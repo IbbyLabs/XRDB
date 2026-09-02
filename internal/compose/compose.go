@@ -1448,7 +1448,12 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 	// viewer who wants the series poster on an episode row has not asked for the
 	// series' rating on it.
 	if req.Config.EpisodeArtworkMode == "series" {
-		return nil, nil, p.episodeRatingID(ctx, req, series, season, episode), "", false
+		id, rating := p.episodeRatingFor(ctx, req, series, season, episode)
+		var meta *provider.MediaMeta
+		if rating != nil {
+			meta = &provider.MediaMeta{Ratings: []provider.Rating{*rating}}
+		}
+		return nil, meta, id, "", false
 	}
 	tmdb := p.TMDBClient()
 	if tmdb == nil {
@@ -1478,24 +1483,54 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 	return data, meta, ratingID, info.StillURL, true
 }
 
-// episodeRatingID is the id the rating sources should be asked about for one
-// episode: its own IMDb tconst where TMDB knows one, and the request's id
-// otherwise. Used where the still is not wanted but the ratings still are, so
-// both ways of addressing an episode answer with the same granularity.
-func (p *Pipeline) episodeRatingID(ctx context.Context, req Request, series string, season, episode int) string {
+// episodeRatingFor is the id the rating sources should be asked about for one
+// episode, and the episode's own TMDB rating. Used where the still is not wanted
+// but the ratings still are, so both ways of addressing an episode answer with
+// the same granularity.
+//
+// The rating is fetched even for an IMDb id, where the id alone would do: the
+// series artwork supplies a series-level TMDB score.
+func (p *Pipeline) episodeRatingFor(ctx context.Context, req Request, series string, season, episode int) (string, *provider.Rating) {
+	id := ""
 	if strings.HasPrefix(req.MediaID, "tt") {
-		return req.MediaID
+		id = req.MediaID
 	}
 	tmdb := p.TMDBClient()
 	if tmdb == nil {
-		return ""
+		return id, nil
 	}
 	info, err := tmdb.FetchEpisode(ctx, strings.TrimPrefix(series, "tmdb:"), season, episode,
 		provider.ArtworkOptions{Language: req.Config.Language, FallbackLanguage: req.Config.FallbackLanguage})
-	if err != nil || info == nil || info.IMDbID == "" {
-		return ""
+	if err != nil || info == nil {
+		return id, nil
 	}
-	return info.IMDbID
+	if info.IMDbID != "" {
+		id = info.IMDbID
+	}
+	return id, info.Rating
+}
+
+// applyEpisodeRating puts an episode's own rating in place of the series-level
+// one from the same source. Builds a new slice: a provider may hand one meta to
+// concurrent renders.
+func applyEpisodeRating(meta *provider.MediaMeta, rating *provider.Rating) {
+	if meta == nil || rating == nil {
+		return
+	}
+	out := make([]provider.Rating, 0, len(meta.Ratings)+1)
+	replaced := false
+	for _, r := range meta.Ratings {
+		if strings.EqualFold(r.Source, rating.Source) {
+			out = append(out, *rating)
+			replaced = true
+			continue
+		}
+		out = append(out, r)
+	}
+	if !replaced {
+		out = append(out, *rating)
+	}
+	meta.Ratings = out
 }
 
 // ratingIDFor picks the id the rating sources are asked about. An episode's own
@@ -1552,6 +1587,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 		series, season, episode, ok = p.identifyEpisode(ctx, req.MediaID)
 	}
 	episodeRatingID := ""
+	var episodeRating *provider.Rating
 	if ok {
 		data, meta, ratingID, stillURL, handled := p.fetchEpisode(ctx, req, series, season, episode)
 		if handled {
@@ -1569,6 +1605,9 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 		// to answer with the same granularity or the same title reads
 		// differently depending how it was asked for.
 		episodeRatingID = ratingID
+		if meta != nil && len(meta.Ratings) > 0 {
+			episodeRating = &meta.Ratings[0]
+		}
 		if !strings.HasPrefix(req.MediaID, "tt") {
 			req.MediaID = series
 		}
@@ -1670,6 +1709,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 			// writes into this one.
 			local := *meta
 			baseMeta, baseFrom = &local, name
+			applyEpisodeRating(baseMeta, episodeRating)
 			p.log().DebugContext(ctx, "Resolved the artwork language for this render",
 				"id", logging.RequestID(ctx), "provider", name,
 				"media_type", req.MediaType, "media_id", req.MediaID,
