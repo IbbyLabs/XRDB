@@ -22,6 +22,10 @@ import (
 // Only one direction is asserted. A control narrower than the server is a design
 // choice — the opacity sliders stop at 5 because 1 to 4 percent is invisible —
 // and a rule against it would be red on arrival for reasons nobody wants changed.
+//
+// The set compared is what NumFields offer, not what the configurator can send.
+// A field written by another control as well is half read: ratingBadgeBorderWidth
+// takes -1 and 0 from a mode selector beside its NumField.
 
 type numFieldBounds struct {
 	min, max      int
