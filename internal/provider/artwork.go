@@ -62,3 +62,13 @@ type TitleIdentifier interface {
 type KindIdentifier interface {
 	KindOfTMDBID(ctx context.Context, id string) (string, error)
 }
+
+// EpisodeIdentifier resolves an external id that names one episode to the
+// series it belongs to and the numbers that address it. ok is false for every
+// id that names something else, which is every film and every series.
+//
+// The caller keeps its own id: this answers "which episode is this" without
+// replacing the identifier the sources that index titles still need.
+type EpisodeIdentifier interface {
+	IdentifyEpisode(ctx context.Context, id string) (seriesTMDBID string, season, episode int, ok bool, err error)
+}

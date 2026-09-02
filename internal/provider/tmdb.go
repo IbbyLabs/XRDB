@@ -266,6 +266,30 @@ type externalMatch struct {
 	// Popularity is TMDB's own relevance score, used only to break a tie
 	// between two records claiming the same external id.
 	Popularity float64
+	// Season and Episode address one episode of the series ID names. IsEpisode
+	// says the id named an episode rather than that the numbers are non-zero:
+	// TMDB numbers a special as season 0, so zero is a value here.
+	Season    int
+	Episode   int
+	IsEpisode bool
+}
+
+// IdentifyEpisode reports which episode an external id names, if it names one.
+//
+// The same /find response that resolves a tt-id to a TMDB id already carries
+// the season and episode, so this costs the request the caller was going to
+// make rather than an extra one — provided the caller then addresses the series
+// numerically and does not send the tt-id round again.
+func (t *TMDB) IdentifyEpisode(ctx context.Context, id string) (string, int, int, bool, error) {
+	rest := strings.TrimSpace(id)
+	if !strings.HasPrefix(rest, "tt") {
+		return "", 0, 0, false, nil
+	}
+	match, found, err := t.findByExternalID(ctx, rest, "imdb_id", "")
+	if err != nil || !found || !match.IsEpisode {
+		return "", 0, 0, false, err
+	}
+	return match.ID, match.Season, match.Episode, true, nil
 }
 
 // findByExternalID resolves an external identifier (an IMDb tt-id or a TVDB id)
@@ -294,7 +318,9 @@ func (t *TMDB) findByExternalID(ctx context.Context, externalID, source, prefer 
 		// the episode resolves to the series it belongs to without a second
 		// request — which is the only thing every other source can answer about.
 		TVEpisodeResults []struct {
-			ShowID int `json:"show_id"`
+			ShowID  int `json:"show_id"`
+			Season  int `json:"season_number"`
+			Episode int `json:"episode_number"`
 		} `json:"tv_episode_results"`
 	}
 	if err := t.get(ctx, path, &result); err != nil {
@@ -313,10 +339,17 @@ func (t *TMDB) findByExternalID(ctx context.Context, externalID, source, prefer 
 	// and none indexes episodes, so this is what turns four simultaneous
 	// failures into four answers.
 	if movie == nil && tv == nil && len(result.TVEpisodeResults) > 0 {
-		if showID := result.TVEpisodeResults[0].ShowID; showID > 0 {
+		if e := result.TVEpisodeResults[0]; e.ShowID > 0 {
 			t.log().InfoContext(ctx, "An episode id was resolved to the series it belongs to",
-				"id", logging.RequestID(ctx), "external_id", externalID, "series", showID)
-			return externalMatch{ID: strconv.Itoa(showID), ContentType: "tv"}, true, nil
+				"id", logging.RequestID(ctx), "external_id", externalID, "series", e.ShowID,
+				"season", e.Season, "episode", e.Episode)
+			// Season and episode ride along so a caller that wants the episode
+			// itself is not left resolving the id a second time. Zero for a
+			// series' own special, which TMDB numbers season 0.
+			return externalMatch{
+				ID: strconv.Itoa(e.ShowID), ContentType: "tv",
+				Season: e.Season, Episode: e.Episode, IsEpisode: true,
+			}, true, nil
 		}
 	}
 	switch {

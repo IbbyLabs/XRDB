@@ -81,3 +81,62 @@ func TestAnEpisodeWithNoShowIdResolvesToNothing(t *testing.T) {
 		t.Error("an episode with no show id resolved to something")
 	}
 }
+
+// The /find response that resolves a tt-id already names the episode. Dropping
+// the two numbers is what made an episode render as its series: the episode
+// path needs them and nothing else supplies them.
+func TestFindCarriesTheEpisodeNumbersNotJustTheShow(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"movie_results":[],"tv_results":[],
+		  "tv_episode_results":[{"show_id":31132,"season_number":6,"episode_number":7}]}`))
+	}))
+	t.Cleanup(srv.Close)
+	tmdb := &TMDB{httpClient: srv.Client(), baseURL: srv.URL, apiKey: "k"}
+
+	series, season, episode, ok, err := tmdb.IdentifyEpisode(context.Background(), "tt4164090")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("an episode id was not recognised as one")
+	}
+	if series != "31132" || season != 6 || episode != 7 {
+		t.Errorf("got series %q s%d e%d, want 31132 s6 e7", series, season, episode)
+	}
+}
+
+// A film's id names no episode, and saying it does would send every film down
+// the episode path.
+func TestFindDoesNotCallAFilmAnEpisode(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"movie_results":[{"id":603,"title":"The Matrix"}],
+		  "tv_results":[],"tv_episode_results":[]}`))
+	}))
+	t.Cleanup(srv.Close)
+	tmdb := &TMDB{httpClient: srv.Client(), baseURL: srv.URL, apiKey: "k"}
+
+	if _, _, _, ok, err := tmdb.IdentifyEpisode(context.Background(), "tt0133093"); err != nil || ok {
+		t.Errorf("IdentifyEpisode said ok=%v err=%v for a film", ok, err)
+	}
+}
+
+// A special is season 0, so a zero season is a value rather than an absence.
+func TestFindKeepsASeasonZeroSpecial(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"movie_results":[],"tv_results":[],
+		  "tv_episode_results":[{"show_id":1399,"season_number":0,"episode_number":2}]}`))
+	}))
+	t.Cleanup(srv.Close)
+	tmdb := &TMDB{httpClient: srv.Client(), baseURL: srv.URL, apiKey: "k"}
+
+	series, season, episode, ok, err := tmdb.IdentifyEpisode(context.Background(), "tt9999999")
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+	if series != "1399" || season != 0 || episode != 2 {
+		t.Errorf("got series %q s%d e%d, want 1399 s0 e2", series, season, episode)
+	}
+}

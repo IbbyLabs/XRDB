@@ -1385,6 +1385,31 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	return result, nil
 }
 
+// identifyEpisode asks TMDB which episode an IMDb id names. Only a tt-id can be
+// one: every other form either carries the numbers already or names a title.
+//
+// The answer costs the /find that resolving the tt-id would have made anyway,
+// so long as the caller addresses the series numerically afterwards.
+func (p *Pipeline) identifyEpisode(ctx context.Context, mediaID string) (series string, season, episode int, ok bool) {
+	if !strings.HasPrefix(mediaID, "tt") {
+		return "", 0, 0, false
+	}
+	ident, isIdent := p.providers.Get("tmdb").(provider.EpisodeIdentifier)
+	if !isIdent {
+		return "", 0, 0, false
+	}
+	seriesID, s, e, found, err := ident.IdentifyEpisode(ctx, mediaID)
+	if err != nil {
+		p.log().DebugContext(ctx, "Could not tell whether the id names an episode",
+			"id", logging.RequestID(ctx), "media_id", mediaID, "error", err)
+		return "", 0, 0, false
+	}
+	if !found {
+		return "", 0, 0, false
+	}
+	return seriesID, s, e, true
+}
+
 // parseEpisodeID detects an episode identifier of the form
 // "<series>:<season>:<episode>" — the Stremio/AIOMetadata format for series
 // episodes, where <series> may be an IMDb tt-id, "tmdb:<id>", or a bare numeric
@@ -1418,8 +1443,12 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 	// "series" mode skips the episode still and falls through to the normal
 	// series artwork path. "still"/"streaming" (and the default) use the still —
 	// v3 has no separate streaming-thumbnail source, so streaming maps to still.
+	//
+	// The rating id is still the episode's: the setting names artwork, so a
+	// viewer who wants the series poster on an episode row has not asked for the
+	// series' rating on it.
 	if req.Config.EpisodeArtworkMode == "series" {
-		return nil, nil, "", "", false
+		return nil, nil, p.episodeRatingID(ctx, req, series, season, episode), "", false
 	}
 	tmdb := p.TMDBClient()
 	if tmdb == nil {
@@ -1447,6 +1476,36 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 		ratingID = info.IMDbID
 	}
 	return data, meta, ratingID, info.StillURL, true
+}
+
+// episodeRatingID is the id the rating sources should be asked about for one
+// episode: its own IMDb tconst where TMDB knows one, and the request's id
+// otherwise. Used where the still is not wanted but the ratings still are, so
+// both ways of addressing an episode answer with the same granularity.
+func (p *Pipeline) episodeRatingID(ctx context.Context, req Request, series string, season, episode int) string {
+	if strings.HasPrefix(req.MediaID, "tt") {
+		return req.MediaID
+	}
+	tmdb := p.TMDBClient()
+	if tmdb == nil {
+		return ""
+	}
+	info, err := tmdb.FetchEpisode(ctx, strings.TrimPrefix(series, "tmdb:"), season, episode,
+		provider.ArtworkOptions{Language: req.Config.Language, FallbackLanguage: req.Config.FallbackLanguage})
+	if err != nil || info == nil || info.IMDbID == "" {
+		return ""
+	}
+	return info.IMDbID
+}
+
+// ratingIDFor picks the id the rating sources are asked about. An episode's own
+// id wins where one was resolved, so the artwork falling back to the series does
+// not drag the ratings up with it.
+func ratingIDFor(episodeID, mediaID string) string {
+	if episodeID != "" {
+		return episodeID
+	}
+	return mediaID
 }
 
 // fetchSourceImageAndMeta fetches the artwork bytes and metadata from the
@@ -1482,16 +1541,37 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	}()
 	// Series-episode requests (thumbnails from AIOMetadata) resolve the episode
 	// still + per-episode ratings instead of the series-level artwork.
-	if series, season, episode, ok := parseEpisodeID(req.MediaID); ok {
-		if data, meta, ratingID, stillURL, handled := p.fetchEpisode(ctx, req, series, season, episode); handled {
+	//
+	// An episode addressed by its own IMDb id reaches the same path: the id
+	// carries no season or episode, so it is asked for rather than parsed out.
+	// req.MediaID is left as the tt-id — the sources below index titles by it,
+	// and replacing it with the series number is what made an episode render as
+	// its series.
+	series, season, episode, ok := parseEpisodeID(req.MediaID)
+	if !ok {
+		series, season, episode, ok = p.identifyEpisode(ctx, req.MediaID)
+	}
+	episodeRatingID := ""
+	if ok {
+		data, meta, ratingID, stillURL, handled := p.fetchEpisode(ctx, req, series, season, episode)
+		if handled {
 			// The episode still comes from TMDB whatever the configured source is.
 			return data, meta, ratingID, "tmdb", stillURL, nil
 		}
 		// Not handled means the still was skipped — episodeArtworkMode "series",
-		// or TMDB having none — and the series artwork is what stands in. Every
-		// source below is keyed on titles, so carrying the episode id here asks
-		// all of them for something none of them has and ends as a placeholder.
-		req.MediaID = series
+		// or TMDB having none — and the series artwork is what stands in. The
+		// sources below are keyed on titles, so a colon-form episode id asks all
+		// of them for something none of them has and ends as a placeholder; a
+		// tt-id they accept, and TMDB resolves it to the series on its own.
+		//
+		// Whichever id fetches the artwork, the ratings are still the episode's:
+		// the setting names artwork, and both ways of addressing an episode have
+		// to answer with the same granularity or the same title reads
+		// differently depending how it was asked for.
+		episodeRatingID = ratingID
+		if !strings.HasPrefix(req.MediaID, "tt") {
+			req.MediaID = series
+		}
 	}
 	opts := provider.ArtworkOptions{
 		Language:           req.Config.Language,
@@ -1604,12 +1684,12 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 			if data, ferr := p.fetcher.Fetch(ctx, url); ferr == nil && len(data) > 0 {
 				data, url = p.betterPoster(ctx, req, meta, url, data)
 				p.enrichMetaForOverlays(ctx, req, baseMeta)
-				return data, baseMeta, req.MediaID, name, url, nil
+				return data, baseMeta, ratingIDFor(episodeRatingID, req.MediaID), name, url, nil
 			}
 		}
 	}
 	if baseMeta == nil {
-		return nil, nil, req.MediaID, "", "", fmt.Errorf("no artwork provider returned metadata")
+		return nil, nil, ratingIDFor(episodeRatingID, req.MediaID), "", "", fmt.Errorf("no artwork provider returned metadata")
 	}
 	// No provider had the exact surface. Last resort allows a poster to stand in
 	// for a missing logo/thumbnail, using art merged from every source tried.
@@ -1617,17 +1697,17 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	if url := selectArtworkURL(baseMeta, req.MediaType, req.Config); url != "" {
 		data, err := p.fetcher.Fetch(ctx, url)
 		if err == nil && len(data) > 0 {
-			return data, baseMeta, req.MediaID, baseFrom, url, nil
+			return data, baseMeta, ratingIDFor(episodeRatingID, req.MediaID), baseFrom, url, nil
 		}
 		// The URL was in the metadata and fetching it is what failed. Reporting
 		// that as a missing URL sends a reader to the provider's response when
 		// the fault is in the request that followed it.
 		if err != nil {
-			return nil, baseMeta, req.MediaID, baseFrom, url, fmt.Errorf("artwork fetch failed: %w", err)
+			return nil, baseMeta, ratingIDFor(episodeRatingID, req.MediaID), baseFrom, url, fmt.Errorf("artwork fetch failed: %w", err)
 		}
-		return nil, baseMeta, req.MediaID, baseFrom, url, fmt.Errorf("artwork fetch returned no bytes")
+		return nil, baseMeta, ratingIDFor(episodeRatingID, req.MediaID), baseFrom, url, fmt.Errorf("artwork fetch returned no bytes")
 	}
-	return nil, baseMeta, req.MediaID, baseFrom, "", fmt.Errorf("no artwork URL in metadata")
+	return nil, baseMeta, ratingIDFor(episodeRatingID, req.MediaID), baseFrom, "", fmt.Errorf("no artwork URL in metadata")
 }
 
 // identify asks an id-authoritative source what MediaID actually resolves to.
