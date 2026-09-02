@@ -90,8 +90,14 @@ type Result struct {
 // Pipeline orchestrates metadata fetch + image composition.
 type Pipeline struct {
 	providers *provider.Registry
-	fetcher   imageFetcher
-	logger    *slog.Logger
+	// warnedRatingSources remembers which unrecognised source names have been
+	// reported, so a config in constant use reports each name once rather than
+	// once per render.
+	warnedRatingSources sync.Map
+	// ratingSourceNames caches the set the warning above is checked against.
+	ratingSourceNames atomic.Value
+	fetcher           imageFetcher
+	logger            *slog.Logger
 	// anime resolves whether a title is a known anime, so the genre badge can
 	// tell anime apart from animation generally. Optional: nil disables it.
 	anime animeResolver
@@ -967,6 +973,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	timings := newRenderTimings()
 	defer func() { timings.log(ctx, p.log(), req) }()
 
+	p.warnUnknownRatingSources(ctx, req.Config)
 	req = p.resolveAnimeID(ctx, req)
 	timings.mark("anime_id")
 	dim := render.DimensionsForSize(req.MediaType, string(req.Config.Size))
