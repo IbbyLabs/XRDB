@@ -168,7 +168,9 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 		wanted := method != "" && method == wikidataWantedMethod[source]
 		// An unqualified statement is a fallback, not a rival: a title whose only
 		// score carries no method still gets a badge, and a named one always
-		// displaces it whichever order the rows arrive in.
+		// displaces it whichever order the rows arrive in. Two unqualified rows
+		// and no named one leaves the last read standing, which is arbitrary and
+		// has to be: neither is known to be the wrong measure.
 		if exact[source] && !wanted {
 			continue
 		}
