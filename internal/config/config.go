@@ -4,6 +4,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -233,12 +234,9 @@ type Config struct {
 	FolderWriterInterval time.Duration
 }
 
-// loadProviderTTLs builds the per-provider TTL map.
-// Each provider can be overridden via XRDB_TTL_<PROVIDER> (in hours, float).
-// Example: XRDB_TTL_MDBLIST=4 sets a 4-hour TTL for mdblist ratings.
-// Unset providers inherit the global defaultTTL.
-// TTLProviders lists the providers whose cache TTL can be tuned. Exported so the
-// admin API offers the same set the loader knows about.
+// TTLProviders lists the providers whose cache TTL can be tuned, and is the
+// whole of that set: XRDB_TTL_ naming anything else is read by nothing.
+// Exported so the admin API offers the same set the loader knows about.
 var TTLProviders = []string{
 	"tmdb", "mdblist", "omdb", "fanart",
 	"trakt", "simkl", "mal", "anilist", "kitsu", "imdb_local",
@@ -292,12 +290,39 @@ func ProviderEnvTTL(name string, defaultTTL time.Duration) time.Duration {
 	return defaultTTL
 }
 
+// loadProviderTTLs builds the per-provider TTL map. A provider in TTLProviders
+// takes XRDB_TTL_<PROVIDER> in hours as a float, e.g. XRDB_TTL_MDBLIST=4. The
+// rest inherit defaultTTL.
 func loadProviderTTLs(defaultTTL time.Duration) map[string]time.Duration {
 	ttls := make(map[string]time.Duration, len(TTLProviders))
 	for _, name := range TTLProviders {
 		ttls[name] = ProviderEnvTTL(name, defaultTTL)
 	}
 	return ttls
+}
+
+// UnknownTTLEnvVars reports XRDB_TTL_ variables in the environment that nothing
+// reads: a provider outside TTLProviders, a surface outside TTLSurfaces, or a
+// misspelling of either. The set a user might type is unbounded, so the check
+// runs against what is actually set rather than against a list of likely errors.
+func UnknownTTLEnvVars() []string {
+	known := make(map[string]bool, len(TTLProviders)+len(TTLSurfaces))
+	for _, name := range TTLProviders {
+		known[ProviderTTLEnvVar(name)] = true
+	}
+	for _, name := range TTLSurfaces {
+		known[SurfaceTTLEnvVar(name)] = true
+	}
+	var out []string
+	for _, kv := range os.Environ() {
+		name, _, ok := strings.Cut(kv, "=")
+		if !ok || !strings.HasPrefix(name, "XRDB_TTL_") || known[name] {
+			continue
+		}
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // buildVersion is stamped into the binary at link time (-X). Empty for a plain

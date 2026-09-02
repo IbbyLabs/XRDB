@@ -118,6 +118,13 @@ func main() {
 		logger.Warn("XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS is set but no longer read",
 			"effect", "an over-cap caller waits the ordinary XRDB_RENDER_QUEUE_WAIT_SECONDS")
 	}
+	if unknown := config.UnknownTTLEnvVars(); len(unknown) > 0 {
+		logger.Warn("A TTL variable is set that nothing reads",
+			"variables", strings.Join(unknown, ", "),
+			"tunable_providers", strings.Join(config.TTLProviders, ", "),
+			"tunable_surfaces", strings.Join(config.TTLSurfaces, ", "),
+			"effect", "the cache TTL it names keeps its default")
+	}
 
 	settingsStore, err := settings.Open(cfg.DBPath + ".settings")
 	if err != nil {

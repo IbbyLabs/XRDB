@@ -95,3 +95,29 @@ func TestEveryEnvVarIsInTheTemplate(t *testing.T) {
 			strings.Join(missing, "\n  "))
 	}
 }
+
+// TestEveryTunableTTLIsNamedInTheTemplate keeps the template's list and
+// TTLProviders from drifting. The variables are built by ProviderTTLEnvVar
+// rather than written as literals, so the walk above cannot see them, and a
+// provider added to the list would otherwise go undocumented.
+func TestEveryTunableTTLIsNamedInTheTemplate(t *testing.T) {
+	root, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatalf("cannot resolve the repository root: %v", err)
+	}
+	tmpl, err := os.ReadFile(filepath.Join(root, "env.template"))
+	if err != nil {
+		t.Fatalf("cannot read env.template: %v", err)
+	}
+	template := string(tmpl)
+	for _, name := range TTLProviders {
+		if v := ProviderTTLEnvVar(name); !strings.Contains(template, v) {
+			t.Errorf("%s is tunable but %s is not in env.template", name, v)
+		}
+	}
+	for _, name := range TTLSurfaces {
+		if v := SurfaceTTLEnvVar(name); !strings.Contains(template, v) {
+			t.Errorf("surface %s is tunable but %s is not in env.template", name, v)
+		}
+	}
+}
