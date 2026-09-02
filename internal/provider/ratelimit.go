@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -406,7 +407,11 @@ type throttledTransport struct {
 	// queued counts requests that waited in our own queue rather than going out
 	// at once, so the wait is countable without a debug level.
 	queued atomic.Int64
-	logger *slog.Logger
+	// reportedRefusal holds the once-per-source report of an unmatched throttle
+	// body. A throttled source produces them in bulk and the wording does not
+	// vary between them.
+	reportedRefusal atomic.Bool
+	logger          *slog.Logger
 }
 
 func (t *throttledTransport) log() *slog.Logger {
@@ -516,13 +521,15 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 		// A quota refusal cannot be retried out of. Spending the retry budget on
 		// it burns the very allowance that is exhausted.
-		if body := peek(resp); isQuotaRefusal(body) {
+		body := peek(resp)
+		if isQuotaRefusal(body) {
 			drain(resp)
 			t.log().WarnContext(req.Context(), "A ratings source has spent its request quota; holding it back",
 				"source", t.source, "status", lastStatus, "attempts", attempt+1)
 			return nil, &RateLimitError{Source: t.source, RetryAfter: wait,
 				Status: lastStatus, QuotaExhausted: true}
 		}
+		t.reportUnknownRefusal(req.Context(), lastStatus, body)
 
 		if attempt >= retries || wait > t.policy.MaxRetryWait {
 			// Drain a little so the connection can be reused, then report the
@@ -599,7 +606,35 @@ func peek(resp *http.Response) []byte {
 	return buf[:n]
 }
 
+// reportUnknownRefusal records a throttle body none of the quotaMarkers matched.
+// The list grows only when someone reads a new source's wording, and an
+// unrecognised quota refusal is indistinguishable in the log from ordinary
+// throttling, so without this it cannot be read.
+//
+// Only a structured body is logged: a JSON error is the wording worth having and
+// the least likely to carry anything else, where 512 bytes of an HTML block page
+// is neither. Once per source per process — the phrase is a property of the
+// source, and a throttled source produces these in bulk.
+func (t *throttledTransport) reportUnknownRefusal(ctx context.Context, status int, body []byte) {
+	// 429 is where a spent allowance is said. A 503 is the source being unwell
+	// and its body says nothing about quota.
+	if status != http.StatusTooManyRequests {
+		return
+	}
+	trimmed := bytes.TrimSpace(body)
+	if len(trimmed) == 0 || (trimmed[0] != '{' && trimmed[0] != '[') {
+		return
+	}
+	if t.reportedRefusal.Swap(true) {
+		return
+	}
+	t.log().InfoContext(ctx, "A ratings source refused with a body none of the quota phrases match",
+		"source", t.source, "status", status, "body", string(trimmed),
+		"effect", "the refusal is retried as ordinary throttling; add the phrase to quotaMarkers if it names a spent allowance")
+}
+
 // quotaMarkers are the phrases a source uses to say the refusal is a spent
+// allowance rather than a moment of pressure.// quotaMarkers are the phrases a source uses to say the refusal is a spent
 // allowance rather than a moment of pressure. SIMKL answers a spent daily
 // allowance with {"error":"app_limit_exceeded", ...}.
 var quotaMarkers = []string{
