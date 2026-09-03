@@ -104,6 +104,23 @@ func (t Target) empty() bool { return t.IMDb == "" && t.TMDB == 0 }
 // which is the shape AIOMetadata emits from {type}:{id}. The type says nothing
 // about which service the id belongs to, so anything deciding by the id's own
 // prefix has to strip it first or it reads the type instead of the id.
+// withoutSourceToken reduces a render-path TMDB id to the bare number the maps
+// are keyed on. An id naming its own space settles the movie/TV ambiguity that
+// mediaType otherwise has to guess at.
+func withoutSourceToken(mediaType, id string) (string, string) {
+	rest, ok := strings.CutPrefix(id, "tmdb:")
+	if !ok {
+		return mediaType, id
+	}
+	if bare, ok := strings.CutPrefix(rest, "movie:"); ok {
+		return "movie", bare
+	}
+	if bare := withoutTypeToken(rest); bare != rest {
+		return "series", bare
+	}
+	return mediaType, rest
+}
+
 func withoutTypeToken(id string) string {
 	for _, tok := range []string{"movie:", "series:", "tv:"} {
 		if rest, ok := strings.CutPrefix(id, tok); ok {
@@ -391,6 +408,7 @@ func (m *Mapper) Resolve(ctx context.Context, mediaType, id string) (IDs, bool) 
 	if id == "" {
 		return IDs{}, false
 	}
+	mediaType, id = withoutSourceToken(mediaType, id)
 	// Merge across sources rather than returning the first hit. A source can hold
 	// a partial mapping — a Kitsu id but no MAL or AniList — and returning it would
 	// shadow the complete answer a later source has. Each source fills the gaps the

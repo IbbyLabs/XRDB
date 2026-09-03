@@ -69,6 +69,10 @@ func (w *AnimeMapped) translate(ctx context.Context, mediaType, id string) (stri
 	return fmt.Sprintf("%s%d", w.prefix, n), nil
 }
 
+// SeriesScoped reports that MAL, AniList and Kitsu are series-level. The anime
+// map is keyed on series ids, so an episode id matches nothing.
+func (w *AnimeMapped) SeriesScoped() bool { return true }
+
 // AppliesTo reports whether the title has a mapping into this service. Asked
 // before the render decides whether the source is available, so a title that is
 // not an anime never counts as a source the render lost.

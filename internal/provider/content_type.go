@@ -36,6 +36,20 @@ type Applicability interface {
 	AppliesTo(ctx context.Context, mediaType, id string) bool
 }
 
+// SeriesScoped marks a source that answers per series and has no per-episode
+// entry. The render asks these about the series id even when the request names
+// an episode.
+type SeriesScoped interface {
+	SeriesScoped() bool
+}
+
+// AsksAboutTheSeries reports whether prov wants the series id in place of an
+// episode one.
+func AsksAboutTheSeries(prov Provider) bool {
+	s, ok := prov.(SeriesScoped)
+	return ok && s.SeriesScoped()
+}
+
 // SourceApplies reports whether prov can answer for this title. A source that
 // does not declare applicability applies to everything, so a source that cannot
 // decide is still tried rather than silently dropped.

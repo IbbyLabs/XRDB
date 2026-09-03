@@ -487,3 +487,25 @@ func TestParseAnimeIDAcceptsAniDB(t *testing.T) {
 		}
 	}
 }
+
+func TestWithoutSourceToken(t *testing.T) {
+	cases := []struct {
+		mediaType, id    string
+		wantType, wantID string
+	}{
+		{"poster", "tmdb:1396", "poster", "1396"},
+		{"poster", "tmdb:tv:1399", "series", "1399"},
+		{"poster", "tmdb:series:34307", "series", "34307"},
+		{"poster", "tmdb:movie:330176", "movie", "330176"},
+		{"poster", "tt0903747", "poster", "tt0903747"},
+		{"poster", "1396", "poster", "1396"},
+		{"poster", "kitsu:11209", "poster", "kitsu:11209"},
+	}
+	for _, c := range cases {
+		gotType, gotID := withoutSourceToken(c.mediaType, c.id)
+		if gotType != c.wantType || gotID != c.wantID {
+			t.Errorf("withoutSourceToken(%q, %q) = (%q, %q), want (%q, %q)",
+				c.mediaType, c.id, gotType, gotID, c.wantType, c.wantID)
+		}
+	}
+}

@@ -47,6 +47,10 @@ type Request struct {
 	// already answered; the configured source is not it when the source could not
 	// serve this id and the fallback took over.
 	artworkFrom string
+	// seriesID is the title the episode belongs to, set on the ratings request
+	// when MediaID names an episode. Series-level sources are asked about this
+	// instead.
+	seriesID string
 }
 
 // Result holds the composed image bytes and metadata.
@@ -1102,6 +1106,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// req.MediaID for episodes, so per-episode ratings resolve correctly.
 	ratingReq := req
 	ratingReq.MediaID = ratingIDForSources(ratingID, meta)
+	// Series-level sources are asked about this instead. The anime map is keyed
+	// on series ids, so an episode tconst matches nothing in it.
+	ratingReq.seriesID = titleID(req.MediaID)
 	ratingReq.artworkFrom = artworkFrom
 	// A TMDB id only becomes an IMDb one here, so this is the earliest the addon
 	// can be asked about it. Either way the call overlaps the rating fan-out and
@@ -2102,6 +2109,20 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 // The third and fourth results are whether the render lost a wanted source, and
 // whether any of those losses was the source's own doing rather than one of our
 // gates.
+// askAbout is the request one source is given. A series-level source gets the
+// series id where the request names an episode; everything else gets the request
+// unchanged.
+func askAbout(req Request, prov provider.Provider) Request {
+	if req.seriesID == "" || req.seriesID == req.MediaID {
+		return req
+	}
+	if !provider.AsksAboutTheSeries(prov) {
+		return req
+	}
+	req.MediaID = req.seriesID
+	return req
+}
+
 func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string, bool, bool, bool, []string) {
 	if artwork == nil {
 		artwork = &provider.MediaMeta{}
@@ -2157,6 +2178,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	covered := make(map[string]bool)
 	for _, i := range freePreferredSuppliers(called, req.Config, req.ContentType) {
 		prov := called[i]
+		req := askAbout(req, prov)
 		if !provider.SourceApplies(ctx, prov, req.ContentType, req.MediaID) {
 			continue
 		}
@@ -2200,6 +2222,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		wg.Add(1)
 		go func(i int, prov provider.Provider) {
 			defer wg.Done()
+			req := askAbout(req, prov)
 			// What a source can answer for is settled before whether it is
 			// available. Every hold-out gate lives inside fetchRatingsResilient,
 			// and a gate marks what it refuses as degraded, which puts a

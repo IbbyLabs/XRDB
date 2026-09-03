@@ -1137,6 +1137,69 @@ func TestLogoLastResortFallsBackToPoster(t *testing.T) {
 	}
 }
 
+// idRecordingProvider records the id each Fetch was asked about. seriesLevel
+// makes it declare provider.SeriesScoped.
+type idRecordingProvider struct {
+	name        string
+	seriesLevel bool
+	mu          sync.Mutex
+	saw         []string
+}
+
+func (r *idRecordingProvider) Name() string { return r.name }
+
+func (r *idRecordingProvider) SeriesScoped() bool { return r.seriesLevel }
+
+func (r *idRecordingProvider) Fetch(_ context.Context, _, id string) (*provider.MediaMeta, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.saw = append(r.saw, id)
+	return &provider.MediaMeta{}, nil
+}
+
+func (r *idRecordingProvider) asked() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]string(nil), r.saw...)
+}
+
+func TestSeriesLevelSourcesAreAskedAboutTheSeries(t *testing.T) {
+	anime := &idRecordingProvider{name: "mal", seriesLevel: true}
+	other := &idRecordingProvider{name: "omdb"}
+	reg := provider.NewRegistry()
+	reg.Register(anime)
+	reg.Register(other)
+	p := &Pipeline{providers: reg, fetcher: &stubImageFetcher{}}
+
+	req := Request{
+		MediaType:   "poster",
+		ContentType: "series",
+		MediaID:     "tt9999999",
+		seriesID:    "tt0903747",
+		Config:      imageconfig.Default(),
+	}
+	p.collectRatingsWithProviders(context.Background(), req, nil)
+
+	if got := anime.asked(); len(got) != 1 || got[0] != "tt0903747" {
+		t.Errorf("series-level source asked about %v, want [tt0903747]", got)
+	}
+	if got := other.asked(); len(got) != 1 || got[0] != "tt9999999" {
+		t.Errorf("episode-level source asked about %v, want [tt9999999]", got)
+	}
+}
+
+func TestAskAboutLeavesANonEpisodeRequestAlone(t *testing.T) {
+	anime := &idRecordingProvider{name: "mal", seriesLevel: true}
+	req := Request{MediaID: "tt0903747", seriesID: "tt0903747"}
+	if got := askAbout(req, anime).MediaID; got != "tt0903747" {
+		t.Errorf("askAbout = %q, want tt0903747", got)
+	}
+	req.seriesID = ""
+	if got := askAbout(req, anime).MediaID; got != "tt0903747" {
+		t.Errorf("askAbout with no series id = %q, want tt0903747", got)
+	}
+}
+
 func TestParseEpisodeID(t *testing.T) {
 	cases := []struct {
 		id      string
