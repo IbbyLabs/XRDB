@@ -82,3 +82,19 @@ func TestAnEmptyAnswerIsReachableButNotASuccess(t *testing.T) {
 		t.Errorf("LastSuccess = %q, want empty: nothing was carried", sh.LastSuccess)
 	}
 }
+
+// req.ContentType is empty unless a per-type override made the render resolve a
+// kind, so the ordinary cache key carries no content type. A signal that needs
+// one is inert on almost every render.
+func TestAnAnswerWithNoContentTypeStillRecordsThatTheSourceAnswers(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.Success("wikidata", GoodKey("wikidata", "", "tt1"), sampleMeta("wikidata", 8.2))
+
+	if !h.AnsweringFor("wikidata", "", time.Minute) {
+		t.Error("an answer under the ordinary empty content type recorded nothing")
+	}
+	// A resolved kind is still its own bucket.
+	if h.AnsweringFor("wikidata", "series", time.Minute) {
+		t.Error("an empty content type answered for a resolved one")
+	}
+}

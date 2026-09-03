@@ -34,10 +34,10 @@ type sourceState struct {
 	// change answers empty rather than erroring, so consecutiveFail never moves
 	// for it.
 	consecutiveEmpty int
-	// lastRatedByType is when the source last answered with ratings, per content
-	// type. Health is per source and a ratings cache key is per source and
-	// content type, so a source can be answering for posters and broken for
-	// thumbnails with one timestamp unable to say so.
+	// lastRatedByType is when the source last answered with ratings, keyed by the
+	// content type in the answer's cache key. That key is empty unless the render
+	// resolved a kind, so most entries share one bucket and the split only
+	// separates the renders that carry one.
 	lastRatedByType map[string]time.Time
 	successes       int64
 	failures        int64
@@ -201,12 +201,13 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	st.consecutiveEmpty = 0
 	st.breakerTrips = 0
 	st.successes++
-	if _, contentType, _ := SplitGoodKey(key); contentType != "" {
-		if st.lastRatedByType == nil {
-			st.lastRatedByType = make(map[string]time.Time)
-		}
-		st.lastRatedByType[contentType] = time.Now()
+	// An empty content type is the ordinary case rather than a missing value, so
+	// it is a bucket like any other. Requiring one here left this inert.
+	if st.lastRatedByType == nil {
+		st.lastRatedByType = make(map[string]time.Time)
 	}
+	_, contentType, _ := SplitGoodKey(key)
+	st.lastRatedByType[contentType] = time.Now()
 
 	h.rememberLocked(key, meta)
 	return recovered
@@ -237,7 +238,7 @@ func (h *HealthTracker) Empty(source string) {
 // A tracker that has not seen a non-empty answer yet reports false, so a restart
 // distrusts every absence until the source answers once.
 func (h *HealthTracker) AnsweringFor(source, contentType string, within time.Duration) bool {
-	if h == nil || within <= 0 || contentType == "" {
+	if h == nil || within <= 0 {
 		return false
 	}
 	h.mu.Lock()
