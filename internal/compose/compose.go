@@ -713,7 +713,13 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	// answer stamps lastSuccess, resets the failure counters and clears a
 	// cooldown another caller class earned. Only the recording is guarded; what
 	// is served is decided below either way.
-	if err == nil && meta != nil && len(meta.Ratings) > 0 && fetched {
+	if err == nil && meta != nil && len(meta.Ratings) > 0 {
+		// The guard is on the recording only. Putting it on the branch sent a
+		// cache hit through to the degraded fallback below, which served the
+		// same ratings and reported the source as degraded.
+		if !fetched {
+			return meta, false, nil
+		}
 		if ownerKeyed {
 			// The owner's key succeeding against its own allowance says nothing
 			// about the shared key's health, so it only caches the result and
