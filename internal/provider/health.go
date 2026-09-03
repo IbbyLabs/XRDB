@@ -95,10 +95,13 @@ type SourceHealth struct {
 	// ConsecutiveEmpty is the field to read for a broken scrape. Healthy stays
 	// true and ConsecutiveFail stays zero through one, because an empty answer
 	// is not an error.
-	ConsecutiveEmpty int   `json:"consecutiveEmpty"`
-	ConsecutiveFail  int   `json:"consecutiveFailures"`
-	Successes        int64 `json:"successes"`
-	Failures         int64 `json:"failures"`
+	ConsecutiveEmpty int `json:"consecutiveEmpty"`
+	ConsecutiveFail  int `json:"consecutiveFailures"`
+	// BreakerTrips sets how long the next failure hold lasts, doubling each
+	// round. A source recovering at full speed sits at zero between failures.
+	BreakerTrips int   `json:"breakerTrips"`
+	Successes    int64 `json:"successes"`
+	Failures     int64 `json:"failures"`
 	// StaleServes counts how often a render fell back to a remembered value,
 	// for any reason: the live fetch failed, or the source was held out and
 	// never called. So it rises alongside Failures when a source is broken, and
@@ -564,6 +567,7 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 			Healthy:          st.healthy,
 			LastError:        st.lastError,
 			ConsecutiveEmpty: st.consecutiveEmpty,
+			BreakerTrips:     st.breakerTrips,
 			ConsecutiveFail:  st.consecutiveFail,
 			Successes:        st.successes,
 			Failures:         st.failures,
