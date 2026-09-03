@@ -768,10 +768,10 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		return good, true, nil
 	}
 	if err == nil && meta != nil && len(meta.Ratings) == 0 && !ownerKeyed {
-		// Nothing remembered and nothing returned. Record it so a source that
-		// starts answering empty still shows up as unhealthy. Skipped for an
-		// owner-keyed render, which does not speak for the shared source.
-		p.health.Success(prov.Name(), key, meta)
+		// Nothing remembered and nothing returned. Counted so a run of empty
+		// answers is visible on the admin view. Skipped for an owner-keyed
+		// render, which does not speak for the shared source.
+		p.health.Empty(prov.Name())
 	}
 	return meta, false, err
 }

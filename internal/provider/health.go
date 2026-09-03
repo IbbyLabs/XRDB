@@ -30,9 +30,13 @@ type sourceState struct {
 	lastFailure     time.Time
 	lastError       string
 	consecutiveFail int
-	successes       int64
-	failures        int64
-	staleServes     int64
+	// consecutiveEmpty counts answers in a row carrying no ratings. A markup
+	// change answers empty rather than erroring, so consecutiveFail never moves
+	// for it.
+	consecutiveEmpty int
+	successes        int64
+	failures         int64
+	staleServes      int64
 	// heldOutEmpty counts renders that lost a rating: held out with nothing
 	// remembered, so the badge is left empty. Keyed by the gate that refused,
 	// because a source refusing us and our own pacing declining to spend do the
@@ -76,13 +80,20 @@ type SourceHealth struct {
 	Source string `json:"source"`
 	// Healthy is false once a source has failed more recently than it has
 	// succeeded. It is the field worth alerting on.
-	Healthy         bool   `json:"healthy"`
-	LastSuccess     string `json:"lastSuccess,omitempty"`
-	LastFailure     string `json:"lastFailure,omitempty"`
-	LastError       string `json:"lastError,omitempty"`
-	ConsecutiveFail int    `json:"consecutiveFailures"`
-	Successes       int64  `json:"successes"`
-	Failures        int64  `json:"failures"`
+	Healthy bool `json:"healthy"`
+	// LastSuccess is when the source last answered with ratings. Successes
+	// counts every answer including empty ones, so the two move apart on a
+	// source that is reachable and scraping nothing.
+	LastSuccess string `json:"lastSuccess,omitempty"`
+	LastFailure string `json:"lastFailure,omitempty"`
+	LastError   string `json:"lastError,omitempty"`
+	// ConsecutiveEmpty is the field to read for a broken scrape. Healthy stays
+	// true and ConsecutiveFail stays zero through one, because an empty answer
+	// is not an error.
+	ConsecutiveEmpty int   `json:"consecutiveEmpty"`
+	ConsecutiveFail  int   `json:"consecutiveFailures"`
+	Successes        int64 `json:"successes"`
+	Failures         int64 `json:"failures"`
 	// StaleServes counts how often a render fell back to a remembered value,
 	// for any reason: the live fetch failed, or the source was held out and
 	// never called. So it rises alongside Failures when a source is broken, and
@@ -156,13 +167,17 @@ func SplitGoodKey(key string) (source, mediaType, id string) {
 	return parts[0], parts[1], parts[2]
 }
 
-// Success records a healthy fetch and remembers its result. A result carrying
-// no ratings is not remembered: it is exactly what a broken scrape produces,
-// and storing it would overwrite the good answer we still want to fall back to.
-// Success records a successful fetch and reports whether it recovered a source
-// that was previously held out, so the caller can log the recovery once.
+// Success records a fetch that carried ratings, remembers its result, and
+// reports whether it recovered a source that was previously held out so the
+// caller can log the recovery once. An answer carrying no ratings routes to
+// Empty instead: a broken scrape answers exactly that way, and storing it would
+// overwrite the good answer we still fall back to.
 func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered bool) {
 	if h == nil {
+		return false
+	}
+	if meta == nil || len(meta.Ratings) == 0 {
+		h.Empty(source)
 		return false
 	}
 	h.mu.Lock()
@@ -178,11 +193,28 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	st.cooldownReason = [callerClassCount]string{}
 	st.lastSuccess = time.Now()
 	st.consecutiveFail = 0
+	st.consecutiveEmpty = 0
 	st.breakerTrips = 0
 	st.successes++
 
 	h.rememberLocked(key, meta)
 	return recovered
+}
+
+// Empty records that a source answered and carried no ratings. It is not a
+// success: a scrape whose markup has changed answers this way, so nothing here
+// marks the source healthy, clears a cooldown or resets a failure count.
+// Successes still counts it, because the source was reachable.
+func (h *HealthTracker) Empty(source string) {
+	if h == nil {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	st := h.stateLocked(source)
+	st.consecutiveEmpty++
+	st.successes++
 }
 
 // Remember caches a good result without touching the source's health. It is the
@@ -487,13 +519,14 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 	out := make([]SourceHealth, 0, len(h.sources))
 	for name, st := range h.sources {
 		sh := SourceHealth{
-			Source:          name,
-			Healthy:         st.healthy,
-			LastError:       st.lastError,
-			ConsecutiveFail: st.consecutiveFail,
-			Successes:       st.successes,
-			Failures:        st.failures,
-			StaleServes:     st.staleServes,
+			Source:           name,
+			Healthy:          st.healthy,
+			LastError:        st.lastError,
+			ConsecutiveEmpty: st.consecutiveEmpty,
+			ConsecutiveFail:  st.consecutiveFail,
+			Successes:        st.successes,
+			Failures:         st.failures,
+			StaleServes:      st.staleServes,
 			// The admin view reports the non-sweep hold: it is the one that
 			// means a person's render is losing the source.
 			CoolingOff: time.Now().Before(st.cooldownUntil[CallerInteractive]) ||
