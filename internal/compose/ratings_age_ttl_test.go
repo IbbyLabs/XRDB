@@ -25,7 +25,7 @@ func TestTheTermGrowsWithTheTitlesAge(t *testing.T) {
 		{name: "dated in the future", year: thisYear + 2, want: base},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ageScaledTTL(base, &provider.MediaMeta{Year: tc.year})
+			got := ageScaledTTL(base, tc.year)
 			if got != tc.want {
 				t.Errorf("ttl = %s, want %s", got, tc.want)
 			}
@@ -45,7 +45,7 @@ func TestAThinAnswerAboutAnOldTitleIsStillReAskedSoon(t *testing.T) {
 	}
 
 	c.mu.Lock()
-	c.storeLocked("k", old, false)
+	c.storeLocked("k", old, false, 0)
 	c.mu.Unlock()
 
 	c.mu.Lock()
@@ -65,11 +65,51 @@ func TestAFullAnswerAboutAnOldTitleTakesTheLongerTerm(t *testing.T) {
 	}
 
 	c.mu.Lock()
-	c.storeLocked("k", old, true)
+	c.storeLocked("k", old, true, 0)
 	life := time.Until(c.entries["k"].ExpiresAt)
 	c.mu.Unlock()
 
 	if life <= 48*time.Hour {
 		t.Errorf("a complete answer about a 20-year-old title was kept %s, want the 3x term", life)
+	}
+}
+
+func TestTheTitlesYearScalesATermTheAnswerCannotDate(t *testing.T) {
+	base := 24 * time.Hour
+	old := time.Now().Year() - 10
+	c := newRatingsCache(base, nil)
+
+	// A rating source that reports no year of its own, which is most of them.
+	answer := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "wikidata", Value: 7}}}
+
+	c.mu.Lock()
+	c.storeLocked("wikidata|movie|tt1", answer, true, old)
+	c.storeLocked("wikidata|movie|tt2", answer, true, 0)
+	withYear, withNone := c.entries["wikidata|movie|tt1"].TTL, c.entries["wikidata|movie|tt2"].TTL
+	c.mu.Unlock()
+
+	if withYear != 3*base {
+		t.Errorf("term with the title's year = %s, want %s", withYear, 3*base)
+	}
+	if withNone != base {
+		t.Errorf("term with no year = %s, want %s", withNone, base)
+	}
+}
+
+func TestTheAnswersOwnYearStillCountsWhenTheTitleHasNone(t *testing.T) {
+	base := 24 * time.Hour
+	c := newRatingsCache(base, nil)
+	answer := &provider.MediaMeta{
+		Year:    time.Now().Year() - 10,
+		Ratings: []provider.Rating{{Source: "tmdb", Value: 7}},
+	}
+
+	c.mu.Lock()
+	c.storeLocked("tmdb|movie|tt1", answer, true, 0)
+	got := c.entries["tmdb|movie|tt1"].TTL
+	c.mu.Unlock()
+
+	if got != 3*base {
+		t.Errorf("term = %s, want %s", got, 3*base)
 	}
 }

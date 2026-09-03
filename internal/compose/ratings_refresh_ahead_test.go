@@ -24,7 +24,7 @@ func TestAnEntryNearExpiryIsRefreshedBehindTheRender(t *testing.T) {
 
 	var calls atomic.Int32
 	done := make(chan struct{})
-	meta, err := c.do(t.Context(), "k", func(context.Context) (*provider.MediaMeta, bool, error) {
+	meta, err := c.do(t.Context(), "k", 0, func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
 		close(done)
 		return ratedAt(2), true, nil
@@ -59,7 +59,7 @@ func TestAnEntryWellInsideItsTermIsNotRefreshed(t *testing.T) {
 
 	var calls atomic.Int32
 	for range 5 {
-		if _, err := c.do(t.Context(), "k", func(context.Context) (*provider.MediaMeta, bool, error) {
+		if _, err := c.do(t.Context(), "k", 0, func(context.Context) (*provider.MediaMeta, bool, error) {
 			calls.Add(1)
 			return ratedAt(2), true, nil
 		}); err != nil {
@@ -80,7 +80,7 @@ func TestConcurrentRendersTriggerOneRefresh(t *testing.T) {
 	var calls atomic.Int32
 	release := make(chan struct{})
 	for range 20 {
-		if _, err := c.do(t.Context(), "k", func(context.Context) (*provider.MediaMeta, bool, error) {
+		if _, err := c.do(t.Context(), "k", 0, func(context.Context) (*provider.MediaMeta, bool, error) {
 			calls.Add(1)
 			<-release
 			return ratedAt(2), true, nil
@@ -103,7 +103,7 @@ func TestARefreshOutlivesTheRenderThatTriggeredIt(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	seen := make(chan error, 1)
-	if _, err := c.do(ctx, "k", func(fctx context.Context) (*provider.MediaMeta, bool, error) {
+	if _, err := c.do(ctx, "k", 0, func(fctx context.Context) (*provider.MediaMeta, bool, error) {
 		time.Sleep(50 * time.Millisecond)
 		seen <- fctx.Err()
 		return ratedAt(2), true, nil
@@ -145,7 +145,7 @@ func TestAFailedRefreshIsLogged(t *testing.T) {
 	c.entries[key] = ratingsEntry{Meta: ratedAt(1), ExpiresAt: time.Now().Add(time.Minute)}
 
 	done := make(chan struct{})
-	if _, err := c.do(t.Context(), key, func(context.Context) (*provider.MediaMeta, bool, error) {
+	if _, err := c.do(t.Context(), key, 0, func(context.Context) (*provider.MediaMeta, bool, error) {
 		defer close(done)
 		return nil, false, provider.ErrPacerBacklog
 	}); err != nil {

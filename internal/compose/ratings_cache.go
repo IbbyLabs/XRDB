@@ -39,11 +39,15 @@ const ratingsRefreshTimeout = 30 * time.Second
 // ratingsCacheMax bounds the number of remembered answers. An answer is one
 // source for one title, so the title coverage is this divided by the number of
 // sources a config asks for: 3.63 on 2026-08-27, counted over the 73,988 answers
-// then resident, giving room for about 82,700 titles at 300,000.
+// then resident, giving room for about 110,000 titles at 400,000.
+//
+// The bound is 400,000 because the age rule's mean multiplier is 2.71 across
+// resident entries, which projects 253,569 against a base population of 93,631
+// measured 2026-09-03.
 //
 // Recount before relying on it. The figure moves with which sources configs ask
 // for, and the ratio is what turns this bound into a title count.
-const ratingsCacheMax = 300_000
+const ratingsCacheMax = 400_000
 
 // ratingsCache remembers what a source said about a title.
 //
@@ -112,7 +116,7 @@ func newRatingsCache(ttl time.Duration, logger *slog.Logger) *ratingsCache {
 // fetch reports whether the answer is complete. An incomplete one is still
 // remembered, because re-asking on every render is what exhausts the allowance
 // in the first place, but it takes the shorter term.
-func (c *ratingsCache) do(ctx context.Context, key string, fetch ratingsFetch) (*provider.MediaMeta, error) {
+func (c *ratingsCache) do(ctx context.Context, key string, titleYear int, fetch ratingsFetch) (*provider.MediaMeta, error) {
 	if c == nil {
 		meta, _, err := fetch(ctx)
 		return meta, err
@@ -120,7 +124,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, fetch ratingsFetch) (
 
 	c.mu.Lock()
 	if e, ok := c.entries[key]; ok && time.Now().Before(e.ExpiresAt) {
-		c.refreshAheadLocked(ctx, key, e, fetch)
+		c.refreshAheadLocked(ctx, key, e, titleYear, fetch)
 		c.mu.Unlock()
 		return e.Meta, nil
 	}
@@ -142,7 +146,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, fetch ratingsFetch) (
 	c.mu.Lock()
 	delete(c.inflight, key)
 	if call.err == nil && call.meta != nil && len(call.meta.Ratings) > 0 {
-		c.storeLocked(key, call.meta, call.complete)
+		c.storeLocked(key, call.meta, call.complete, titleYear)
 	}
 	c.mu.Unlock()
 
@@ -161,7 +165,7 @@ type ratingsFetch func(context.Context) (*provider.MediaMeta, bool, error)
 // The refresh takes the caller's context values and not its cancellation: the
 // render that triggered it returns immediately, and a refresh on that context
 // would be cancelled before it reached the source.
-func (c *ratingsCache) refreshAheadLocked(ctx context.Context, key string, e ratingsEntry, fetch ratingsFetch) {
+func (c *ratingsCache) refreshAheadLocked(ctx context.Context, key string, e ratingsEntry, titleYear int, fetch ratingsFetch) {
 	term := e.TTL
 	if term <= 0 {
 		term = c.ttl
@@ -175,10 +179,10 @@ func (c *ratingsCache) refreshAheadLocked(ctx context.Context, key string, e rat
 	}
 	call := &ratingsCall{done: make(chan struct{})}
 	c.inflight[key] = call
-	go c.runRefresh(ctx, key, call, fetch)
+	go c.runRefresh(ctx, key, titleYear, call, fetch)
 }
 
-func (c *ratingsCache) runRefresh(ctx context.Context, key string, call *ratingsCall, fetch ratingsFetch) {
+func (c *ratingsCache) runRefresh(ctx context.Context, key string, titleYear int, call *ratingsCall, fetch ratingsFetch) {
 	defer close(call.done)
 	rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), ratingsRefreshTimeout)
 	defer cancel()
@@ -200,7 +204,7 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, call *ratings
 	c.mu.Lock()
 	delete(c.inflight, key)
 	if call.err == nil && call.meta != nil && len(call.meta.Ratings) > 0 {
-		c.storeLocked(key, call.meta, call.complete)
+		c.storeLocked(key, call.meta, call.complete, titleYear)
 	}
 	c.mu.Unlock()
 }
@@ -211,9 +215,14 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, call *ratings
 // expensive part of a render is paid for less often.
 //
 // The multipliers are deliberately small. This cache is clock-bound rather than
-// full, so resident entries scale with the term: 73,892 of a 300,000 cap when
-// it was measured on 2026-08-31, which a 3x ceiling stays inside. A larger one
-// makes it capacity-bound and evicts the answers the rule just decided to keep.
+// full, so resident entries scale with the term. Entry-weighted across the
+// resident population on 2026-09-03, 78.1 percent fall in the 3x tier and the
+// mean multiplier is 2.71, projecting 253,569 resident against a 400,000 cap. A
+// larger ceiling makes the cache capacity-bound and evicts the answers the rule
+// just decided to keep.
+//
+// Eviction takes the entries closest to expiry, which are the 1x tier, so cap
+// pressure falls on the newest titles.
 //
 // The unit is the year because a rating source reports a year and not a date.
 var ratingsAgeTTLTiers = []struct {
@@ -224,13 +233,13 @@ var ratingsAgeTTLTiers = []struct {
 	{olderThanYears: 1, multiplier: 2},
 }
 
-// ageScaledTTL returns the term for an answer about this title. A title with no
-// year takes the base term, as does one dated in the future.
-func ageScaledTTL(base time.Duration, meta *provider.MediaMeta) time.Duration {
-	if meta == nil || meta.Year <= 0 {
+// ageScaledTTL returns the term for an answer about a title released in year.
+// Year zero takes the base term, as does one in the future.
+func ageScaledTTL(base time.Duration, year int) time.Duration {
+	if year <= 0 {
 		return base
 	}
-	age := time.Now().Year() - meta.Year
+	age := time.Now().Year() - year
 	for _, tier := range ratingsAgeTTLTiers {
 		if age >= tier.olderThanYears {
 			return base * time.Duration(tier.multiplier)
@@ -240,15 +249,22 @@ func ageScaledTTL(base time.Duration, meta *provider.MediaMeta) time.Duration {
 }
 
 // storeLocked remembers an answer. Called with c.mu held.
-func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complete bool) {
+//
+// titleYear comes from the artwork metadata. Most rating sources report no year
+// of their own, so reading it off the answer leaves the age rule inert for
+// about seven entries in eight.
+func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complete bool, titleYear int) {
 	if len(c.entries) >= ratingsCacheMax {
 		c.evictLocked()
+	}
+	if titleYear <= 0 && meta != nil {
+		titleYear = meta.Year
 	}
 	// The age rule decides how long a full answer is worth keeping; the partial
 	// rule decides that a thin one is not. The thin case wins, so an answer
 	// missing a source because an allowance ran out is re-asked in minutes
 	// rather than pinned for days by the title being old.
-	ttl := ageScaledTTL(c.ttl, meta)
+	ttl := ageScaledTTL(c.ttl, titleYear)
 	if !complete && PartialRatingsCacheTTL < ttl {
 		ttl = PartialRatingsCacheTTL
 	}

@@ -686,7 +686,14 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	// nothing. Timed apart from the fetch: the two are the same number to a
 	// caller and only one of them is work.
 	fetched, waitStart := false, time.Now()
-	meta, err := p.ratings.do(ctx, cacheKey, func(fctx context.Context) (*provider.MediaMeta, bool, error) {
+	// The title's year comes from the artwork metadata: most rating sources
+	// report none of their own. Guarded here rather than at the caller, which is
+	// not the only way in.
+	titleYear := 0
+	if artwork != nil {
+		titleYear = artwork.Year
+	}
+	meta, err := p.ratings.do(ctx, cacheKey, titleYear, func(fctx context.Context) (*provider.MediaMeta, bool, error) {
 		fetched = true
 		m, ferr := p.fetchRatings(fctx, prov, req, artwork)
 		return m, p.answerKeptItsSources(prov.Name(), cacheKey, m), ferr
