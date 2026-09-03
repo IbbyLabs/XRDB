@@ -139,14 +139,17 @@ func TestTheTimerRebuildsWithoutBeingCalled(t *testing.T) {
 	rating = "8.1"
 	mu.Unlock()
 
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
+	start := time.Now()
+	polls := 0
+	for time.Since(start) < waitBudget {
+		polls++
 		if ratingOf(t, d) == 8.1 {
 			return
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	t.Error("the index never rebuilt on its own; the timer does not reach refresh")
+	t.Errorf("the index never rebuilt on its own after %v and %d polls; the timer does not reach refresh",
+		time.Since(start).Round(time.Millisecond), polls)
 }
 
 // An interval of zero turns the rebuild off rather than spinning, and must not

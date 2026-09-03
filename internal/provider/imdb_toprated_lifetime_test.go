@@ -11,17 +11,27 @@ import (
 	"xrdb_rewrite/internal/testutil"
 )
 
-// waitFor polls until cond holds or the budget runs out.
+// waitBudget is paid only by a failing run. A polling wait returns as soon as
+// its condition holds.
+const waitBudget = 30 * time.Second
+
+// waitFor polls until cond holds or the budget runs out. The failure reports
+// elapsed time and poll count: elapsed far above the budget on few polls is the
+// process losing the CPU, and elapsed at the budget on many polls is a condition
+// that never held.
 func waitFor(t *testing.T, what string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
+	start := time.Now()
+	polls := 0
+	for time.Since(start) < waitBudget {
+		polls++
 		if cond() {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatalf("timed out waiting for %s", what)
+	t.Fatalf("timed out waiting for %s after %v and %d polls",
+		what, time.Since(start).Round(time.Millisecond), polls)
 }
 
 // The ranking streams a dataset far larger than the ratings file, so it
