@@ -1154,6 +1154,12 @@ func TestParseEpisodeID(t *testing.T) {
 		{"tt0903747:x:1", "", 0, 0, false},
 		{"tt0903747:1:0", "", 0, 0, false}, // episodes are 1-based
 		{"", "", 0, 0, false},
+		// Anime schemes address an episode as scheme:id:episode, so the leading
+		// segment is a scheme name rather than a series id.
+		{"kitsu:11209:1", "", 0, 0, false},
+		{"mal:1535:26", "", 0, 0, false},
+		{"al:21:1000", "", 0, 0, false},
+		{"kitsu:11209:1:2", "kitsu:11209", 1, 2, true},
 	}
 	for _, c := range cases {
 		series, season, episode, ok := parseEpisodeID(c.id)

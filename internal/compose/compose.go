@@ -1437,7 +1437,23 @@ func parseEpisodeID(id string) (series string, season, episode int, ok bool) {
 	if series == "" || s < 0 || e < 1 {
 		return "", 0, 0, false
 	}
+	if !looksLikeTitleID(series) {
+		return "", 0, 0, false
+	}
 	return series, s, e, true
+}
+
+// looksLikeTitleID reports whether s can stand alone as a title id: a tt-id, or
+// one whose last colon-segment is numeric. A bare scheme name cannot.
+func looksLikeTitleID(s string) bool {
+	if strings.HasPrefix(s, "tt") {
+		return true
+	}
+	if i := strings.LastIndex(s, ":"); i >= 0 {
+		s = s[i+1:]
+	}
+	_, err := strconv.Atoi(s)
+	return err == nil
 }
 
 // fetchEpisode resolves per-episode artwork and ratings for a series episode.

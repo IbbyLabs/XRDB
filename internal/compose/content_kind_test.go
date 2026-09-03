@@ -105,6 +105,9 @@ func TestTitleIDStripsTheEpisodeTail(t *testing.T) {
 		"tmdb:550":    "tmdb:550",
 		"tt1442437:3": "tt1442437:3",
 		"":            "",
+		// A scheme name is not a series id.
+		"kitsu:11209:1": "kitsu:11209:1",
+		"mal:1535:26":   "mal:1535:26",
 	} {
 		if got := titleID(id); got != want {
 			t.Errorf("titleID(%q) = %q, want %q", id, got, want)
