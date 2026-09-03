@@ -365,6 +365,10 @@ func (c *ratingsCache) evictLocked() {
 		all = append(all, aged{k, e.ExpiresAt})
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].at.Before(all[j].at) })
+	// Absences take AbsentRatingsCacheTTL against a base term in hours, so they
+	// are always nearest expiry and always evicted first. At the cap, absence
+	// caching stops rather than degrades.
+	//
 	// A tenth at a time, so the cap is not hit again on the very next write.
 	for i := 0; i < len(all)/10+1; i++ {
 		delete(c.entries, all[i].key)
