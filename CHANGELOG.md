@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.105.0](https://github.com/IbbyLabs/XRDB/compare/v3.104.0...v3.105.0) (2026-09-03)
+
+
+### Added
+
+* **provider:** expose the failure breaker's trip count ([2613abd](https://github.com/IbbyLabs/XRDB/commit/2613abd0334c419ce3ea13269d35ebf563ed257a))
+* **server:** serve v2's two-segment episode thumbnail URL ([8aa6121](https://github.com/IbbyLabs/XRDB/commit/8aa6121d4ccb5dcf3d17ff814eb730d72d363be5))
+
+
+### Fixed
+
+* **compose:** BUG-282 drop an absolute anime episode number ([31cefbb](https://github.com/IbbyLabs/XRDB/commit/31cefbb646813a237cc9385486f5ac962b00ea7b))
+* **provider:** let an empty answer reset the failure breaker ([89ae856](https://github.com/IbbyLabs/XRDB/commit/89ae856ee9606ff4af81d2401c52092c272ab3bf))
+
 ## [3.104.0](https://github.com/IbbyLabs/XRDB/compare/v3.103.0...v3.104.0) (2026-09-03)
 
 
