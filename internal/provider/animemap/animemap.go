@@ -317,11 +317,21 @@ type indexes struct {
 	// "tv:<tmdb id>". Anime catalogues number by aired season while TMDB often
 	// packs several into one.
 	seasons map[string][]seasonRow
+	// animeSeason points an anime id at the series and aired season it names.
+	// An anime catalogue gives each season its own id, so the id alone says
+	// which season a request means.
+	animeSeason map[string]animeSeasonRef
 	// partialSeasons marks a series carrying an aired season with no TMDB
 	// season beside it. Whether a season is packed is judged by scanning its
 	// siblings, and a sibling that names no TMDB season cannot be scanned, so
 	// the series is refused rather than read from what is left.
 	partialSeasons map[string]bool
+}
+
+// animeSeasonRef is the series and aired season an anime id names.
+type animeSeasonRef struct {
+	seriesKey string
+	aired     int
 }
 
 // seasonRow is one aired season of a series and where TMDB files its episodes.
@@ -368,6 +378,9 @@ const (
 	// SeasonPartialSeries is a series carrying an aired season with no TMDB
 	// season beside it, leaving the packing scan an incomplete set.
 	SeasonPartialSeries SeasonRefusal = "series_missing_a_tmdb_season"
+	// SeasonWrongSeries is an anime id resolving to a series other than the one
+	// the caller named.
+	SeasonWrongSeries SeasonRefusal = "anime_id_names_another_series"
 )
 
 // source is one disk-cached dataset (primary or supplement) with its own
@@ -396,6 +409,7 @@ type source struct {
 	byAnimeID   map[string]reverseEntry
 	bySeason    map[string][]seasonRow
 	partialSeas map[string]bool
+	animeSeas   map[string]animeSeasonRef
 }
 
 // New creates a Mapper. Datasets load lazily on first Resolve.
@@ -533,6 +547,37 @@ func (m *Mapper) SeasonFor(seriesKey string, aired int) (SeasonMapping, SeasonRe
 	return SeasonMapping{}, SeasonNoRows
 }
 
+// SeasonForAnimeID maps an anime id that names a season onto the TMDB season
+// holding its episodes. An anime catalogue gives each season its own id, so
+// "kitsu:42198" is a season rather than a series and the episode number counts
+// from that season's first episode.
+//
+// seriesKey, when given, must be the series the id is expected to belong to. An
+// id resolving to a different series is refused: the caller reached this with an
+// identifier sitting where a season number belongs, and a recovery that lands on
+// another title would render the wrong thing rather than nothing.
+func (m *Mapper) SeasonForAnimeID(animeID, seriesKey string) (SeasonMapping, SeasonRefusal) {
+	service, num, ok := ParseAnimeID(animeID)
+	if !ok {
+		return SeasonMapping{}, SeasonNoRows
+	}
+	key := animeKey(service, num)
+	for _, src := range []*source{m.primary, m.supplement} {
+		if src == nil {
+			continue
+		}
+		ref, found := src.animeSeasonRef(key)
+		if !found {
+			continue
+		}
+		if seriesKey != "" && ref.seriesKey != seriesKey {
+			return SeasonMapping{}, SeasonWrongSeries
+		}
+		return m.SeasonFor(ref.seriesKey, ref.aired)
+	}
+	return SeasonMapping{}, SeasonNoRows
+}
+
 func mapSeason(rows []seasonRow, aired int) (SeasonMapping, SeasonRefusal) {
 	var match []seasonRow
 	for _, r := range rows {
@@ -627,6 +672,15 @@ func (s *source) lookupReverse(key string) (reverseEntry, bool) {
 	defer s.mu.Unlock()
 	e, ok := s.byAnimeID[key]
 	return e, ok
+}
+
+// animeSeasonRef returns the series and aired season an anime id names.
+func (s *source) animeSeasonRef(key string) (animeSeasonRef, bool) {
+	s.ensureLoaded()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ref, ok := s.animeSeas[key]
+	return ref, ok
 }
 
 // seasonRows returns every aired season recorded for a series, and whether the
@@ -766,7 +820,7 @@ func (s *source) loadFromDiskLocked() error {
 		return err
 	}
 	s.byIMDb, s.byTMDBMovie, s.byTMDBTV, s.byAnimeID = idx.imdb, idx.movie, idx.tv, idx.reverse
-	s.bySeason, s.partialSeas = idx.seasons, idx.partialSeasons
+	s.bySeason, s.partialSeas, s.animeSeas = idx.seasons, idx.partialSeasons, idx.animeSeason
 	s.loadedAt = info.ModTime()
 	return nil
 }
@@ -1017,6 +1071,7 @@ func buildIndexes(data []byte) (indexes, error) {
 		reverse:        make(map[string]reverseEntry),
 		seasons:        make(map[string][]seasonRow),
 		partialSeasons: make(map[string]bool),
+		animeSeason:    make(map[string]animeSeasonRef),
 	}
 	ranks := make(map[string]int)
 	for _, e := range entries {
@@ -1070,9 +1125,18 @@ func buildIndexes(data []byte) (indexes, error) {
 					idx.seasons[imdbID] = append(idx.seasons[imdbID], row)
 				}
 			}
+			seriesKey := target.IMDb
 			if e.TMDBID.TV != 0 {
 				k := "tv:" + strconv.Itoa(e.TMDBID.TV)
 				idx.seasons[k] = append(idx.seasons[k], row)
+				if seriesKey == "" {
+					seriesKey = k
+				}
+			}
+			if seriesKey != "" {
+				for _, k := range reverseKeys(ids) {
+					idx.animeSeason[k] = animeSeasonRef{seriesKey: seriesKey, aired: e.Season.tvdb}
+				}
 			}
 		}
 	}

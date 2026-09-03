@@ -217,3 +217,61 @@ func TestAnIgnoredRefusalIsNotUsable(t *testing.T) {
 		t.Errorf("control: a resolved mapping gave %q / resolved=%v", why, ok.Resolved())
 	}
 }
+
+// mrkaon's report: AIOMetadata fills {season} from the middle segment of a
+// Stremio anime id, so tt5607616:42198:1 arrives with a Kitsu id where a season
+// belongs. Rows are the live ones for that title.
+func mapperWithSeasons(t *testing.T) *Mapper {
+	t.Helper()
+	idx, err := buildIndexes([]byte(`[
+		{"type":"TV","kitsu_id":11209,"imdb_id":["tt5607616"],"themoviedb_id":{"tv":65942},"season":{"tvdb":1,"tmdb":1}},
+		{"type":"TV","kitsu_id":42198,"imdb_id":["tt5607616"],"themoviedb_id":{"tv":65942},"season":{"tvdb":2,"tmdb":1},"episode_offset":{"tmdb":26}},
+		{"type":"TV","kitsu_id":47235,"imdb_id":["tt5607616"],"themoviedb_id":{"tv":65942},"season":{"tvdb":3,"tmdb":1},"episode_offset":{"tmdb":50}},
+		{"type":"TV","kitsu_id":99999,"imdb_id":["tt0000001"],"themoviedb_id":{"tv":11},"season":{"tvdb":2,"tmdb":1},"episode_offset":{"tmdb":7}},
+		{"type":"TV","kitsu_id":99998,"imdb_id":["tt0000001"],"themoviedb_id":{"tv":11},"season":{"tvdb":1,"tmdb":1}}
+	]`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &Mapper{primary: &source{
+		bySeason: idx.seasons, partialSeas: idx.partialSeasons, animeSeas: idx.animeSeason,
+		loaded: true, loadedAt: time.Now(), ttl: time.Hour,
+	}}
+}
+
+func TestSeasonForAnimeID(t *testing.T) {
+	m := mapperWithSeasons(t)
+
+	// Season 2's own Kitsu id, so episode 1 is episode 27 of TMDB's season 1.
+	got, why := m.SeasonForAnimeID("kitsu:42198", "tt5607616")
+	if why != SeasonResolved {
+		t.Fatalf("refusal = %q, want resolved", why)
+	}
+	if got.TMDBSeason != 1 || got.EpisodeDelta != 26 {
+		t.Errorf("mapping = %+v, want season 1 delta 26", got)
+	}
+
+	// The first season carries no offset, so its numbering already matches.
+	if got, why := m.SeasonForAnimeID("kitsu:11209", "tt5607616"); why != SeasonResolved || got.EpisodeDelta != 0 {
+		t.Errorf("first season gave %+v / %q, want delta 0 resolved", got, why)
+	}
+
+	// A recovery landing on another title would render the wrong series, which
+	// is the failure this whole path exists to avoid.
+	if _, why := m.SeasonForAnimeID("kitsu:99999", "tt5607616"); why != SeasonWrongSeries {
+		t.Errorf("refusal = %q, want %q", why, SeasonWrongSeries)
+	}
+	// Control: the same id resolves against its own series, so the refusal above
+	// is the mismatch rather than the id being unknown.
+	if _, why := m.SeasonForAnimeID("kitsu:99999", "tt0000001"); why != SeasonResolved {
+		t.Errorf("control: own series gave %q, want resolved", why)
+	}
+
+	// An id nothing records, and something that is not an anime id at all.
+	if _, why := m.SeasonForAnimeID("kitsu:1234567", "tt5607616"); why != SeasonNoRows {
+		t.Errorf("unknown id refusal = %q, want %q", why, SeasonNoRows)
+	}
+	if _, why := m.SeasonForAnimeID("tt5607616", ""); why != SeasonNoRows {
+		t.Errorf("non-anime id refusal = %q, want %q", why, SeasonNoRows)
+	}
+}
