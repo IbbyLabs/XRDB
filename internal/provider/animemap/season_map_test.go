@@ -271,7 +271,18 @@ func TestSeasonForAnimeID(t *testing.T) {
 	if _, why := m.SeasonForAnimeID("kitsu:1234567", "tt5607616"); why != SeasonNoRows {
 		t.Errorf("unknown id refusal = %q, want %q", why, SeasonNoRows)
 	}
-	if _, why := m.SeasonForAnimeID("tt5607616", ""); why != SeasonNoRows {
+	if _, why := m.SeasonForAnimeID("tt5607616", "tt5607616"); why != SeasonNoRows {
 		t.Errorf("non-anime id refusal = %q, want %q", why, SeasonNoRows)
+	}
+
+	// The series check is the only thing stopping a recovery landing on another
+	// title, so an absent series refuses rather than proceeding unchecked.
+	if _, why := m.SeasonForAnimeID("kitsu:42198", ""); why != SeasonNoSeriesKey {
+		t.Errorf("empty series refusal = %q, want %q", why, SeasonNoSeriesKey)
+	}
+	// Control: the same id with its series resolves, so the refusal above is the
+	// missing key rather than the id.
+	if _, why := m.SeasonForAnimeID("kitsu:42198", "tt5607616"); why != SeasonResolved {
+		t.Errorf("control: with a series key it gave %q, want resolved", why)
 	}
 }

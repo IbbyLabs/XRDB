@@ -381,6 +381,9 @@ const (
 	// SeasonWrongSeries is an anime id resolving to a series other than the one
 	// the caller named.
 	SeasonWrongSeries SeasonRefusal = "anime_id_names_another_series"
+	// SeasonNoSeriesKey is a recovery attempted without the series to check it
+	// against. The caller reaching here always has one.
+	SeasonNoSeriesKey SeasonRefusal = "no_series_to_check_against"
 )
 
 // source is one disk-cached dataset (primary or supplement) with its own
@@ -552,14 +555,19 @@ func (m *Mapper) SeasonFor(seriesKey string, aired int) (SeasonMapping, SeasonRe
 // "kitsu:42198" is a season rather than a series and the episode number counts
 // from that season's first episode.
 //
-// seriesKey, when given, must be the series the id is expected to belong to. An
-// id resolving to a different series is refused: the caller reached this with an
-// identifier sitting where a season number belongs, and a recovery that lands on
-// another title would render the wrong thing rather than nothing.
+// seriesKey is the series the id is expected to belong to and is required. An id
+// resolving to a different series is refused: the caller reached this with an
+// identifier sitting where a season number belongs, and a recovery landing on
+// another title would render the wrong thing rather than nothing. An empty key
+// refuses rather than proceeding unchecked, because that check is the whole
+// safety property of this path.
 func (m *Mapper) SeasonForAnimeID(animeID, seriesKey string) (SeasonMapping, SeasonRefusal) {
 	service, num, ok := ParseAnimeID(animeID)
 	if !ok {
 		return SeasonMapping{}, SeasonNoRows
+	}
+	if seriesKey == "" {
+		return SeasonMapping{}, SeasonNoSeriesKey
 	}
 	key := animeKey(service, num)
 	for _, src := range []*source{m.primary, m.supplement} {
@@ -570,7 +578,7 @@ func (m *Mapper) SeasonForAnimeID(animeID, seriesKey string) (SeasonMapping, Sea
 		if !found {
 			continue
 		}
-		if seriesKey != "" && ref.seriesKey != seriesKey {
+		if ref.seriesKey != seriesKey {
 			return SeasonMapping{}, SeasonWrongSeries
 		}
 		return m.SeasonFor(ref.seriesKey, ref.aired)
