@@ -28,8 +28,12 @@ type MediaMeta struct {
 	// a national site often indexes only one of the two.
 	OriginalTitle string
 	Year          int
-	Overview      string
-	PosterURL     string // canonical poster image URL
+	// ReleaseDate is the same value Year is cut from, in YYYY-MM-DD form, when
+	// the source gives a full one. Age in whole years puts a December release a
+	// year old on 1 January.
+	ReleaseDate string
+	Overview    string
+	PosterURL   string // canonical poster image URL
 	// PosterAltURL is a second poster file to use when PosterURL turns out to be
 	// unusable. Kitsu publishes an "original" whose file is often smaller than
 	// its "large", and sometimes landscape, and says nothing about either in the

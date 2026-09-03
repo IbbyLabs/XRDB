@@ -656,6 +656,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		Title:         title,
 		OriginalTitle: originalTitle,
 		Year:          year,
+		ReleaseDate:   date,
 		Overview:      result.Overview,
 		Language:      artLang,
 		IMDbID:        imdbID,

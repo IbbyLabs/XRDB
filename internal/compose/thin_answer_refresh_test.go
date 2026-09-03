@@ -18,7 +18,7 @@ func TestAThinAnswerIsNotRefreshedOnEveryHit(t *testing.T) {
 	meta := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "imdb", Value: 7.5}}}
 
 	c.mu.Lock()
-	c.storeLocked("k", meta, false, 0)
+	c.storeLocked("k", meta, false, titleAge{})
 	e := c.entries["k"]
 	c.mu.Unlock()
 
@@ -33,7 +33,7 @@ func TestAThinAnswerIsNotRefreshedOnEveryHit(t *testing.T) {
 	}
 
 	c.mu.Lock()
-	c.refreshAheadLocked(context.Background(), "k", e, 0, fetch)
+	c.refreshAheadLocked(context.Background(), "k", e, titleAge{}, fetch)
 	c.mu.Unlock()
 
 	select {
@@ -59,7 +59,7 @@ func TestAThinAnswerNearItsEndStillRefreshes(t *testing.T) {
 	e := ratingsEntry{Meta: meta, ExpiresAt: time.Now().Add(30 * time.Second), TTL: PartialRatingsCacheTTL}
 
 	c.mu.Lock()
-	c.refreshAheadLocked(context.Background(), "k", e, 0, fetch)
+	c.refreshAheadLocked(context.Background(), "k", e, titleAge{}, fetch)
 	c.mu.Unlock()
 
 	select {
@@ -84,7 +84,7 @@ func TestAnEntryWithNoStoredTermFallsBackToTheBase(t *testing.T) {
 	e := ratingsEntry{Meta: meta, ExpiresAt: time.Now().Add(time.Minute)}
 
 	c.mu.Lock()
-	c.refreshAheadLocked(context.Background(), "k", e, 0, fetch)
+	c.refreshAheadLocked(context.Background(), "k", e, titleAge{}, fetch)
 	c.mu.Unlock()
 
 	select {

@@ -24,7 +24,7 @@ func TestRememberedRatingsSurviveARestart(t *testing.T) {
 
 	first := newRatingsCache(time.Hour, nil)
 	first.path = filepath.Join(dir, ratingsCacheFile)
-	if _, err := first.do(context.Background(), "tt1:imdb", 0, func(context.Context) (*provider.MediaMeta, bool, error) {
+	if _, err := first.do(context.Background(), "tt1:imdb", titleAge{}, func(context.Context) (*provider.MediaMeta, bool, error) {
 		return metaWith("imdb"), true, nil
 	}); err != nil {
 		t.Fatal(err)
@@ -39,7 +39,7 @@ func TestRememberedRatingsSurviveARestart(t *testing.T) {
 	second.load(logger)
 
 	fetched := false
-	got, err := second.do(context.Background(), "tt1:imdb", 0, func(context.Context) (*provider.MediaMeta, bool, error) {
+	got, err := second.do(context.Background(), "tt1:imdb", titleAge{}, func(context.Context) (*provider.MediaMeta, bool, error) {
 		fetched = true
 		return metaWith("imdb"), true, nil
 	})

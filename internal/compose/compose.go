@@ -689,11 +689,11 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	// The title's year comes from the artwork metadata: most rating sources
 	// report none of their own. Guarded here rather than at the caller, which is
 	// not the only way in.
-	titleYear := 0
+	var age titleAge
 	if artwork != nil {
-		titleYear = artwork.Year
+		age = titleAge{year: artwork.Year, date: artwork.ReleaseDate}
 	}
-	meta, err := p.ratings.do(ctx, cacheKey, titleYear, func(fctx context.Context) (*provider.MediaMeta, bool, error) {
+	meta, err := p.ratings.do(ctx, cacheKey, age, func(fctx context.Context) (*provider.MediaMeta, bool, error) {
 		fetched = true
 		m, ferr := p.fetchRatings(fctx, prov, req, artwork)
 		return m, p.answerKeptItsSources(prov.Name(), cacheKey, m), ferr

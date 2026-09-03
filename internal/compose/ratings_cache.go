@@ -163,7 +163,7 @@ func newRatingsCache(ttl time.Duration, logger *slog.Logger) *ratingsCache {
 // fetch reports whether the answer is complete. An incomplete one is still
 // remembered, because re-asking on every render is what exhausts the allowance
 // in the first place, but it takes the shorter term.
-func (c *ratingsCache) do(ctx context.Context, key string, titleYear int, fetch ratingsFetch) (*provider.MediaMeta, error) {
+func (c *ratingsCache) do(ctx context.Context, key string, age titleAge, fetch ratingsFetch) (*provider.MediaMeta, error) {
 	if c == nil {
 		meta, _, err := fetch(ctx)
 		return meta, err
@@ -171,7 +171,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, titleYear int, fetch 
 
 	c.mu.Lock()
 	if e, ok := c.entries[key]; ok && time.Now().Before(e.ExpiresAt) && c.trusted(key, e) {
-		c.refreshAheadLocked(ctx, key, e, titleYear, fetch)
+		c.refreshAheadLocked(ctx, key, e, age, fetch)
 		c.mu.Unlock()
 		return e.Meta, nil
 	}
@@ -193,7 +193,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, titleYear int, fetch 
 	c.mu.Lock()
 	delete(c.inflight, key)
 	if call.err == nil && c.storable(key, call.meta) {
-		c.storeLocked(key, call.meta, call.complete, titleYear)
+		c.storeLocked(key, call.meta, call.complete, age)
 	}
 	c.mu.Unlock()
 
@@ -212,7 +212,7 @@ type ratingsFetch func(context.Context) (*provider.MediaMeta, bool, error)
 // The refresh takes the caller's context values and not its cancellation: the
 // render that triggered it returns immediately, and a refresh on that context
 // would be cancelled before it reached the source.
-func (c *ratingsCache) refreshAheadLocked(ctx context.Context, key string, e ratingsEntry, titleYear int, fetch ratingsFetch) {
+func (c *ratingsCache) refreshAheadLocked(ctx context.Context, key string, e ratingsEntry, age titleAge, fetch ratingsFetch) {
 	term := e.TTL
 	if term <= 0 {
 		term = c.ttl
@@ -226,10 +226,10 @@ func (c *ratingsCache) refreshAheadLocked(ctx context.Context, key string, e rat
 	}
 	call := &ratingsCall{done: make(chan struct{})}
 	c.inflight[key] = call
-	go c.runRefresh(ctx, key, titleYear, call, fetch)
+	go c.runRefresh(ctx, key, age, call, fetch)
 }
 
-func (c *ratingsCache) runRefresh(ctx context.Context, key string, titleYear int, call *ratingsCall, fetch ratingsFetch) {
+func (c *ratingsCache) runRefresh(ctx context.Context, key string, age titleAge, call *ratingsCall, fetch ratingsFetch) {
 	defer close(call.done)
 	rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), ratingsRefreshTimeout)
 	defer cancel()
@@ -251,7 +251,7 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, titleYear int
 	c.mu.Lock()
 	delete(c.inflight, key)
 	if call.err == nil && c.storable(key, call.meta) {
-		c.storeLocked(key, call.meta, call.complete, titleYear)
+		c.storeLocked(key, call.meta, call.complete, age)
 	}
 	c.mu.Unlock()
 }
@@ -280,13 +280,49 @@ var ratingsAgeTTLTiers = []struct {
 	{olderThanYears: 1, multiplier: 2},
 }
 
-// ageScaledTTL returns the term for an answer about a title released in year.
-// Year zero takes the base term, as does one in the future.
-func ageScaledTTL(base time.Duration, year int) time.Duration {
-	if year <= 0 {
+// titleAge is what the store decision knows about when a title came out. The
+// date is preferred and the year is the fallback, because most sources report
+// only a year.
+type titleAge struct {
+	year int
+	date string
+}
+
+// ageScaledTTL returns the term for an answer about a title released on date, in
+// YYYY-MM-DD form, falling back to year when there is no date. Year zero takes
+// the base term, as does a release in the future.
+//
+// A whole-year age moves a December release into the next tier on 1 January,
+// thirteen days after it came out, which is when a score is still moving.
+func ageScaledTTL(base time.Duration, age titleAge) time.Duration {
+	if years, ok := yearsSince(age.date); ok {
+		return termFor(base, years)
+	}
+	if age.year <= 0 {
 		return base
 	}
-	age := time.Now().Year() - year
+	return termFor(base, time.Now().Year()-age.year)
+}
+
+// yearsSince is whole years elapsed since date. Not ok when the date is absent
+// or unparseable, so the caller falls back to the year.
+func yearsSince(date string) (int, bool) {
+	if len(date) < 10 {
+		return 0, false
+	}
+	t, err := time.Parse("2006-01-02", date[:10])
+	if err != nil {
+		return 0, false
+	}
+	now := time.Now()
+	age := now.Year() - t.Year()
+	if now.YearDay() < t.YearDay() {
+		age--
+	}
+	return age, true
+}
+
+func termFor(base time.Duration, age int) time.Duration {
 	for _, tier := range ratingsAgeTTLTiers {
 		if age >= tier.olderThanYears {
 			return base * time.Duration(tier.multiplier)
@@ -300,18 +336,21 @@ func ageScaledTTL(base time.Duration, year int) time.Duration {
 // titleYear comes from the artwork metadata. Most rating sources report no year
 // of their own, so reading it off the answer leaves the age rule inert for
 // about seven entries in eight.
-func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complete bool, titleYear int) {
+func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complete bool, age titleAge) {
 	if len(c.entries) >= ratingsCacheMax {
 		c.evictLocked()
 	}
-	if titleYear <= 0 && meta != nil {
-		titleYear = meta.Year
+	if age.year <= 0 && meta != nil {
+		age.year = meta.Year
+	}
+	if age.date == "" && meta != nil {
+		age.date = meta.ReleaseDate
 	}
 	// The age rule decides how long a full answer is worth keeping; the partial
 	// rule decides that a thin one is not. The thin case wins, so an answer
 	// missing a source because an allowance ran out is re-asked in minutes
 	// rather than pinned for days by the title being old.
-	ttl := ageScaledTTL(c.ttl, titleYear)
+	ttl := ageScaledTTL(c.ttl, age)
 	if !complete && PartialRatingsCacheTTL < ttl {
 		ttl = PartialRatingsCacheTTL
 	}

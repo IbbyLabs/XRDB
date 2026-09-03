@@ -14,9 +14,9 @@ func noRatings() *provider.MediaMeta { return &provider.MediaMeta{} }
 
 // mustDo runs a cache lookup and fails the test if it errors, so a call made for
 // its side effect still checks its error.
-func mustDo(t *testing.T, c *ratingsCache, key string, year int, fetch ratingsFetch) {
+func mustDo(t *testing.T, c *ratingsCache, key string, age titleAge, fetch ratingsFetch) {
 	t.Helper()
-	if _, err := c.do(context.Background(), key, year, fetch); err != nil {
+	if _, err := c.do(context.Background(), key, age, fetch); err != nil {
 		t.Fatalf("cache lookup for %s: %v", key, err)
 	}
 }
@@ -33,7 +33,7 @@ func TestAnAbsenceIsRememberedWhileTheSourceIsWorking(t *testing.T) {
 		return noRatings(), true, nil
 	}
 	for i := 0; i < 5; i++ {
-		if _, err := c.do(context.Background(), provider.GoodKey("wikidata", "poster", "tt1"), 0, fetch); err != nil {
+		if _, err := c.do(context.Background(), provider.GoodKey("wikidata", "poster", "tt1"), titleAge{}, fetch); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -54,7 +54,7 @@ func TestAnAbsenceIsNotRememberedFromASourceThatIsNotAnswering(t *testing.T) {
 		return noRatings(), true, nil
 	}
 	for i := 0; i < 3; i++ {
-		if _, err := c.do(context.Background(), provider.GoodKey("wikidata", "poster", "tt1"), 0, fetch); err != nil {
+		if _, err := c.do(context.Background(), provider.GoodKey("wikidata", "poster", "tt1"), titleAge{}, fetch); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -76,14 +76,14 @@ func TestARememberedAbsenceStopsBeingServedWhenTheSourceGoesQuiet(t *testing.T) 
 		return noRatings(), true, nil
 	}
 	key := provider.GoodKey("wikidata", "poster", "tt1")
-	mustDo(t, c, key, 0, fetch)
-	mustDo(t, c, key, 0, fetch)
+	mustDo(t, c, key, titleAge{}, fetch)
+	mustDo(t, c, key, titleAge{}, fetch)
 	if calls.Load() != 1 {
 		t.Fatalf("setup: the absence was not remembered, %d fetches", calls.Load())
 	}
 
 	working = false
-	mustDo(t, c, key, 0, fetch)
+	mustDo(t, c, key, titleAge{}, fetch)
 
 	if calls.Load() != 2 {
 		t.Error("a remembered absence was still served after the source went quiet")
@@ -102,8 +102,8 @@ func TestARememberedRatingIsServedRegardlessOfSourceHealth(t *testing.T) {
 		return oneRating("wikidata"), true, nil
 	}
 	key := provider.GoodKey("wikidata", "poster", "tt1")
-	mustDo(t, c, key, 0, fetch)
-	mustDo(t, c, key, 0, fetch)
+	mustDo(t, c, key, titleAge{}, fetch)
+	mustDo(t, c, key, titleAge{}, fetch)
 
 	if calls.Load() != 1 {
 		t.Errorf("a remembered rating was re-fetched: %d calls, want 1", calls.Load())
@@ -117,7 +117,7 @@ func TestAnAbsenceTakesItsOwnTermRatherThanTheAgeScaledOne(t *testing.T) {
 	c.answering = func(string, string, time.Duration) bool { return true }
 
 	key := provider.GoodKey("wikidata", "poster", "tt1")
-	mustDo(t, c, key, 1950, func(context.Context) (*provider.MediaMeta, bool, error) {
+	mustDo(t, c, key, titleAge{year: 1950}, func(context.Context) (*provider.MediaMeta, bool, error) {
 		return noRatings(), true, nil
 	})
 
@@ -139,10 +139,10 @@ func TestAbsencesAreNotPersisted(t *testing.T) {
 
 	absent := provider.GoodKey("wikidata", "poster", "tt1")
 	rated := provider.GoodKey("wikidata", "poster", "tt2")
-	mustDo(t, c, absent, 0, func(context.Context) (*provider.MediaMeta, bool, error) {
+	mustDo(t, c, absent, titleAge{}, func(context.Context) (*provider.MediaMeta, bool, error) {
 		return noRatings(), true, nil
 	})
-	mustDo(t, c, rated, 0, func(context.Context) (*provider.MediaMeta, bool, error) {
+	mustDo(t, c, rated, titleAge{}, func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("wikidata"), true, nil
 	})
 	if err := c.Save(); err != nil {

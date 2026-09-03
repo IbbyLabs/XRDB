@@ -26,7 +26,7 @@ func TestTheSameTitleIsFetchedOnce(t *testing.T) {
 		return oneRating("simkl"), true, nil
 	}
 	for i := 0; i < 5; i++ {
-		if _, err := c.do(context.Background(), "simkl:movie:tt1", 0, fetch); err != nil {
+		if _, err := c.do(context.Background(), "simkl:movie:tt1", titleAge{}, fetch); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -43,8 +43,8 @@ func TestDifferentTitlesAreNotConflated(t *testing.T) {
 		calls.Add(1)
 		return oneRating("simkl"), true, nil
 	}
-	_, _ = c.do(context.Background(), "simkl:movie:tt1", 0, fetch)
-	_, _ = c.do(context.Background(), "simkl:movie:tt2", 0, fetch)
+	_, _ = c.do(context.Background(), "simkl:movie:tt1", titleAge{}, fetch)
+	_, _ = c.do(context.Background(), "simkl:movie:tt2", titleAge{}, fetch)
 	if calls.Load() != 2 {
 		t.Errorf("calls = %d, want one per title", calls.Load())
 	}
@@ -65,7 +65,7 @@ func TestConcurrentMissesShareOneFetch(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, _ = c.do(context.Background(), "simkl:movie:tt1", 0, fetch)
+			_, _ = c.do(context.Background(), "simkl:movie:tt1", titleAge{}, fetch)
 		}()
 	}
 	time.Sleep(50 * time.Millisecond)
@@ -86,7 +86,7 @@ func TestFailuresAreNotRemembered(t *testing.T) {
 		return nil, true, errors.New("refused")
 	}
 	for i := 0; i < 3; i++ {
-		_, _ = c.do(context.Background(), "simkl:movie:tt1", 0, fetch)
+		_, _ = c.do(context.Background(), "simkl:movie:tt1", titleAge{}, fetch)
 	}
 	if calls.Load() != 3 {
 		t.Errorf("a failure was cached: calls = %d, want 3", calls.Load())
@@ -103,7 +103,7 @@ func TestEmptyAnswersAreNotRemembered(t *testing.T) {
 		return &provider.MediaMeta{}, true, nil
 	}
 	for i := 0; i < 3; i++ {
-		_, _ = c.do(context.Background(), "simkl:movie:tt1", 0, fetch)
+		_, _ = c.do(context.Background(), "simkl:movie:tt1", titleAge{}, fetch)
 	}
 	if calls.Load() != 3 {
 		t.Errorf("an empty answer was cached: calls = %d, want 3", calls.Load())
@@ -117,9 +117,9 @@ func TestEntriesExpire(t *testing.T) {
 		calls.Add(1)
 		return oneRating("simkl"), true, nil
 	}
-	_, _ = c.do(context.Background(), "simkl:movie:tt1", 0, fetch)
+	_, _ = c.do(context.Background(), "simkl:movie:tt1", titleAge{}, fetch)
 	time.Sleep(40 * time.Millisecond)
-	_, _ = c.do(context.Background(), "simkl:movie:tt1", 0, fetch)
+	_, _ = c.do(context.Background(), "simkl:movie:tt1", titleAge{}, fetch)
 	if calls.Load() != 2 {
 		t.Errorf("the entry did not expire: calls = %d, want 2", calls.Load())
 	}
@@ -128,7 +128,7 @@ func TestEntriesExpire(t *testing.T) {
 // A nil cache is the disabled case and must not swallow the fetch.
 func TestNilCacheStillFetches(t *testing.T) {
 	var c *ratingsCache
-	got, err := c.do(context.Background(), "k", 0, func(context.Context) (*provider.MediaMeta, bool, error) {
+	got, err := c.do(context.Background(), "k", titleAge{}, func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("simkl"), true, nil
 	})
 	if err != nil || got == nil || len(got.Ratings) != 1 {

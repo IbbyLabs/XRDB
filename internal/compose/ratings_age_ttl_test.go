@@ -25,7 +25,7 @@ func TestTheTermGrowsWithTheTitlesAge(t *testing.T) {
 		{name: "dated in the future", year: thisYear + 2, want: base},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ageScaledTTL(base, tc.year)
+			got := ageScaledTTL(base, titleAge{year: tc.year})
 			if got != tc.want {
 				t.Errorf("ttl = %s, want %s", got, tc.want)
 			}
@@ -45,7 +45,7 @@ func TestAThinAnswerAboutAnOldTitleIsStillReAskedSoon(t *testing.T) {
 	}
 
 	c.mu.Lock()
-	c.storeLocked("k", old, false, 0)
+	c.storeLocked("k", old, false, titleAge{})
 	c.mu.Unlock()
 
 	c.mu.Lock()
@@ -65,7 +65,7 @@ func TestAFullAnswerAboutAnOldTitleTakesTheLongerTerm(t *testing.T) {
 	}
 
 	c.mu.Lock()
-	c.storeLocked("k", old, true, 0)
+	c.storeLocked("k", old, true, titleAge{})
 	life := time.Until(c.entries["k"].ExpiresAt)
 	c.mu.Unlock()
 
@@ -83,8 +83,8 @@ func TestTheTitlesYearScalesATermTheAnswerCannotDate(t *testing.T) {
 	answer := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "wikidata", Value: 7}}}
 
 	c.mu.Lock()
-	c.storeLocked("wikidata|movie|tt1", answer, true, old)
-	c.storeLocked("wikidata|movie|tt2", answer, true, 0)
+	c.storeLocked("wikidata|movie|tt1", answer, true, titleAge{year: old})
+	c.storeLocked("wikidata|movie|tt2", answer, true, titleAge{})
 	withYear, withNone := c.entries["wikidata|movie|tt1"].TTL, c.entries["wikidata|movie|tt2"].TTL
 	c.mu.Unlock()
 
@@ -105,11 +105,47 @@ func TestTheAnswersOwnYearStillCountsWhenTheTitleHasNone(t *testing.T) {
 	}
 
 	c.mu.Lock()
-	c.storeLocked("tmdb|movie|tt1", answer, true, 0)
+	c.storeLocked("tmdb|movie|tt1", answer, true, titleAge{})
 	got := c.entries["tmdb|movie|tt1"].TTL
 	c.mu.Unlock()
 
 	if got != 3*base {
 		t.Errorf("term = %s, want %s", got, 3*base)
+	}
+}
+
+// A whole-year age moves a December release into the next tier on 1 January,
+// thirteen days after it came out.
+func TestTheTermUsesTheFullDateWhenThereIsOne(t *testing.T) {
+	base := 24 * time.Hour
+	now := time.Now()
+	lastDecember := time.Date(now.Year()-1, time.December, 19, 0, 0, 0, 0, time.UTC)
+
+	byYear := ageScaledTTL(base, titleAge{year: lastDecember.Year()})
+	byDate := ageScaledTTL(base, titleAge{
+		year: lastDecember.Year(),
+		date: lastDecember.Format("2006-01-02"),
+	})
+
+	// The year says one year old, so the 1x tier ends and 2x begins.
+	if byYear != 2*base {
+		t.Errorf("term from the year alone = %s, want %s", byYear, 2*base)
+	}
+	// Fewer than 365 days have passed, so the title is still in its first year.
+	if !lastDecember.AddDate(1, 0, 0).After(now) {
+		t.Skip("more than a year has passed since last December")
+	}
+	if byDate != base {
+		t.Errorf("term from the full date = %s, want %s", byDate, base)
+	}
+}
+
+func TestAnUnparseableDateFallsBackToTheYear(t *testing.T) {
+	base := 24 * time.Hour
+	old := time.Now().Year() - 10
+	for _, date := range []string{"", "2015", "not-a-date", "2015-13-45"} {
+		if got := ageScaledTTL(base, titleAge{year: old, date: date}); got != 3*base {
+			t.Errorf("date %q gave %s, want the year's %s", date, got, 3*base)
+		}
 	}
 }
