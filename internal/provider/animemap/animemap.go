@@ -313,7 +313,62 @@ type indexes struct {
 	movie   map[int]indexed
 	tv      map[int]indexed
 	reverse map[string]reverseEntry
+	// seasons holds every aired season of a series, keyed by IMDb id and by
+	// "tv:<tmdb id>". Anime catalogues number by aired season while TMDB often
+	// packs several into one.
+	seasons map[string][]seasonRow
+	// partialSeasons marks a series carrying an aired season with no TMDB
+	// season beside it. Whether a season is packed is judged by scanning its
+	// siblings, and a sibling that names no TMDB season cannot be scanned, so
+	// the series is refused rather than read from what is left.
+	partialSeasons map[string]bool
 }
+
+// seasonRow is one aired season of a series and where TMDB files its episodes.
+type seasonRow struct {
+	aired      int
+	tmdbSeason int
+	offset     int
+	hasOffset  bool
+}
+
+// SeasonMapping is where an aired season's episodes sit on TMDB. The zero value
+// is unusable on purpose: season 0 is TMDB's specials season, so a caller that
+// ignored the refusal would otherwise ask for it rather than fail.
+type SeasonMapping struct {
+	TMDBSeason int
+	// EpisodeDelta is added to the requested episode number.
+	EpisodeDelta int
+	resolved     bool
+}
+
+// Resolved reports whether this mapping came from a conversion. Read it before
+// using the fields.
+func (m SeasonMapping) Resolved() bool { return m.resolved }
+
+// SeasonRefusal names why a conversion did not resolve. A refusal and a title
+// nobody has ever recorded produce the same render, so the reason is returned
+// rather than inferred from an absence.
+type SeasonRefusal string
+
+const (
+	SeasonResolved SeasonRefusal = ""
+	// SeasonNoRows is a series with no aired seasons recorded.
+	SeasonNoRows SeasonRefusal = "no_rows"
+	// SeasonUnknownAired is a series recorded without the season asked for.
+	SeasonUnknownAired SeasonRefusal = "unknown_aired_season"
+	// SeasonContradictory is one aired season filed under two TMDB seasons.
+	SeasonContradictory SeasonRefusal = "aired_season_in_two_tmdb_seasons"
+	// SeasonSplitIntoCours is a packed season described by several rows, where
+	// choosing between them needs an offset the air dates do not confirm.
+	SeasonSplitIntoCours SeasonRefusal = "packed_season_split_into_cours"
+	// SeasonAmbiguousOffset is a season alone in its TMDB season yet carrying an
+	// offset, which the dataset does not say what to count from.
+	SeasonAmbiguousOffset SeasonRefusal = "exclusive_season_with_offset"
+	// SeasonPartialSeries is a series carrying an aired season with no TMDB
+	// season beside it, leaving the packing scan an incomplete set.
+	SeasonPartialSeries SeasonRefusal = "series_missing_a_tmdb_season"
+)
 
 // source is one disk-cached dataset (primary or supplement) with its own
 // indexes and refresh lifecycle. Safe for concurrent use.
@@ -339,6 +394,8 @@ type source struct {
 	byTMDBMovie map[int]indexed
 	byTMDBTV    map[int]indexed
 	byAnimeID   map[string]reverseEntry
+	bySeason    map[string][]seasonRow
+	partialSeas map[string]bool
 }
 
 // New creates a Mapper. Datasets load lazily on first Resolve.
@@ -440,6 +497,80 @@ func (m *Mapper) Resolve(ctx context.Context, mediaType, id string) (IDs, bool) 
 // ResolveTarget maps an anime-service id back to its IMDb/TMDB identifier.
 // Catalogues sourced from MAL or Kitsu hand out ids like "kitsu:123", which no
 // artwork or rating source understands on its own.
+// SeasonFor converts a catalogue's aired season into the TMDB season holding
+// its episodes. seriesKey is an IMDb id or "tv:<tmdb id>".
+//
+// Four cases, and only the first moves an episode number:
+//
+//   - the TMDB season holds several aired seasons, so the episodes are packed
+//     end to end and the offset says where this one starts. One row only: a
+//     season split into cours needs the aired-side offset to choose between
+//     them, which the air dates do not confirm;
+//   - the TMDB season holds this aired season alone and several rows describe
+//     it, so the offsets mark cours inside one season and the number already
+//     counts across it;
+//   - one row, no offset, so the two numberings agree;
+//   - one row carrying an offset. The dataset does not say what it counts from
+//     and the air dates do not settle it, so this refuses rather than risk an
+//     episode that is wrong by one and looks right.
+//
+// Two further refusals: rows disagreeing about which TMDB season an aired season
+// belongs to, and a series carrying an aired season with no TMDB season beside
+// it, which leaves the packing scan reading an incomplete set.
+func (m *Mapper) SeasonFor(seriesKey string, aired int) (SeasonMapping, SeasonRefusal) {
+	for _, src := range []*source{m.primary, m.supplement} {
+		if src == nil {
+			continue
+		}
+		rows, partial := src.seasonRows(seriesKey)
+		if partial {
+			return SeasonMapping{}, SeasonPartialSeries
+		}
+		if len(rows) > 0 {
+			return mapSeason(rows, aired)
+		}
+	}
+	return SeasonMapping{}, SeasonNoRows
+}
+
+func mapSeason(rows []seasonRow, aired int) (SeasonMapping, SeasonRefusal) {
+	var match []seasonRow
+	for _, r := range rows {
+		if r.aired == aired {
+			match = append(match, r)
+		}
+	}
+	if len(match) == 0 {
+		return SeasonMapping{}, SeasonUnknownAired
+	}
+	target := match[0].tmdbSeason
+	for _, r := range match[1:] {
+		if r.tmdbSeason != target {
+			return SeasonMapping{}, SeasonContradictory
+		}
+	}
+	packed := false
+	for _, r := range rows {
+		if r.tmdbSeason == target && r.aired != aired {
+			packed = true
+			break
+		}
+	}
+	if packed {
+		// Several rows for one aired season are its cours, each starting at its
+		// own point. Picking between them needs the aired-side offset and the
+		// air dates do not confirm what it counts from, so this refuses.
+		if len(match) > 1 {
+			return SeasonMapping{}, SeasonSplitIntoCours
+		}
+		return SeasonMapping{TMDBSeason: target, EpisodeDelta: match[0].offset, resolved: true}, SeasonResolved
+	}
+	if len(match) == 1 && match[0].hasOffset {
+		return SeasonMapping{}, SeasonAmbiguousOffset
+	}
+	return SeasonMapping{TMDBSeason: target, resolved: true}, SeasonResolved
+}
+
 func (m *Mapper) ResolveTarget(ctx context.Context, id string) (Target, bool) {
 	service, num, ok := ParseAnimeID(id)
 	if !ok {
@@ -496,6 +627,18 @@ func (s *source) lookupReverse(key string) (reverseEntry, bool) {
 	defer s.mu.Unlock()
 	e, ok := s.byAnimeID[key]
 	return e, ok
+}
+
+// seasonRows returns every aired season recorded for a series, and whether the
+// series was dropped for carrying a season with no TMDB number.
+func (s *source) seasonRows(key string) ([]seasonRow, bool) {
+	s.ensureLoaded()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.partialSeas[key] {
+		return nil, true
+	}
+	return s.bySeason[key], false
 }
 
 // lookup loads the source if needed, then resolves id against its indexes.
@@ -623,6 +766,7 @@ func (s *source) loadFromDiskLocked() error {
 		return err
 	}
 	s.byIMDb, s.byTMDBMovie, s.byTMDBTV, s.byAnimeID = idx.imdb, idx.movie, idx.tv, idx.reverse
+	s.bySeason, s.partialSeas = idx.seasons, idx.partialSeasons
 	s.loadedAt = info.ModTime()
 	return nil
 }
@@ -734,7 +878,13 @@ const seasonlessRank = typeRankUnknown * seasonRanks
 // string) into a rank, lowest wins: 0 = first season, 1 = later season, 2 =
 // season 0 or absent. Season 0 is where the dataset files specials and OVAs,
 // and several of those share the series' IMDb id.
-type seasonRef struct{ rank int }
+type seasonRef struct {
+	rank int
+	// tvdb and tmdb are the season numbers themselves, zero when absent. The
+	// rank above is a coarse ordering; these are what a numbering conversion
+	// reads.
+	tvdb, tmdb int
+}
 
 func (s *seasonRef) UnmarshalJSON(b []byte) error {
 	trimmed := strings.TrimSpace(string(b))
@@ -750,6 +900,7 @@ func (s *seasonRef) UnmarshalJSON(b []byte) error {
 		if err := json.Unmarshal(b, &obj); err != nil {
 			return nil
 		}
+		s.tmdb, s.tvdb = int(obj.TMDB), int(obj.TVDB)
 		season = int(obj.TMDB)
 		if season == 0 {
 			season = int(obj.TVDB)
@@ -760,6 +911,7 @@ func (s *seasonRef) UnmarshalJSON(b []byte) error {
 			return nil
 		}
 		season = int(n)
+		s.tvdb, s.tmdb = season, season
 	}
 	switch {
 	case season == 1:
@@ -769,6 +921,41 @@ func (s *seasonRef) UnmarshalJSON(b []byte) error {
 	default:
 		s.rank = 2
 	}
+	return nil
+}
+
+// offsetRef decodes Fribb's episode_offset, which is {"tvdb":13,"tmdb":13}, a
+// bare number, or absent. Only the TMDB figure is read; XRDB numbers episodes
+// against TMDB.
+type offsetRef struct {
+	tmdb int
+	set  bool
+}
+
+func (o *offsetRef) UnmarshalJSON(b []byte) error {
+	trimmed := strings.TrimSpace(string(b))
+	if trimmed == "" || trimmed == "null" {
+		return nil
+	}
+	if trimmed[0] == '{' {
+		var obj struct {
+			TMDB flexInt `json:"tmdb"`
+			TVDB flexInt `json:"tvdb"`
+		}
+		if err := json.Unmarshal(b, &obj); err != nil {
+			return nil
+		}
+		o.tmdb, o.set = int(obj.TMDB), true
+		if o.tmdb == 0 {
+			o.tmdb = int(obj.TVDB)
+		}
+		return nil
+	}
+	var n flexInt
+	if err := json.Unmarshal(b, &n); err != nil {
+		return nil
+	}
+	o.tmdb, o.set = int(n), true
 	return nil
 }
 
@@ -812,6 +999,7 @@ type datasetEntry struct {
 	IMDbID    []string  `json:"imdb_id"`
 	TMDBID    tmdbRef   `json:"themoviedb_id"`
 	Season    seasonRef `json:"season"`
+	Offset    offsetRef `json:"episode_offset"`
 }
 
 func buildIndexes(data []byte) (indexes, error) {
@@ -823,10 +1011,12 @@ func buildIndexes(data []byte) (indexes, error) {
 		return indexes{}, fmt.Errorf("empty dataset")
 	}
 	idx := indexes{
-		imdb:    make(map[string]indexed),
-		movie:   make(map[int]indexed),
-		tv:      make(map[int]indexed),
-		reverse: make(map[string]reverseEntry),
+		imdb:           make(map[string]indexed),
+		movie:          make(map[int]indexed),
+		tv:             make(map[int]indexed),
+		reverse:        make(map[string]reverseEntry),
+		seasons:        make(map[string][]seasonRow),
+		partialSeasons: make(map[string]bool),
 	}
 	ranks := make(map[string]int)
 	for _, e := range entries {
@@ -858,6 +1048,33 @@ func buildIndexes(data []byte) (indexes, error) {
 			}
 		}
 		insertTarget(idx.reverse, ranks, ids, target, rank)
+		if e.Season.tvdb > 0 && e.Season.tmdb == 0 {
+			for _, imdbID := range e.IMDbID {
+				if imdbID != "" {
+					idx.partialSeasons[imdbID] = true
+				}
+			}
+			if e.TMDBID.TV != 0 {
+				idx.partialSeasons["tv:"+strconv.Itoa(e.TMDBID.TV)] = true
+			}
+		}
+		if e.Season.tvdb > 0 && e.Season.tmdb > 0 {
+			row := seasonRow{
+				aired:      e.Season.tvdb,
+				tmdbSeason: e.Season.tmdb,
+				offset:     e.Offset.tmdb,
+				hasOffset:  e.Offset.set,
+			}
+			for _, imdbID := range e.IMDbID {
+				if imdbID != "" {
+					idx.seasons[imdbID] = append(idx.seasons[imdbID], row)
+				}
+			}
+			if e.TMDBID.TV != 0 {
+				k := "tv:" + strconv.Itoa(e.TMDBID.TV)
+				idx.seasons[k] = append(idx.seasons[k], row)
+			}
+		}
 	}
 	return idx, nil
 }
