@@ -30,6 +30,9 @@ access_control:
         - '^/poster/[^/]+$'
         - '^/backdrop/[^/]+$'
         - '^/thumbnail/[^/]+$'
+        # v2 addressed an episode still with the season and episode in a second
+        # segment, and clients configured then still send it.
+        - '^/thumbnail/[^/]+/[Ss][0-9]+[Ee][0-9]+(\.(jpg|jpeg|png|webp))?$'
         - '^/logo/[^/]+$'
         # Stremio addon
         - '^/stremio/manifest\.json$'

@@ -644,6 +644,18 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	for _, mt := range imageconfig.Surfaces {
 		mux.HandleFunc("/"+mt+"/{id}", renderHandler)
 	}
+	// v2 addressed an episode still as /thumbnail/{id}/S{season}E{episode}.jpg,
+	// and clients configured against v2 still send it. Only thumbnail: it is the
+	// one surface v2 served this way and the only one that receives it.
+	mux.HandleFunc("/thumbnail/{id}/{episode}", func(w http.ResponseWriter, r *http.Request) {
+		id, ok := legacyEpisodeID(r.PathValue("id"), r.PathValue("episode"))
+		if !ok {
+			http.Error(w, "invalid episode token", http.StatusBadRequest)
+			return
+		}
+		r.SetPathValue("id", id)
+		renderHandler(w, r)
+	})
 
 	mux.HandleFunc("/render-placeholder", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

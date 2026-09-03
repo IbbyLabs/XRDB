@@ -1,6 +1,11 @@
 package server
 
-import "strings"
+import (
+	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
+)
 
 // v2-compatible media id shim.
 //
@@ -44,4 +49,27 @@ func normalizeLegacyMediaID(id string) string {
 		}
 	}
 	return id
+}
+
+// legacyEpisodeToken matches the second path segment v2 served episode stills
+// under: /thumbnail/{id}/S{season}E{episode}, with an optional image extension.
+var legacyEpisodeToken = regexp.MustCompile(`(?i)^s(\d+)e(\d+)(?:\.jpg|\.jpeg|\.png|\.webp)?$`)
+
+// legacyEpisodeID folds a v2 episode token into the single-segment id the render
+// route resolves. The numbers are parsed rather than copied, so S04E15 and S4E15
+// share one cache entry.
+func legacyEpisodeID(id, token string) (string, bool) {
+	m := legacyEpisodeToken.FindStringSubmatch(token)
+	if m == nil {
+		return "", false
+	}
+	season, err := strconv.Atoi(m[1])
+	if err != nil {
+		return "", false
+	}
+	episode, err := strconv.Atoi(m[2])
+	if err != nil {
+		return "", false
+	}
+	return fmt.Sprintf("%s:%d:%d", normalizeLegacyMediaID(id), season, episode), true
 }
