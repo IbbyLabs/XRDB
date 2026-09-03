@@ -221,7 +221,7 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 		// render returns nothing at all; Kitsu can draw it.
 		if kitsuResolver, canKitsu := resolver.(animeKitsuResolver); canKitsu {
 			if kitsu, found := kitsuResolver.ResolveKitsu(ctx, head); found {
-				req.MediaID = "kitsu:" + strconv.Itoa(kitsu) + tail
+				req.MediaID = withEpisodeTail("kitsu:"+strconv.Itoa(kitsu), tail)
 				p.log().DebugContext(ctx, "No mainstream id is mapped for this anime id; using its Kitsu sibling",
 					"id", logging.RequestID(ctx), "media_id", req.MediaID)
 				return req
@@ -233,19 +233,32 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	}
 	switch {
 	case target.IMDb != "":
-		req.MediaID = target.IMDb + tail
+		req.MediaID = withEpisodeTail(target.IMDb, tail)
 	case target.TMDB != 0:
 		kind := "series"
 		if target.TMDBType == "movie" {
 			kind = "movie"
 		}
-		req.MediaID = "tmdb:" + kind + ":" + strconv.Itoa(target.TMDB) + tail
+		req.MediaID = withEpisodeTail("tmdb:"+kind+":"+strconv.Itoa(target.TMDB), tail)
 	default:
 		return req
 	}
 	p.log().DebugContext(ctx, "Resolved an anime id to its mainstream id",
 		"id", logging.RequestID(ctx), "from", head, "to", req.MediaID)
 	return req
+}
+
+// withEpisodeTail appends an episode tail to a resolved id, keeping it only when
+// it forms a season and episode. An anime tail can be a bare absolute episode
+// number, which names no season.
+func withEpisodeTail(base, tail string) string {
+	if tail == "" {
+		return base
+	}
+	if _, _, _, ok := parseEpisodeID(base + tail); ok {
+		return base + tail
+	}
+	return base
 }
 
 // needsAnimeFlag reports whether anything this config draws reads IsAnime.

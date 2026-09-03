@@ -37,6 +37,11 @@ func TestResolveAnimeIDRewritesTheRequest(t *testing.T) {
 		{"anilist to tmdb series", "anilist:5", "tmdb:series:37854"},
 		{"kitsu to tmdb movie", "kitsu:900", "tmdb:movie:129"},
 		{"episode tail is carried across", "kitsu:12:1:5", "tt0388629:1:5"},
+		// Anime episode ids end in an absolute episode number, which names no
+		// season.
+		{"absolute episode number is dropped", "kitsu:12:1", "tt0388629"},
+		{"absolute episode on a tmdb target", "anilist:5:7", "tmdb:series:37854"},
+		{"absolute episode behind a type token", "series:kitsu:12:1", "tt0388629"},
 		// AIOMetadata's {type}:{id} puts the content type in front. The tail
 		// split counts colons from the start, so the id's own number was read
 		// as a season and episode and the request 404d.
