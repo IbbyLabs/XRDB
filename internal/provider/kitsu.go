@@ -108,10 +108,11 @@ func (k *Kitsu) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 	}
 
 	meta := &MediaMeta{
-		Title:    title,
-		Year:     year,
-		Overview: attr.Synopsis,
-		Language: "en",
+		Title:       title,
+		Year:        year,
+		ReleaseDate: attr.StartDate,
+		Overview:    attr.Synopsis,
+		Language:    "en",
 	}
 
 	if attr.AgeRating != "" {

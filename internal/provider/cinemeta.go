@@ -109,8 +109,12 @@ func (c *Cinemeta) fetchMeta(ctx context.Context, contentType, id string) (*Medi
 
 	var result struct {
 		Meta struct {
-			Name        string   `json:"name"`
-			ReleaseInfo string   `json:"releaseInfo"`
+			Name        string `json:"name"`
+			ReleaseInfo string `json:"releaseInfo"`
+			// released is the full date; releaseInfo is a year, and a year range on a
+			// series. Confirmed against the live endpoint 2026-09-03: tt0068646 gives
+			// "1972" and "1972-03-24T00:00:00.000Z", tt0903747 gives "2008-2013".
+			Released    string   `json:"released"`
 			Description string   `json:"description"`
 			IMDbRating  string   `json:"imdbRating"`
 			Genres      []string `json:"genres"`
@@ -138,6 +142,9 @@ func (c *Cinemeta) fetchMeta(ctx context.Context, contentType, id string) (*Medi
 	}
 	if len(m.ReleaseInfo) >= 4 {
 		meta.Year, _ = strconv.Atoi(m.ReleaseInfo[:4])
+	}
+	if len(m.Released) >= 10 {
+		meta.ReleaseDate = m.Released[:10]
 	}
 	if r, err := strconv.ParseFloat(m.IMDbRating, 64); err == nil && r > 0 {
 		meta.Ratings = []Rating{{

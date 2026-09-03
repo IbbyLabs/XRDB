@@ -162,3 +162,45 @@ func TestCinemetaSeriesFirstWhenContentTypeKnown(t *testing.T) {
 		t.Errorf("expected one request, got %v", paths)
 	}
 }
+
+// releaseInfo is a year, and a year range on a series, so the year is all it can
+// give. released carries the full date beside it.
+func TestCinemetaTakesTheFullDateFromReleased(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"meta":{"name":"The Godfather","releaseInfo":"1972",` +
+			`"released":"1972-03-24T00:00:00.000Z","imdbRating":"9.2"}}`))
+	}))
+	defer srv.Close()
+
+	c := NewCinemetaWithBaseURL(srv.URL)
+	meta, err := c.Fetch(context.Background(), "poster", "tt0068646")
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if meta.Year != 1972 {
+		t.Errorf("Year = %d, want 1972", meta.Year)
+	}
+	if meta.ReleaseDate != "1972-03-24" {
+		t.Errorf("ReleaseDate = %q, want 1972-03-24", meta.ReleaseDate)
+	}
+}
+
+// A series' releaseInfo is a range, so the year still parses and there is no
+// date to take when released is absent.
+func TestCinemetaLeavesTheDateEmptyWhenReleasedIsAbsent(t *testing.T) {
+	srv := newCinemetaTestServer(t)
+	defer srv.Close()
+
+	c := NewCinemetaWithBaseURL(srv.URL)
+	meta, err := c.Fetch(context.Background(), "poster", "tt0903747")
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if meta.Year != 2008 {
+		t.Errorf("Year = %d, want 2008 from the range", meta.Year)
+	}
+	if meta.ReleaseDate != "" {
+		t.Errorf("ReleaseDate = %q, want empty", meta.ReleaseDate)
+	}
+}
