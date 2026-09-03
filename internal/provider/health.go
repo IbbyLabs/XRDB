@@ -34,9 +34,14 @@ type sourceState struct {
 	// change answers empty rather than erroring, so consecutiveFail never moves
 	// for it.
 	consecutiveEmpty int
-	successes        int64
-	failures         int64
-	staleServes      int64
+	// lastRatedByType is when the source last answered with ratings, per content
+	// type. Health is per source and a ratings cache key is per source and
+	// content type, so a source can be answering for posters and broken for
+	// thumbnails with one timestamp unable to say so.
+	lastRatedByType map[string]time.Time
+	successes       int64
+	failures        int64
+	staleServes     int64
 	// heldOutEmpty counts renders that lost a rating: held out with nothing
 	// remembered, so the badge is left empty. Keyed by the gate that refused,
 	// because a source refusing us and our own pacing declining to spend do the
@@ -196,6 +201,12 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	st.consecutiveEmpty = 0
 	st.breakerTrips = 0
 	st.successes++
+	if _, contentType, _ := SplitGoodKey(key); contentType != "" {
+		if st.lastRatedByType == nil {
+			st.lastRatedByType = make(map[string]time.Time)
+		}
+		st.lastRatedByType[contentType] = time.Now()
+	}
 
 	h.rememberLocked(key, meta)
 	return recovered
@@ -215,6 +226,29 @@ func (h *HealthTracker) Empty(source string) {
 	st := h.stateLocked(source)
 	st.consecutiveEmpty++
 	st.successes++
+}
+
+// AnsweringFor reports whether a source has produced ratings for a content type
+// within the last `within`. It is the discriminator for trusting an absence: a
+// scrape whose markup has changed answers empty for everything, so a recent
+// non-empty answer for the same content type says an empty one is about the
+// title rather than about the source.
+//
+// A tracker that has not seen a non-empty answer yet reports false, so a restart
+// distrusts every absence until the source answers once.
+func (h *HealthTracker) AnsweringFor(source, contentType string, within time.Duration) bool {
+	if h == nil || within <= 0 || contentType == "" {
+		return false
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	st, ok := h.sources[source]
+	if !ok {
+		return false
+	}
+	last, ok := st.lastRatedByType[contentType]
+	return ok && time.Since(last) < within
 }
 
 // Remember caches a good result without touching the source's health. It is the

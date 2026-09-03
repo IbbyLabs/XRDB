@@ -593,6 +593,7 @@ func (p *Pipeline) SetRatingsCacheTTL(ttl time.Duration) {
 		return
 	}
 	p.ratings = newRatingsCache(ttl, p.log())
+	p.wireRatingsHealth()
 }
 
 // CachedRatings reports how many source answers are held.
@@ -832,7 +833,7 @@ func artworkCarriesTitle(meta *provider.MediaMeta, mediaType string, cfg imageco
 
 // New creates a Pipeline with the given provider registry.
 func New(reg *provider.Registry) *Pipeline {
-	return &Pipeline{
+	p := &Pipeline{
 		providers: reg,
 		fetcher: &httpFetcher{client: &http.Client{
 			Timeout:   defaultArtFetchTimeout,
@@ -840,6 +841,21 @@ func New(reg *provider.Registry) *Pipeline {
 		}},
 		logger:  slog.Default(),
 		ratings: newRatingsCache(DefaultRatingsCacheTTL, slog.Default()),
+	}
+	p.wireRatingsHealth()
+	return p
+}
+
+// wireRatingsHealth lets the ratings cache ask whether a source is still
+// producing ratings, which is what makes an absence safe to remember. The
+// closure reads p.health when called rather than when built, so attaching a
+// tracker and replacing the cache may happen in either order.
+func (p *Pipeline) wireRatingsHealth() {
+	if p.ratings == nil {
+		return
+	}
+	p.ratings.answering = func(source, contentType string, within time.Duration) bool {
+		return p.health.AnsweringFor(source, contentType, within)
 	}
 }
 

@@ -27,6 +27,19 @@ const DefaultRatingsCacheTTL = 6 * time.Hour
 // briefly and re-asked rather than held for the full term.
 const PartialRatingsCacheTTL = 10 * time.Minute
 
+// AbsentRatingsCacheTTL is how long an answer carrying no ratings stands. Most
+// titles genuinely have no score on most sources, and re-asking for an absence
+// on every render is what fills the pacing queue. Short because no absence has
+// ever been stored, so there is nothing to argue a longer term from, and an
+// absence that later becomes a rating is the case that costs a reader a badge.
+const AbsentRatingsCacheTTL = 30 * time.Minute
+
+// ratingsAnswerFreshness is how recently a source must have produced ratings for
+// a content type before an absence from it is believed. It bounds the damage of
+// a scrape breaking: absences are trusted for at most this long past the
+// source's last real answer, whatever term they were stored for.
+const ratingsAnswerFreshness = 15 * time.Minute
+
 // ratingsRefreshAheadFrac is how much of an entry's term is spent in its refresh
 // window. Inside it a render is served the remembered answer and a fetch runs
 // behind it, so the next render does not wait on the source. A fraction rather
@@ -67,9 +80,43 @@ type ratingsCache struct {
 
 	logger *slog.Logger
 
+	// answering reports whether a source has produced ratings for a content type
+	// within the given window. Nil means absences are never remembered, which is
+	// the behaviour before this existed.
+	answering func(source, contentType string, within time.Duration) bool
+
 	mu       sync.Mutex
 	entries  map[string]ratingsEntry
 	inflight map[string]*ratingsCall
+}
+
+// storable reports whether an answer is worth remembering. An answer carrying
+// ratings always is. An empty one is only worth remembering while the source is
+// demonstrably producing ratings for this content type: a broken scrape answers
+// empty for everything, and remembering that would pin its outage.
+func (c *ratingsCache) storable(key string, meta *provider.MediaMeta) bool {
+	if meta == nil {
+		return false
+	}
+	if len(meta.Ratings) > 0 {
+		return true
+	}
+	if c.answering == nil {
+		return false
+	}
+	source, contentType, _ := provider.SplitGoodKey(key)
+	return c.answering(source, contentType, ratingsAnswerFreshness)
+}
+
+// trusted reports whether a live entry may still be served. A remembered
+// absence is re-checked against the source's current state, so the exposure
+// after a scrape breaks is how long it takes to notice rather than the term the
+// entry was written for.
+func (c *ratingsCache) trusted(key string, e ratingsEntry) bool {
+	if e.Meta == nil || len(e.Meta.Ratings) > 0 {
+		return true
+	}
+	return c.storable(key, e.Meta)
 }
 
 func (c *ratingsCache) log() *slog.Logger {
@@ -123,7 +170,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, titleYear int, fetch 
 	}
 
 	c.mu.Lock()
-	if e, ok := c.entries[key]; ok && time.Now().Before(e.ExpiresAt) {
+	if e, ok := c.entries[key]; ok && time.Now().Before(e.ExpiresAt) && c.trusted(key, e) {
 		c.refreshAheadLocked(ctx, key, e, titleYear, fetch)
 		c.mu.Unlock()
 		return e.Meta, nil
@@ -145,7 +192,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, titleYear int, fetch 
 
 	c.mu.Lock()
 	delete(c.inflight, key)
-	if call.err == nil && call.meta != nil && len(call.meta.Ratings) > 0 {
+	if call.err == nil && c.storable(key, call.meta) {
 		c.storeLocked(key, call.meta, call.complete, titleYear)
 	}
 	c.mu.Unlock()
@@ -203,7 +250,7 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, titleYear int
 
 	c.mu.Lock()
 	delete(c.inflight, key)
-	if call.err == nil && call.meta != nil && len(call.meta.Ratings) > 0 {
+	if call.err == nil && c.storable(key, call.meta) {
 		c.storeLocked(key, call.meta, call.complete, titleYear)
 	}
 	c.mu.Unlock()
@@ -267,6 +314,20 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 	ttl := ageScaledTTL(c.ttl, titleYear)
 	if !complete && PartialRatingsCacheTTL < ttl {
 		ttl = PartialRatingsCacheTTL
+	}
+	// An absence carries no sources, so the partial rule cannot see it and the
+	// age rule would give the newest titles the longest term. Absences skew
+	// towards new titles, so both are wrong for it.
+	if meta == nil || len(meta.Ratings) == 0 {
+		ttl = AbsentRatingsCacheTTL
+	} else if prev, ok := c.entries[key]; ok && prev.Meta != nil && len(prev.Meta.Ratings) == 0 {
+		// The term for an absence has to come from somewhere, and nothing has
+		// ever stored one. This line is that measurement.
+		source, contentType, id := provider.SplitGoodKey(key)
+		c.log().Info("A remembered absence turned into a rating",
+			"source", source, "content_type", contentType, "media_id", id,
+			"absent_for_ms", time.Since(prev.ExpiresAt.Add(-prev.TTL)).Milliseconds(),
+			"term_ms", prev.TTL.Milliseconds())
 	}
 	c.entries[key] = ratingsEntry{Meta: meta, ExpiresAt: time.Now().Add(ttl), TTL: ttl}
 }
@@ -415,9 +476,15 @@ func (c *ratingsCache) Save() error {
 	c.mu.Lock()
 	live := make(map[string]ratingsEntry, len(c.entries))
 	for k, e := range c.entries {
-		if now.Before(e.ExpiresAt) {
-			live[k] = e
+		if !now.Before(e.ExpiresAt) {
+			continue
 		}
+		// A restart starts with no health state, so a loaded absence could not
+		// be believed on arrival anyway.
+		if e.Meta == nil || len(e.Meta.Ratings) == 0 {
+			continue
+		}
+		live[k] = e
 	}
 	c.mu.Unlock()
 
