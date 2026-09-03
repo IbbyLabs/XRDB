@@ -2,6 +2,53 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.104.0](https://github.com/IbbyLabs/XRDB/compare/v3.103.0...v3.104.0) (2026-09-03)
+
+
+### Added
+
+* **artwork:** let a language's region choose the country's posters ([f1ed0b3](https://github.com/IbbyLabs/XRDB/commit/f1ed0b38df1840b6799d6790fe9c500d37dc5323))
+* **compose:** remember a rating source's absence for a short term ([19cc825](https://github.com/IbbyLabs/XRDB/commit/19cc825ab1798f29443c9b1ead23f445ce462329))
+* **ratelimit:** report a refusal body no quota phrase matches ([8b4ee8e](https://github.com/IbbyLabs/XRDB/commit/8b4ee8e2ed7a683761426cecf11cd7ce3f9e2a8c))
+* **ring:** let the centre disc be made invisible ([b7f46d6](https://github.com/IbbyLabs/XRDB/commit/b7f46d6ea63c335f4b28002750a461908e0a11f0))
+* **tmdb:** record the country asked for beside the one delivered ([c00c579](https://github.com/IbbyLabs/XRDB/commit/c00c579c564f494621a20c657fa61a701e717f74))
+
+
+### Fixed
+
+* **compose:** age a title by its release date, not just the year ([4d9f7cd](https://github.com/IbbyLabs/XRDB/commit/4d9f7cde38c9da6578556c7d14ff70d7f1856bdc))
+* **compose:** BUG-282 an episode id's series part must name a title ([e96fde2](https://github.com/IbbyLabs/XRDB/commit/e96fde2045d2f2891ec443c7cf52f1a52d53bd2a))
+* **compose:** BUG-283 ask series-level sources about the series id ([3dba33b](https://github.com/IbbyLabs/XRDB/commit/3dba33b4926e1bc1bdbf6be467b02486fffe4175))
+* **compose:** fall back to the cache's own logger when load is given none ([df2fdd1](https://github.com/IbbyLabs/XRDB/commit/df2fdd15d7d8867bfe832a0d0c74aff9011466a8))
+* **compose:** FR-201 scale the ratings term by the title's own year ([54f67bd](https://github.com/IbbyLabs/XRDB/commit/54f67bd0811063b733886fffa01f6bbe5c684c9d))
+* **compose:** keep serving a cache hit before the degraded fallback ([bdbd5cc](https://github.com/IbbyLabs/XRDB/commit/bdbd5ccdcb0487d51b660d0e33458652de92d2fa))
+* **compose:** record source health only when the source was asked ([b9badc6](https://github.com/IbbyLabs/XRDB/commit/b9badc67a8d3a7f60d0eaec30166b1908ff2a2d7))
+* **config:** warn on a TTL variable nothing reads ([3e13a97](https://github.com/IbbyLabs/XRDB/commit/3e13a9756743acd20a2a858f5430781a8f63bc4a))
+* **imageconfig:** bound ageRatingBorderWidth like the two controls it copies ([2c1814c](https://github.com/IbbyLabs/XRDB/commit/2c1814c22b90df2fc61a03b2b24a14168a12b237))
+* **logging:** scope the JSON redactor's comment to what it reads ([167e50a](https://github.com/IbbyLabs/XRDB/commit/167e50a1ab2e32eb43e58da4b88ad8be87db8bc3))
+* **provider:** keep the full release date from Kitsu and Cinemeta ([2ad182b](https://github.com/IbbyLabs/XRDB/commit/2ad182b71ae393daef643993c99bbaf461ff565c))
+* **provider:** record an empty answer without marking the source healthy ([56a9b0d](https://github.com/IbbyLabs/XRDB/commit/56a9b0de1b64893d16c31eefb1a1227ac937bb23))
+* **provider:** record the answered-for signal under an empty content type ([3c8de26](https://github.com/IbbyLabs/XRDB/commit/3c8de26b5c016f801d7b23ce0ee1d335b99680a3))
+* **ratelimit:** give AlloCine a built-in pace ([09b92e4](https://github.com/IbbyLabs/XRDB/commit/09b92e464390e04ccac5c46485d18a5737ed69e5))
+* **ratelimit:** redact credential-named fields from a logged refusal body ([8dfde76](https://github.com/IbbyLabs/XRDB/commit/8dfde76a9b7b16f70bcfd5132f5ef62d3b4e09f6))
+* **ratelimit:** say when an env interval shadows the built-in one ([e65c7ef](https://github.com/IbbyLabs/XRDB/commit/e65c7ef7db0307e0a04e1d3e7e438c322c30dd38))
+* **ratings:** take the refresh window from the entry's own term ([5364451](https://github.com/IbbyLabs/XRDB/commit/536445174daa27c051f980a0abcc95b66a8edc1b))
+* **ratings:** warn on a configured source nothing answers for ([0eb47c1](https://github.com/IbbyLabs/XRDB/commit/0eb47c17f638a38590b97e6d30767bd33d2af77a))
+* **server:** write the ratings snapshot before draining ([8a45c10](https://github.com/IbbyLabs/XRDB/commit/8a45c106ef0b4894c486b1608e66704d4de491df))
+* **tmdb:** bound the country substitution line per country pair ([6fe5cd0](https://github.com/IbbyLabs/XRDB/commit/6fe5cd06bfcfb07a1e2317f63e2db558270cc701))
+
+
+### Changed
+
+* **compose:** drop ContributingProviders, which nothing reads ([599432a](https://github.com/IbbyLabs/XRDB/commit/599432a8fdcc537ed863c76c23d7b5b55eec82e3))
+
+
+### Documentation
+
+* **compose:** note that absences are evicted first at the cap ([cbab023](https://github.com/IbbyLabs/XRDB/commit/cbab02363c912bc0efb4246e2e8c29ba40df6de4))
+* **config:** name what the bounds guard does not compare ([e0c0f2e](https://github.com/IbbyLabs/XRDB/commit/e0c0f2e2581658cf81b2bd6272f42eeb0584b9c6))
+* **context:** say where a v2 rating source name is translated ([e0fc627](https://github.com/IbbyLabs/XRDB/commit/e0fc6277f1610cc8ffbede5b4f344dc109662b2d))
+
 ## [3.103.0](https://github.com/IbbyLabs/XRDB/compare/v3.102.0...v3.103.0) (2026-09-02)
 
 
