@@ -55,10 +55,9 @@ type Request struct {
 
 // Result holds the composed image bytes and metadata.
 type Result struct {
-	ImageBytes            []byte
-	ContentType           string
-	CacheKey              string
-	ContributingProviders []string // names of providers that returned data
+	ImageBytes  []byte
+	ContentType string
+	CacheKey    string
 	// RatingProviders names the rating sources that answered. The render TTL is
 	// the minimum across these; the artwork source is not one of them.
 	RatingProviders []string
@@ -1148,7 +1147,6 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// before then carries rank 0 and keeps it for the ratings cache TTL. Read
 	// the live table instead of trusting what the cache handed back.
 	p.applyTopRatedRank(meta, req.MediaID)
-	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	result.RatingProviders = ratingProviders
 	result.Degraded = degraded
 	result.DegradedByUs = degraded && !sourceFault

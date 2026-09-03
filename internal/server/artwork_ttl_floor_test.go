@@ -11,8 +11,7 @@ import (
 // not the render's ceiling.
 func TestArtworkSourceDoesNotFloorTheTTL(t *testing.T) {
 	result := &compose.Result{
-		ContributingProviders: []string{"tmdb", "mal"},
-		RatingProviders:       []string{"mal"},
+		RatingProviders: []string{"mal"},
 	}
 	ttls := newTTLStore(map[string]time.Duration{
 		"tmdb": time.Hour,
@@ -27,8 +26,7 @@ func TestArtworkSourceDoesNotFloorTheTTL(t *testing.T) {
 // A source supplying artwork and ratings both is counted for its ratings.
 func TestArtworkSourceInTheRatingsListStillFloors(t *testing.T) {
 	result := &compose.Result{
-		ContributingProviders: []string{"tmdb", "tmdb", "mal"},
-		RatingProviders:       []string{"tmdb", "mal"},
+		RatingProviders: []string{"tmdb", "mal"},
 	}
 	ttls := newTTLStore(map[string]time.Duration{
 		"tmdb": time.Hour,
