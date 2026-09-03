@@ -12,6 +12,15 @@ import (
 
 func noRatings() *provider.MediaMeta { return &provider.MediaMeta{} }
 
+// mustDo runs a cache lookup and fails the test if it errors, so a call made for
+// its side effect still checks its error.
+func mustDo(t *testing.T, c *ratingsCache, key string, year int, fetch ratingsFetch) {
+	t.Helper()
+	if _, err := c.do(context.Background(), key, year, fetch); err != nil {
+		t.Fatalf("cache lookup for %s: %v", key, err)
+	}
+}
+
 // Most titles genuinely have no score on most sources, and re-asking for each
 // absence on every render is what fills the pacing queue.
 func TestAnAbsenceIsRememberedWhileTheSourceIsWorking(t *testing.T) {
@@ -67,14 +76,14 @@ func TestARememberedAbsenceStopsBeingServedWhenTheSourceGoesQuiet(t *testing.T) 
 		return noRatings(), true, nil
 	}
 	key := provider.GoodKey("wikidata", "poster", "tt1")
-	c.do(context.Background(), key, 0, fetch)
-	c.do(context.Background(), key, 0, fetch)
+	mustDo(t, c, key, 0, fetch)
+	mustDo(t, c, key, 0, fetch)
 	if calls.Load() != 1 {
 		t.Fatalf("setup: the absence was not remembered, %d fetches", calls.Load())
 	}
 
 	working = false
-	c.do(context.Background(), key, 0, fetch)
+	mustDo(t, c, key, 0, fetch)
 
 	if calls.Load() != 2 {
 		t.Error("a remembered absence was still served after the source went quiet")
@@ -93,8 +102,8 @@ func TestARememberedRatingIsServedRegardlessOfSourceHealth(t *testing.T) {
 		return oneRating("wikidata"), true, nil
 	}
 	key := provider.GoodKey("wikidata", "poster", "tt1")
-	c.do(context.Background(), key, 0, fetch)
-	c.do(context.Background(), key, 0, fetch)
+	mustDo(t, c, key, 0, fetch)
+	mustDo(t, c, key, 0, fetch)
 
 	if calls.Load() != 1 {
 		t.Errorf("a remembered rating was re-fetched: %d calls, want 1", calls.Load())
@@ -108,7 +117,7 @@ func TestAnAbsenceTakesItsOwnTermRatherThanTheAgeScaledOne(t *testing.T) {
 	c.answering = func(string, string, time.Duration) bool { return true }
 
 	key := provider.GoodKey("wikidata", "poster", "tt1")
-	c.do(context.Background(), key, 1950, func(context.Context) (*provider.MediaMeta, bool, error) {
+	mustDo(t, c, key, 1950, func(context.Context) (*provider.MediaMeta, bool, error) {
 		return noRatings(), true, nil
 	})
 
@@ -130,10 +139,10 @@ func TestAbsencesAreNotPersisted(t *testing.T) {
 
 	absent := provider.GoodKey("wikidata", "poster", "tt1")
 	rated := provider.GoodKey("wikidata", "poster", "tt2")
-	c.do(context.Background(), absent, 0, func(context.Context) (*provider.MediaMeta, bool, error) {
+	mustDo(t, c, absent, 0, func(context.Context) (*provider.MediaMeta, bool, error) {
 		return noRatings(), true, nil
 	})
-	c.do(context.Background(), rated, 0, func(context.Context) (*provider.MediaMeta, bool, error) {
+	mustDo(t, c, rated, 0, func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("wikidata"), true, nil
 	})
 	if err := c.Save(); err != nil {
