@@ -2047,7 +2047,17 @@ func parseAge(cfg *Config, r *raw) {
 		cfg.AgeRatingBackgroundOpacity = clampInt(*r.AgeRatingBackgroundOpacity, 1, 100)
 	}
 	if r.AgeRatingBorderWidth != nil {
-		cfg.AgeRatingBorderWidth = *r.AgeRatingBorderWidth
+		// Same three states and the same ceiling as the genre badge, whose
+		// control this one is a copy of.
+		switch w := *r.AgeRatingBorderWidth; {
+		case w < 0:
+			cfg.AgeRatingBorderWidth = -1 // sentinel: border off
+		case w > 0:
+			if w > 8 {
+				w = 8
+			}
+			cfg.AgeRatingBorderWidth = w
+		}
 	}
 	if r.AgeRatingBorderColor != nil && isHexColor(*r.AgeRatingBorderColor) {
 		cfg.AgeRatingBorderColor = strings.TrimSpace(*r.AgeRatingBorderColor)
