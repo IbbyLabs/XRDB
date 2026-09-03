@@ -426,6 +426,9 @@ func (c *ratingsCache) load(logger *slog.Logger) {
 	if c == nil || c.path == "" {
 		return
 	}
+	if logger == nil {
+		logger = c.log()
+	}
 	data, err := os.ReadFile(c.path)
 	if err != nil {
 		return

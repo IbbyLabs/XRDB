@@ -245,3 +245,17 @@ func TestTheWikidataFixDiscardsRememberedWikidataAnswers(t *testing.T) {
 		t.Error("omdb was discarded for a change to wikidata")
 	}
 }
+
+func TestLoadingACorruptSnapshotWithNoLoggerDoesNotPanic(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ratingsCacheFile)
+	if err := os.WriteFile(path, []byte("{not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c := newRatingsCache(time.Hour, nil)
+	c.path = path
+	c.load(nil)
+	if c.Len() != 0 {
+		t.Errorf("entries = %d, want 0 from an unreadable snapshot", c.Len())
+	}
+}
