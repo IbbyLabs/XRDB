@@ -335,14 +335,20 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	logger.Info("Shutting down")
-	if err := srv.Shutdown(ctx); err != nil {
-		logger.Error("Graceful shutdown failed", "error", err)
-	}
+	// Before the drain rather than after it. The drain and the container's stop
+	// grace are the same ten seconds, so a save queued behind a slow drain is
+	// reachable only in the time the drain does not use — and a drain is slowest
+	// exactly when a sweep is in flight. The answers arriving during the drain
+	// are worth less than the whole snapshot.
+	//
 	// Written here rather than left to the snapshot goroutine: cancelling the
 	// schedule races the process exiting, and a lost snapshot costs a full
 	// repopulation of metered lookups on the next start.
 	if err := pipeline.SaveRatingsCache(); err != nil {
 		logger.Error("Could not write the remembered ratings at shutdown", "error", err)
+	}
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Error("Graceful shutdown failed", "error", err)
 	}
 }
 
