@@ -708,7 +708,12 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	}
 	key := cacheKey
 
-	if err == nil && meta != nil && len(meta.Ratings) > 0 {
+	// Health records what the source did, and a cache hit never reached it. These
+	// calls sit after do returns, so without the fetched guard a remembered
+	// answer stamps lastSuccess, resets the failure counters and clears a
+	// cooldown another caller class earned. Only the recording is guarded; what
+	// is served is decided below either way.
+	if err == nil && meta != nil && len(meta.Ratings) > 0 && fetched {
 		if ownerKeyed {
 			// The owner's key succeeding against its own allowance says nothing
 			// about the shared key's health, so it only caches the result and
@@ -731,7 +736,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		}
 		return meta, false, nil
 	}
-	if err != nil && !ownerKeyed {
+	if err != nil && !ownerKeyed && fetched {
 		// An owner key failing says nothing about the shared source's health: it
 		// is a different credential with its own allowance. Recording it would let
 		// one exhausted owner key set the shared cooldown for every other render.
@@ -767,10 +772,11 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 			"age_ms", age.Milliseconds(), "error", err)
 		return good, true, nil
 	}
-	if err == nil && meta != nil && len(meta.Ratings) == 0 && !ownerKeyed {
+	if err == nil && meta != nil && len(meta.Ratings) == 0 && !ownerKeyed && fetched {
 		// Nothing remembered and nothing returned. Counted so a run of empty
 		// answers is visible on the admin view. Skipped for an owner-keyed
-		// render, which does not speak for the shared source.
+		// render, which does not speak for the shared source, and for a served
+		// absence, which counts renders rather than anything the source did.
 		p.health.Empty(prov.Name())
 	}
 	return meta, false, err

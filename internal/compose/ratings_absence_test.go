@@ -162,3 +162,35 @@ func TestAbsencesAreNotPersisted(t *testing.T) {
 		t.Error("control: the rated answer did not survive, so the test proves nothing")
 	}
 }
+
+// Health records what a source did. A served absence is a render rather than an
+// answer, so it must not move a counter that reads as evidence about the source.
+func TestAServedAbsenceIsNotCountedAsTheSourceAnsweringEmpty(t *testing.T) {
+	h := provider.NewHealthTracker(10, time.Hour)
+	// A real answer first, so the absence is storable at all.
+	h.Success("wikidata", provider.GoodKey("wikidata", "", "tt1"),
+		&provider.MediaMeta{Ratings: []provider.Rating{{Source: "wikidata", Value: 7}}})
+
+	prov := &provider.StubProvider{ProviderName: "wikidata", Meta: noRatings()}
+	p := &Pipeline{providers: testRegistry(prov), fetcher: &stubImageFetcher{}, health: h}
+	p.ratings = newRatingsCache(time.Hour, nil)
+	p.wireRatingsHealth()
+
+	req := Request{MediaType: "poster", MediaID: "tt2"}
+	for i := 0; i < 4; i++ {
+		if _, _, err := p.fetchRatingsResilient(context.Background(), prov, req,
+			&provider.MediaMeta{}); err != nil {
+			t.Fatalf("render %d: %v", i, err)
+		}
+	}
+
+	if got := prov.Calls; got != 1 {
+		t.Fatalf("setup: the source was asked %d times, want 1", got)
+	}
+	for _, sh := range h.Snapshot() {
+		if sh.Source == "wikidata" && sh.ConsecutiveEmpty != 1 {
+			t.Errorf("ConsecutiveEmpty = %d after one fetch and three cache hits, want 1",
+				sh.ConsecutiveEmpty)
+		}
+	}
+}
