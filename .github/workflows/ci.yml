@@ -50,6 +50,10 @@ jobs:
         # -short drops those sweeps here and the ordinary test step above still runs
         # them in full. The default is include: a new test is covered unless it
         # explicitly opts out, so nothing loses the detector by being forgotten.
+        # Those sweeps are therefore race-checked by no run: dropped here, and the
+        # step above carries no detector. A full -race pass on this package did not
+        # finish in 2401s, so a green build says nothing about races on the render
+        # path itself.
         run: go test -race -short -timeout 12m ./internal/compose/...
 
   web:
