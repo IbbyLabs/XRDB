@@ -213,10 +213,14 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	return recovered
 }
 
-// Empty records that a source answered and carried no ratings. It is not a
-// success: a scrape whose markup has changed answers this way, so nothing here
-// marks the source healthy, clears a cooldown or resets a failure count.
-// Successes still counts it, because the source was reachable.
+// Empty records that a source answered and carried no ratings.
+//
+// Reachability is proved, so the failure breaker's counters reset. Useful output
+// is not, so lastSuccess and lastRatedByType do not move: AnsweringFor reads
+// those to decide whether an absence can be trusted.
+//
+// Cooldowns are per caller class and are left held. An interactive render that
+// received nothing says nothing about the wait a bulk sweep was given.
 func (h *HealthTracker) Empty(source string) {
 	if h == nil {
 		return
@@ -225,6 +229,8 @@ func (h *HealthTracker) Empty(source string) {
 	defer h.mu.Unlock()
 
 	st := h.stateLocked(source)
+	st.consecutiveFail = 0
+	st.breakerTrips = 0
 	st.consecutiveEmpty++
 	st.successes++
 }

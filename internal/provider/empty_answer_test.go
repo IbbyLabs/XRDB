@@ -83,6 +83,43 @@ func TestAnEmptyAnswerIsReachableButNotASuccess(t *testing.T) {
 	}
 }
 
+// The breaker holds a source out on a run of failures. An answer carrying no
+// ratings still proves the source is reachable, so the run is over.
+func TestAnEmptyAnswerResetsTheFailureBreaker(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	for i := 0; i < 12; i++ {
+		h.Failure("wikidata", rateLimited("wikidata"), CallerInteractive)
+	}
+	if got := healthOf(t, h, "wikidata").ConsecutiveFail; got == 0 {
+		t.Fatal("setup: no failures were recorded")
+	}
+
+	h.Empty("wikidata")
+
+	if got := healthOf(t, h, "wikidata").ConsecutiveFail; got != 0 {
+		t.Errorf("ConsecutiveFail = %d after an answer, want 0", got)
+	}
+}
+
+// The two facts an empty answer carries are separate: reachable, and producing
+// nothing. Resetting the breaker must not let the source vouch for absences.
+func TestAnEmptyAnswerDoesNotVouchForAbsences(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.Success("wikidata", GoodKey("wikidata", "movie", "tt1"), sampleMeta("wikidata", 8.2))
+	if !h.AnsweringFor("wikidata", "movie", time.Minute) {
+		t.Fatal("setup: a real answer recorded nothing")
+	}
+
+	h.Empty("wikidata")
+
+	if h.AnsweringFor("wikidata", "series", time.Minute) {
+		t.Error("an empty answer vouched for a content type it never carried")
+	}
+	if got := healthOf(t, h, "wikidata").LastSuccess; got == "" {
+		t.Error("the earlier real answer was cleared")
+	}
+}
+
 // req.ContentType is empty unless a per-type override made the render resolve a
 // kind, so the ordinary cache key carries no content type. A signal that needs
 // one is inert on almost every render.
