@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -287,4 +288,62 @@ func TestAnUnknownRatingIsNamedRatherThanDropped(t *testing.T) {
 	if !slicesEqual(got, want) {
 		t.Errorf("labelRatings() = %v, want %v", got, want)
 	}
+}
+
+// A panel that never posts because nothing configured it reads exactly like one
+// that is working. The first release shipped it off for six hours and no line
+// anywhere said so.
+func TestAPanelThatIsOffSaysSo(t *testing.T) {
+	// The configured panel logs from its own goroutine, so the buffer is written
+	// while the test reads it.
+	buf := &lockedBuffer{}
+	logger := slog.New(slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	pipeline, _ := panelPipeline(t, "tmdb")
+
+	// The control: configured, so the "on" line is what appears. Without it an
+	// implementation that logged nothing at all would satisfy the rest.
+	srv := panelServer(t, &panelCalls{})
+	cfg := config.Config{StatusPanel: panelConfig(t, srv.URL)}
+	StartStatusPanel(context.Background(), cfg, pipeline, logger)
+	deadline := time.Now().Add(5 * time.Second)
+	for !strings.Contains(buf.String(), "The public status panel is on") {
+		if time.Now().After(deadline) {
+			t.Fatalf("setup: a configured panel did not report itself on: %s", buf.String())
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	buf.Reset()
+	StartStatusPanel(context.Background(), config.Config{}, pipeline, logger)
+	line := buf.String()
+	if !strings.Contains(line, "The public status panel is off") {
+		t.Errorf("an unconfigured panel returned in silence: %q", line)
+	}
+	if !strings.Contains(line, "no webhook is configured") {
+		t.Errorf("the off line did not name the reason: %q", line)
+	}
+}
+
+// lockedBuffer is a bytes.Buffer safe to read while a goroutine writes to it.
+type lockedBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *lockedBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *lockedBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
+}
+
+func (b *lockedBuffer) Reset() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.buf.Reset()
 }

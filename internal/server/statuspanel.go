@@ -386,11 +386,19 @@ func StartStatusPanel(
 	logger *slog.Logger,
 ) {
 	panel := cfg.StatusPanel
-	if !panel.Enabled() || pipeline == nil {
-		return
-	}
 	if logger == nil {
 		logger = slog.Default()
+	}
+	// Said rather than returned in silence. A panel that never posts because
+	// nothing configured it reads exactly like one that is working, and the
+	// first release shipped it off for six hours without a line anywhere.
+	if !panel.Enabled() || pipeline == nil {
+		reason := "no webhook is configured"
+		if pipeline == nil {
+			reason = "the render pipeline is unavailable"
+		}
+		logger.InfoContext(ctx, "The public status panel is off", "reason", reason)
+		return
 	}
 	poster := panelPoster{URL: panel.WebhookURL, Client: &http.Client{Timeout: 15 * time.Second}}
 
