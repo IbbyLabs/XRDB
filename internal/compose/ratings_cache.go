@@ -386,14 +386,21 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 	// towards new titles, so both are wrong for it.
 	if meta == nil || len(meta.Ratings) == 0 {
 		ttl = AbsentRatingsCacheTTL
-	} else if prev, ok := c.entries[key]; ok && prev.Meta != nil && len(prev.Meta.Ratings) == 0 {
-		// The term for an absence has to come from somewhere, and nothing has
-		// ever stored one. This line is that measurement.
-		source, contentType, id := provider.SplitGoodKey(key)
-		c.log().Info("A remembered absence turned into a rating",
-			"source", source, "content_type", contentType, "media_id", id,
-			"absent_for_ms", time.Since(prev.ExpiresAt.Add(-prev.TTL)).Milliseconds(),
-			"term_ms", prev.TTL.Milliseconds())
+	} else if prev, ok := c.entries[key]; ok && prev.Meta != nil {
+		if len(prev.Meta.Ratings) == 0 {
+			// The term for an absence has to come from somewhere, and nothing has
+			// ever stored one. This line is that measurement.
+			source, contentType, id := provider.SplitGoodKey(key)
+			c.log().Info("A remembered absence turned into a rating",
+				"source", source, "content_type", contentType, "media_id", id,
+				"absent_for_ms", time.Since(prev.ExpiresAt.Add(-prev.TTL)).Milliseconds(),
+				"term_ms", prev.TTL.Milliseconds())
+		} else {
+			// FR-210. How far the score moved over a known interval, which is
+			// what the age multipliers should be derived from and what nothing
+			// has ever recorded.
+			sampleScoreMovement(key, prev, meta, age)
+		}
 	}
 	c.entries[key] = ratingsEntry{Meta: meta, ExpiresAt: time.Now().Add(ttl), TTL: ttl}
 }

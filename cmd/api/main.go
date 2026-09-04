@@ -217,6 +217,10 @@ func main() {
 		// count has to survive a restart or every deploy hands bulk callers a
 		// fresh allowance against a pool that has not refilled.
 		provider.SetDailyBudgetPath(cfg.CacheDir, logger)
+		// FR-210. The age multipliers deciding how long a rating is kept are not
+		// anchored to how fast a score moves, and the sample that would anchor
+		// them is discarded on every refetch. This records it.
+		compose.SetScoreMovementPath(cfg.CacheDir, logger)
 		// SIMKL's search endpoint is not cached upstream and a resolved id never
 		// changes, so the mappings are kept permanently rather than re-searched
 		// on every restart.
