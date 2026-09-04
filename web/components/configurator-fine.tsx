@@ -674,10 +674,10 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
             checked={config.bottomRatingsRow}
             onChange={v => onUpdate('bottomRatingsRow', v)}
             hint="Keep every badge on one row instead of wrapping. The row follows the ratings layout." />
-          <ToggleField id={`${uid}-unavailable-mark`} label="Mark a source that is unavailable"
+          <ToggleField id={`${uid}-unavailable-mark`} label="Mark a rating hidden for too few votes"
             checked={config.ratingUnavailableMark}
             onChange={v => onUpdate('ratingUnavailableMark', v)}
-            hint="Draw an X where a source's score would go while it is briefly held out. Off hides it, and a missing score then reads as the source having no rating for this title." />
+            hint="Draw an X where a rating would go when the minimum vote count hid it, so the source keeps its place in the row. Needs the minimum turned on. A source we could not reach is never marked." />
           <ToggleField id={`${uid}-uniform-width`} label="Match badge widths"
             checked={config.ratingsUniformWidth}
             onChange={v => onUpdate('ratingsUniformWidth', v)}

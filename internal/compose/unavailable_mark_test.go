@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
-	"xrdb_rewrite/internal/provider"
 )
 
 // On by default. Without the mark a missing rating reads as the provider being
@@ -38,16 +37,5 @@ func TestTheMarkChangesTheCacheKey(t *testing.T) {
 	off.RatingUnavailableMark = false
 	if imageconfig.CacheKey(on) == imageconfig.CacheKey(off) {
 		t.Error("both settings share a cache key")
-	}
-}
-
-// The control: a source another provider answered must never be marked, whether
-// the setting is on or off. OMDb serving an imdb score means imdb has one.
-func TestASourceAnotherProviderAnsweredIsNeverMarked(t *testing.T) {
-	p := &Pipeline{providers: provider.NewRegistry()}
-	got := p.unavailableSources([]string{"mdblist"}, []string{"imdb"},
-		[]provider.Rating{{Source: "imdb", Value: 8.1}})
-	if len(got) != 0 {
-		t.Errorf("imdb was marked unavailable despite having a score: %v", got)
 	}
 }

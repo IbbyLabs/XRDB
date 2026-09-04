@@ -74,9 +74,7 @@ func TestACoolingOffSourceMarksNothingOnATitleItCannotAnswerFor(t *testing.T) {
 	if len(degradedSources) != 0 {
 		t.Errorf("degraded sources %v, want none", degradedSources)
 	}
-	if got := p.unavailableSources(degradedSources, cfg.Ratings, all); len(got) != 0 {
-		t.Errorf("placeholders %v drawn for a source that could never answer", got)
-	}
+	_ = all
 }
 
 // The source is still held out for titles it does apply to, or the fix has
@@ -91,10 +89,10 @@ func TestACoolingOffSourceStillMarksATitleItCouldAnswerFor(t *testing.T) {
 	if !degraded {
 		t.Fatal("a title the source applies to lost it silently")
 	}
-	got := p.unavailableSources(degradedSources, cfg.Ratings, all)
-	if len(got) != 1 || got[0] != "mal" {
-		t.Errorf("placeholders %v, want mal crossed out", got)
+	if len(degradedSources) != 1 || degradedSources[0] != "mal" {
+		t.Errorf("degraded sources %v, want mal", degradedSources)
 	}
+	_ = all
 }
 
 // Applicability is asked before availability, so a source that cannot answer is

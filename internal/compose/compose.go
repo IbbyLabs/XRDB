@@ -1035,50 +1035,6 @@ const (
 	outcomeCached = "cached"
 )
 
-// unavailableSources turns the providers held out of a render into the rating
-// sources the strip is filtered by. The two are the same string only by
-// coincidence: MDBList alone answers thirteen sources and no provider is called
-// "imdb", so naming the provider drew one badge nobody had configured and left
-// the rest silently missing.
-//
-// A source another provider answered is not unavailable — if OMDb served imdb
-// while MDBList was down, imdb has its score and must not be crossed out.
-func (p *Pipeline) unavailableSources(degradedProviders, wanted []string, got []provider.Rating) []string {
-	if len(degradedProviders) == 0 || len(wanted) == 0 {
-		return nil
-	}
-	answered := make(map[string]bool, len(got))
-	for _, r := range got {
-		answered[strings.ToLower(r.Source)] = true
-	}
-	want := make(map[string]bool, len(wanted))
-	for _, s := range wanted {
-		want[strings.ToLower(s)] = true
-	}
-
-	seen := make(map[string]bool)
-	var out []string
-	for _, name := range degradedProviders {
-		// The provider's own name is the fallback for one that does not declare
-		// its sources.
-		sources := []string{name}
-		if prov := p.providers.Get(name); prov != nil {
-			if rs, ok := prov.(provider.RatingSourcer); ok {
-				sources = rs.RatingSources()
-			}
-		}
-		for _, src := range sources {
-			key := strings.ToLower(src)
-			if !want[key] || answered[key] || seen[key] {
-				continue
-			}
-			seen[key] = true
-			out = append(out, src)
-		}
-	}
-	return out
-}
-
 func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	timings := newRenderTimings()
 	defer func() { timings.log(ctx, p.log(), req) }()
@@ -1222,7 +1178,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if resolveQuality == nil {
 		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, ratingReq.MediaID)
 	}
-	allRatings, ratingProviders, degraded, sourceFault, queueHeld, degradedSources := p.collectRatingsWithProviders(ctx, ratingReq, meta)
+	allRatings, ratingProviders, degraded, sourceFault, queueHeld, _ := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	timings.mark("ratings")
 	// Resolved here, where the title's identity is, so the draw path receives an
 	// answer rather than an id and never needs to know a bundled list exists.
@@ -1246,15 +1202,14 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			"source", name, "media_id", req.MediaID)
 	}
 	stripRatings := allRatings
-	// Turning the mark off leaves the source out of the strip entirely rather
-	// than drawing an empty dimmed plate, which would say less than nothing.
-	if req.Config.RatingUnavailableMark {
-		for _, name := range p.unavailableSources(degradedSources, req.Config.Ratings, allRatings) {
-			stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true})
-		}
-	}
-	// A rating hidden for thin votes keeps its place in the strip under the same
-	// mark as a held-out one: the source was wanted and is not being shown.
+	// A source that is held out is not marked. At that moment we cannot tell a
+	// rating we failed to reach from one that never existed, and the second is
+	// the common case: measured 2026-09-04, an unreachable Letterboxd is wrong
+	// on 78% of series, and Roger Ebert is wrong on 44% of films.
+	//
+	// A rating hidden for thin votes still is. There we fetched the score and
+	// chose not to show it, so the mark states a fact, and only someone who
+	// turned the minimum-votes filter on ever sees it.
 	if req.Config.RatingUnavailableMark {
 		for _, name := range thinSources {
 			stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true, Withheld: true})

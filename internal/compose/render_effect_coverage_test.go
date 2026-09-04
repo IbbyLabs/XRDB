@@ -500,6 +500,12 @@ func keyMutations() map[string]keyOverride {
 		// A map, so the blind mutation is not a value the parser accepts. The
 		// default already hides Trakt's four votes, so the override that shows
 		// it again is the one that changes the image.
+		// The mark no longer draws for a held-out source, only for a rating we
+		// hid ourselves on thin votes, so the minimum has to be on for it to
+		// have anything to mark. Trakt's four votes are what it acts on.
+		"ratingUnavailableMark": {
+			pre: func(c *imageconfig.Config) { c.RatingMinVotes = true },
+		},
 		"ratingMinVotesBySource": {
 			pre: func(c *imageconfig.Config) { c.RatingMinVotes = true },
 			mut: func(c *imageconfig.Config) {

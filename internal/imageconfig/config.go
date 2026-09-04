@@ -176,9 +176,14 @@ type Config struct {
 	// is on: "value" fills the gap with something true, "marker" says there is
 	// nothing. Empty is "value".
 	PlaceholderStyle string `json:"placeholderStyle,omitempty"`
-	// RatingUnavailableMark draws the X in place of a value for a source that was
-	// wanted and held out. On by default: without it a missing rating reads as the
-	// provider being broken rather than one source being briefly unavailable.
+	// RatingUnavailableMark draws the X in place of a rating hidden for having too
+	// few votes to mean anything, so a source the minimum acted on keeps its place
+	// in the strip rather than vanishing. Needs RatingMinVotes to have anything to
+	// mark.
+	//
+	// It does not mark a source that was held out. There we cannot tell a rating we
+	// failed to reach from one that never existed, and the second is the common
+	// case.
 	RatingUnavailableMark bool `json:"ratingUnavailableMark"`
 
 	// BadgeShadow draws the drop shadow under every badge. Off leaves the
