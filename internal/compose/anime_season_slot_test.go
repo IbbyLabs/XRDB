@@ -264,9 +264,15 @@ func TestANumberThatIsNotAnAnimeIDIsSilentAtInfo(t *testing.T) {
 // from the value that comes back.
 type eliminationResolver struct {
 	seasonSlotResolver
-	sole  bool
-	names bool
-	asked []string
+	sole   bool
+	names  bool
+	stated int
+	asked  []string
+}
+
+func (e *eliminationResolver) SoleClaimOfStatedSeason(animeID, seriesKey string) (int, bool) {
+	e.asked = append(e.asked, "stated:"+animeID+"/"+seriesKey)
+	return e.stated, e.stated > 0
 }
 
 func (e *eliminationResolver) NamesSeries(animeID, seriesKey string) bool {
@@ -324,5 +330,35 @@ func TestAKnownAnimeIDThatCannotBePlacedLogsAtInfo(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "could not be converted") {
 		t.Errorf("a known anime id did not reach the info log: %q", buf.String())
+	}
+}
+
+// BUG-286 case 2. Bleach's Kitsu entry names TMDB season 1 outright with no
+// aired season, so the season index cannot hold it and the recovery has to read
+// what it states.
+func TestAStatedSeasonPlacesTheEpisode(t *testing.T) {
+	r := &eliminationResolver{stated: 1, names: true}
+	p := &Pipeline{anime: r}
+
+	season, episode, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt0434665", 244, 1)
+	if !ok || season != 1 || episode != 1 {
+		t.Fatalf("got season %d episode %d recovered=%v, want 1/1 recovered", season, episode, ok)
+	}
+	if !strings.Contains(strings.Join(r.asked, " "), "stated:kitsu:244/tt0434665") {
+		t.Errorf("the stated-season guard was never asked: %v", r.asked)
+	}
+}
+
+// The control. Same id, guard declines, and a conversion here would mean the
+// season came from somewhere other than the guard.
+func TestAStatedSeasonRefusedDoesNotPlace(t *testing.T) {
+	r := &eliminationResolver{stated: 0, names: true}
+	p := &Pipeline{anime: r}
+
+	if season, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt0434665", 244, 1); ok {
+		t.Errorf("converted to season %d with the guard refusing", season)
+	}
+	if !strings.Contains(strings.Join(r.asked, " "), "stated:kitsu:244/tt0434665") {
+		t.Errorf("the stated-season guard was never asked: %v", r.asked)
 	}
 }

@@ -23,6 +23,7 @@ func seasonlessMapper(t *testing.T) *Mapper {
 	return &Mapper{primary: &source{
 		byAnimeID: idx.reverse, bySeason: idx.seasons, partialSeas: idx.partialSeasons,
 		animeSeas: idx.animeSeason, entriesPer: idx.seriesEntries,
+		statedSeas: idx.statedSeasons, claims: idx.seasonClaims,
 		loaded: true, loadedAt: time.Now(), ttl: time.Hour,
 	}}
 }
@@ -67,5 +68,52 @@ func TestSoleSeasonlessSeriesIsNarrow(t *testing.T) {
 	}
 	if m.SoleSeasonlessSeries("kitsu:6448", "tt0434665") {
 		t.Error("placed an id against a series it does not name")
+	}
+}
+
+// BUG-286 case 2. Bleach's main entry names TMDB season 1 with no aired season,
+// which keeps it out of the season index: seasons is keyed on the aired number.
+// The mirror set is what makes the season it states reachable.
+func TestAStatedSeasonIsReachableWhenNothingElseClaimsIt(t *testing.T) {
+	m := seasonlessMapper(t)
+
+	if _, why := m.SeasonForAnimeID("kitsu:244", "tt0434665"); why != SeasonNoRows {
+		t.Fatalf("refusal = %q, want %q, otherwise this test proves nothing", why, SeasonNoRows)
+	}
+	got, ok := m.SoleClaimOfStatedSeason("kitsu:244", "tt0434665")
+	if !ok || got != 1 {
+		t.Errorf("stated season = %d ok=%v, want season 1", got, ok)
+	}
+}
+
+// A TMDB season several entries share is a packed one, and which cour an id
+// names is exactly what the missing aired number would have said.
+func TestAStatedSeasonSharedWithAnotherEntryRefuses(t *testing.T) {
+	idx, err := buildIndexes([]byte(`[
+		{"type":"TV","kitsu_id":10,"imdb_id":["tt5"],"themoviedb_id":{"tv":5},"season":{"tmdb":1}},
+		{"type":"TV","kitsu_id":11,"imdb_id":["tt5"],"themoviedb_id":{"tv":5},"season":{"tvdb":2,"tmdb":1},"episode_offset":{"tmdb":12}}
+	]`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := &Mapper{primary: &source{
+		byAnimeID: idx.reverse, bySeason: idx.seasons, partialSeas: idx.partialSeasons,
+		animeSeas: idx.animeSeason, entriesPer: idx.seriesEntries,
+		statedSeas: idx.statedSeasons, claims: idx.seasonClaims,
+		loaded: true, loadedAt: time.Now(), ttl: time.Hour,
+	}}
+	if got, ok := m.SoleClaimOfStatedSeason("kitsu:10", "tt5"); ok {
+		t.Errorf("placed into a shared season as %d; the offset is what is missing", got)
+	}
+	if m.NamesSeries("kitsu:10", "tt5") != true {
+		t.Error("control: the id does name the series, so the refusal above is the sharing")
+	}
+}
+
+// The id must name the series it is being placed against.
+func TestAStatedSeasonAgainstAnotherSeriesRefuses(t *testing.T) {
+	m := seasonlessMapper(t)
+	if _, ok := m.SoleClaimOfStatedSeason("kitsu:244", "tt2098220"); ok {
+		t.Error("placed Bleach's season against Hunter x Hunter")
 	}
 }

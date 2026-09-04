@@ -330,6 +330,25 @@ type indexes struct {
 	// way as seasons. Counted per entry, not per anime id, so the four ids one
 	// entry carries count once.
 	seriesEntries map[string]int
+	// statedSeasons holds the mirror of partialSeasons: an entry naming a TMDB
+	// season with no aired season beside it. It cannot join seasons, which is
+	// keyed on the aired number, so without this the season it states is
+	// unreachable.
+	statedSeasons map[string]statedSeason
+	// seasonClaims counts the entries naming each TMDB season of a series, so a
+	// stated season can be taken only when nothing else sits in it.
+	seasonClaims map[string]int
+}
+
+// statedSeason is a TMDB season an anime id names outright.
+type statedSeason struct {
+	seriesKey  string
+	tmdbSeason int
+}
+
+// seasonClaimKey names one TMDB season of one series.
+func seasonClaimKey(seriesKey string, season int) string {
+	return seriesKey + "#" + strconv.Itoa(season)
 }
 
 // animeSeasonRef is the series and aired season an anime id names.
@@ -425,6 +444,8 @@ type source struct {
 	partialSeas map[string]bool
 	animeSeas   map[string]animeSeasonRef
 	entriesPer  map[string]int
+	statedSeas  map[string]statedSeason
+	claims      map[string]int
 }
 
 // New creates a Mapper. Datasets load lazily on first Resolve.
@@ -590,6 +611,59 @@ func (s *source) targetFor(key string) (Target, bool) {
 	defer s.mu.Unlock()
 	e, ok := s.byAnimeID[key]
 	return e.Target, ok
+}
+
+// statedSeasonFor returns the TMDB season an anime id names outright.
+func (s *source) statedSeasonFor(key string) (statedSeason, bool) {
+	s.ensureLoaded()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	st, ok := s.statedSeas[key]
+	return st, ok
+}
+
+// seasonClaimCount returns how many entries name a TMDB season of a series.
+func (s *source) seasonClaimCount(seriesKey string, season int) int {
+	s.ensureLoaded()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.claims[seasonClaimKey(seriesKey, season)]
+}
+
+// SoleClaimOfStatedSeason returns the TMDB season an anime id names outright,
+// when it is the only entry of that series naming it.
+//
+// Such an entry carries no aired season, so nothing says where inside the TMDB
+// season its episodes begin. Being the only claimant answers that: a season with
+// one occupant is not packed, so its episodes start at the first and no offset is
+// needed. A season several entries share is a packed one, and choosing between
+// them is what the missing aired number would have decided.
+func (m *Mapper) SoleClaimOfStatedSeason(animeID, seriesKey string) (int, bool) {
+	service, num, ok := ParseAnimeID(animeID)
+	if !ok || seriesKey == "" {
+		return 0, false
+	}
+	key := animeKey(service, num)
+	for _, src := range []*source{m.primary, m.supplement} {
+		if src == nil {
+			continue
+		}
+		st, found := src.statedSeasonFor(key)
+		if !found || st.seriesKey != seriesKey {
+			continue
+		}
+		claims := 0
+		for _, s2 := range []*source{m.primary, m.supplement} {
+			if s2 != nil {
+				claims += s2.seasonClaimCount(seriesKey, st.tmdbSeason)
+			}
+		}
+		if claims != 1 {
+			return 0, false
+		}
+		return st.tmdbSeason, true
+	}
+	return 0, false
 }
 
 // NamesSeries reports whether animeID resolves to seriesKey.
@@ -951,7 +1025,7 @@ func (s *source) loadFromDiskLocked() error {
 	}
 	s.byIMDb, s.byTMDBMovie, s.byTMDBTV, s.byAnimeID = idx.imdb, idx.movie, idx.tv, idx.reverse
 	s.bySeason, s.partialSeas, s.animeSeas = idx.seasons, idx.partialSeasons, idx.animeSeason
-	s.entriesPer = idx.seriesEntries
+	s.entriesPer, s.statedSeas, s.claims = idx.seriesEntries, idx.statedSeasons, idx.seasonClaims
 	s.loadedAt = info.ModTime()
 	return nil
 }
@@ -1204,6 +1278,8 @@ func buildIndexes(data []byte) (indexes, error) {
 		partialSeasons: make(map[string]bool),
 		animeSeason:    make(map[string]animeSeasonRef),
 		seriesEntries:  make(map[string]int),
+		statedSeasons:  make(map[string]statedSeason),
+		seasonClaims:   make(map[string]int),
 	}
 	ranks := make(map[string]int)
 	for _, e := range entries {
@@ -1248,6 +1324,27 @@ func buildIndexes(data []byte) (indexes, error) {
 			}
 			if e.TMDBID.TV != 0 {
 				idx.partialSeasons["tv:"+strconv.Itoa(e.TMDBID.TV)] = true
+			}
+		}
+		// Every entry naming a TMDB season claims it, whichever branch below
+		// records it, so a stated season can be checked for company.
+		if e.Season.tmdb > 0 {
+			for _, k := range seriesKeysFor(target) {
+				idx.seasonClaims[seasonClaimKey(k, e.Season.tmdb)]++
+			}
+		}
+		// The mirror of the branch above: a TMDB season with no aired season
+		// beside it. seasons is keyed on the aired number, so such an entry
+		// cannot join it and the season it names outright would be lost.
+		if e.Season.tvdb == 0 && e.Season.tmdb > 0 {
+			seriesKey := target.IMDb
+			if seriesKey == "" && e.TMDBID.TV != 0 {
+				seriesKey = "tv:" + strconv.Itoa(e.TMDBID.TV)
+			}
+			if seriesKey != "" {
+				for _, k := range reverseKeys(ids) {
+					idx.statedSeasons[k] = statedSeason{seriesKey: seriesKey, tmdbSeason: e.Season.tmdb}
+				}
 			}
 		}
 		if e.Season.tvdb > 0 && e.Season.tmdb > 0 {

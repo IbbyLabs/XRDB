@@ -191,6 +191,12 @@ type animeSeriesNamer interface {
 	SoleSeasonlessSeries(animeID, seriesKey string) bool
 }
 
+// animeStatedSeasonResolver reads a TMDB season an anime id names outright.
+// Separate interface for the same reason as the two above.
+type animeStatedSeasonResolver interface {
+	SoleClaimOfStatedSeason(animeID, seriesKey string) (int, bool)
+}
+
 // animeKitsuResolver answers for the titles animeTargetResolver cannot: a row
 // with a Kitsu id and no mainstream one. Separate interface so a resolver that
 // predates it still satisfies the first.
@@ -1558,6 +1564,9 @@ func (p *Pipeline) recoverAnimeSeasonSlot(ctx context.Context, series string, se
 		found, any = m, true
 	}
 	if !any {
+		if s2, ok := p.statedSeasonFor(series, season); ok {
+			return s2, episode, true
+		}
 		if s2, ok := p.firstSeasonByElimination(series, season); ok {
 			return s2, episode, true
 		}
@@ -1586,6 +1595,24 @@ func (p *Pipeline) namesThisSeries(series string, season int) bool {
 		}
 	}
 	return false
+}
+
+// statedSeasonFor places an anime id that names a TMDB season outright but no
+// aired season, which keeps it out of the season index entirely.
+//
+// Taken only when nothing else of that series names the same TMDB season, so the
+// episodes begin at its first and no offset is needed.
+func (p *Pipeline) statedSeasonFor(series string, season int) (int, bool) {
+	resolver, ok := p.anime.(animeStatedSeasonResolver)
+	if !ok || resolver == nil {
+		return 0, false
+	}
+	for _, service := range animeServices {
+		if s2, ok := resolver.SoleClaimOfStatedSeason(service+":"+strconv.Itoa(season), series); ok {
+			return s2, true
+		}
+	}
+	return 0, false
 }
 
 // firstSeasonByElimination places an anime id whose series records no season at
