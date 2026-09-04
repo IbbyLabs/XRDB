@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -138,5 +139,83 @@ func TestJikanHostDropsPathAndQuery(t *testing.T) {
 	}
 	if got != "jikan.example" {
 		t.Errorf("JikanHost = %q, want jikan.example", got)
+	}
+}
+
+// The timing header carries our own scheduling as well as theirs: measured
+// 2026-09-04, a localhost server answering in microseconds read 4,400ms under
+// load and crossed the one-second threshold on 6.5% of requests. So a per-title
+// 504 is recognised by what Jikan says rather than by how long we took to read
+// it.
+func TestAPerTitleGatewayErrorIsRecognisedByItsBody(t *testing.T) {
+	body := `{"status":504,"type":"BadResponseException","message":"Jikan failed to connect to MyAnimeList"}`
+	resp := &http.Response{
+		StatusCode: http.StatusGatewayTimeout,
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}
+	// Four seconds: under the old rule this was the source's fault.
+	resp.Header.Set(upstreamMsHeader, "4000")
+	if !perTitleGatewayError(resp) {
+		t.Error("a Jikan per-title fault was counted against the source because we were slow to read it")
+	}
+}
+
+// A gateway that has genuinely stopped answering says something else, and must
+// still count against the source however fast it said it.
+func TestAGatewayFaultIsNotReadAsATitleFact(t *testing.T) {
+	body := `{"status":504,"type":"ServerException","message":"gateway timeout"}`
+	resp := &http.Response{
+		StatusCode: http.StatusGatewayTimeout,
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}
+	resp.Header.Set(upstreamMsHeader, "130")
+	if perTitleGatewayError(resp) {
+		t.Error("a gateway fault was excused because it arrived quickly")
+	}
+}
+
+// An envelope we do not recognise falls back to the timing, which is the old
+// behaviour rather than a new failure mode.
+func TestAnUnrecognisedEnvelopeFallsBackToTheTiming(t *testing.T) {
+	for _, tc := range []struct {
+		name, body, ms string
+		want           bool
+	}{
+		{"empty body, fast", "", "130", true},
+		{"empty body, slow", "", "4000", false},
+		{"not json, fast", "<html>gateway timeout</html>", "130", true},
+		{"json without a type, slow", `{"status":504}`, "4000", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := &http.Response{
+				StatusCode: http.StatusGatewayTimeout,
+				Header:     make(http.Header),
+				Body:       io.NopCloser(strings.NewReader(tc.body)),
+			}
+			resp.Header.Set(upstreamMsHeader, tc.ms)
+			if got := perTitleGatewayError(resp); got != tc.want {
+				t.Errorf("perTitleGatewayError() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// End to end through Fetch, because testing the classifier alone does not prove
+// the classifier is the one being used. The server answers the per-title body
+// but takes longer than instantRefusal to do it, which is the shape our own
+// load produces: their fault is per-title, our stopwatch says slow.
+func TestASlowlyDeliveredPerTitleFaultIsStillATitleFact(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(instantRefusal + 100*time.Millisecond)
+		w.WriteHeader(http.StatusGatewayTimeout)
+		_, _ = w.Write([]byte(`{"status":504,"type":"BadResponseException","message":"Jikan failed to connect to MyAnimeList"}`))
+	}))
+	defer srv.Close()
+
+	_, err := NewMALWithURL(srv.URL+"/").Fetch(context.Background(), "series", "mal:2001")
+	if !errors.Is(err, ErrUpstreamUnavailable) {
+		t.Fatalf("err = %v, want ErrUpstreamUnavailable: a per-title fault was counted against the source because we were slow to read it", err)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -60,6 +61,36 @@ func answeredFast(resp *http.Response) bool {
 	return time.Duration(ms)*time.Millisecond < instantRefusal
 }
 
+// jikanUpstreamFault is the type Jikan reports when it reached us but could not
+// reach MyAnimeList for one title. Its own name for the case.
+const jikanUpstreamFault = "BadResponseException"
+
+// perTitleGatewayError reports whether a 504 is Jikan speaking about one title
+// rather than a gateway that stopped answering. It reads the body first, which
+// says what happened, and falls back to the timing header for an envelope it
+// does not recognise.
+//
+// The timing alone was not enough. That header carries time.Since around the
+// round trip, so our own scheduling is inside it: measured 2026-09-04, a
+// localhost server answering in microseconds read 4,400ms under load, crossing
+// the one-second threshold on 6.5% of requests. Five of those in a row open the
+// failure breaker and take the source off every render, which is the outcome
+// this check exists to prevent.
+//
+// The body is consumed here. Every path from this point returns an error.
+func perTitleGatewayError(resp *http.Response) bool {
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+	if err == nil {
+		var envelope struct {
+			Type string `json:"type"`
+		}
+		if json.Unmarshal(body, &envelope) == nil && envelope.Type != "" {
+			return envelope.Type == jikanUpstreamFault
+		}
+	}
+	return answeredFast(resp)
+}
+
 // JikanHost names the Jikan instance a base URL points at, or the public one
 // when the override is empty. Host only, never the path or query.
 func JikanHost(baseURL string) string {
@@ -103,7 +134,7 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("mal: anime not found for id %q: %w", id, ErrNotApplicable)
 	}
-	if resp.StatusCode == http.StatusGatewayTimeout && answeredFast(resp) {
+	if resp.StatusCode == http.StatusGatewayTimeout && perTitleGatewayError(resp) {
 		return nil, fmt.Errorf("mal: http %d for id %q: %w", resp.StatusCode, id, ErrUpstreamUnavailable)
 	}
 	if resp.StatusCode != http.StatusOK {
