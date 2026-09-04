@@ -183,6 +183,14 @@ type animeSeasonResolver interface {
 	KnowsTMDBSeason(seriesKey string, season int) bool
 }
 
+// animeSeriesNamer answers whether a number, read as an anime id, names the
+// series in hand. Separate interface so a resolver that predates it still
+// satisfies the first, matching animeKitsuResolver below.
+type animeSeriesNamer interface {
+	NamesSeries(animeID, seriesKey string) bool
+	SoleSeasonlessSeries(animeID, seriesKey string) bool
+}
+
 // animeKitsuResolver answers for the titles animeTargetResolver cannot: a row
 // with a Kitsu id and no mainstream one. Separate interface so a resolver that
 // predates it still satisfies the first.
@@ -1534,7 +1542,7 @@ func (p *Pipeline) recoverAnimeSeasonSlot(ctx context.Context, series string, se
 	any := false
 	refusals := make([]string, 0, 4)
 	named := false
-	for _, service := range []string{"kitsu", "mal", "anilist", "anidb"} {
+	for _, service := range animeServices {
 		m, refusal := resolver.SeasonForAnimeID(service+":"+strconv.Itoa(season), series)
 		if refusal != animemap.SeasonResolved || !m.Resolved() {
 			refusals = append(refusals, service+"="+string(refusal))
@@ -1550,22 +1558,69 @@ func (p *Pipeline) recoverAnimeSeasonSlot(ctx context.Context, series string, se
 		found, any = m, true
 	}
 	if !any {
-		p.logSeasonSlotDeclined(ctx, series, season, refusals, named)
+		if s2, ok := p.firstSeasonByElimination(series, season); ok {
+			return s2, episode, true
+		}
+		p.logSeasonSlotDeclined(ctx, series, season, refusals, named || p.namesThisSeries(series, season))
 		return season, episode, false
 	}
 	return found.TMDBSeason, episode + found.EpisodeDelta, true
 }
 
+// animeServices are the catalogues a number in the season position might be an
+// id from, tried in order.
+var animeServices = []string{"kitsu", "mal", "anilist", "anidb"}
+
+// namesThisSeries reports whether the number, read as an anime id on any
+// service, names this series. An id absent from the season index refuses as
+// no_rows whether or not it is an anime id, so this is what separates a
+// catalogue id we could not place from a number that was never one.
+func (p *Pipeline) namesThisSeries(series string, season int) bool {
+	namer, ok := p.anime.(animeSeriesNamer)
+	if !ok || namer == nil {
+		return false
+	}
+	for _, service := range animeServices {
+		if namer.NamesSeries(service+":"+strconv.Itoa(season), series) {
+			return true
+		}
+	}
+	return false
+}
+
+// firstSeasonByElimination places an anime id whose series records no season at
+// all. Nothing states which season it is, and nothing else could be: it is the
+// only entry mapping to that series, so its episodes are the first season.
+//
+// Narrow on purpose. A series with several entries refuses, because which one
+// comes first is exactly what the missing data would have said, and a series
+// with any season recorded is a different case that this must not touch.
+func (p *Pipeline) firstSeasonByElimination(series string, season int) (int, bool) {
+	namer, ok := p.anime.(animeSeriesNamer)
+	if !ok || namer == nil {
+		return 0, false
+	}
+	for _, service := range animeServices {
+		if namer.SoleSeasonlessSeries(service+":"+strconv.Itoa(season), series) {
+			return 1, true
+		}
+	}
+	return 0, false
+}
+
 // logSeasonSlotDeclined records a recovery that did not happen, which is
 // otherwise invisible: the render simply 404s with no artwork.
 //
-// named is true when at least one service held the id and the season could still
-// not be used. That is the population a fix would reach, so it goes to info.
-// Everything else is at debug, because an ordinary episode of a series the anime
-// dataset has never heard of reaches here too and there are far more of those.
-// Reading a rate off the info lines alone therefore undercounts: no_rows covers
-// both a number that was never an anime id and one whose series carries no
-// season rows at all.
+// named is true when the number is an anime id naming this series, whether that
+// came from a refusal other than no_rows or from the reverse index. That is the
+// population a fix would reach, so it goes to info. Everything else is at debug,
+// because an ordinary episode of a series the anime dataset has never heard of
+// reaches here too and there are far more of those.
+//
+// The reverse index is what makes the split honest. Reading the refusal alone
+// undercounts badly: an entry is absent from the season index unless it carries
+// both a TVDB and a TMDB season, so an anime id with one or neither refuses as
+// no_rows, exactly as a number that was never an id does.
 func (p *Pipeline) logSeasonSlotDeclined(ctx context.Context, series string, season int, refusals []string, named bool) {
 	log, msg := p.log().DebugContext, "Left an unrecognised season number alone"
 	if named {

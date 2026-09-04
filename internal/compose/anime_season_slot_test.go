@@ -258,3 +258,71 @@ func TestANumberThatIsNotAnAnimeIDIsSilentAtInfo(t *testing.T) {
 		t.Errorf("an ordinary season number logged at info: %q", out)
 	}
 }
+
+// eliminationResolver answers the namer questions and records what it was asked,
+// because a guard that is never consulted and one that passes look identical
+// from the value that comes back.
+type eliminationResolver struct {
+	seasonSlotResolver
+	sole  bool
+	names bool
+	asked []string
+}
+
+func (e *eliminationResolver) NamesSeries(animeID, seriesKey string) bool {
+	e.asked = append(e.asked, "names:"+animeID+"/"+seriesKey)
+	return e.names
+}
+
+func (e *eliminationResolver) SoleSeasonlessSeries(animeID, seriesKey string) bool {
+	e.asked = append(e.asked, "sole:"+animeID+"/"+seriesKey)
+	return e.sole
+}
+
+// BUG-286 case 3. Hunter x Hunter's Kitsu entry records no season at all and is
+// the only entry for the series, so its episodes are the first season by
+// elimination. Nothing in the season index can say so.
+func TestASoleSeasonlessEntryIsPlacedAsTheFirstSeason(t *testing.T) {
+	r := &eliminationResolver{sole: true, names: true}
+	p := &Pipeline{anime: r}
+
+	season, episode, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt2098220", 6448, 1)
+	if !ok || season != 1 || episode != 1 {
+		t.Fatalf("got season %d episode %d recovered=%v, want 1/1 recovered", season, episode, ok)
+	}
+	if !strings.Contains(strings.Join(r.asked, " "), "sole:kitsu:6448/tt2098220") {
+		t.Errorf("the guard was never asked, so a pass proves nothing: %v", r.asked)
+	}
+}
+
+// The control. Same id, same series, guard says no. A conversion here would mean
+// the guard is decorative.
+func TestElimination(t *testing.T) {
+	r := &eliminationResolver{sole: false, names: true}
+	p := &Pipeline{anime: r}
+
+	if season, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt2098220", 6448, 1); ok {
+		t.Errorf("converted to season %d with the guard refusing", season)
+	}
+	if !strings.Contains(strings.Join(r.asked, " "), "sole:kitsu:6448/tt2098220") {
+		t.Errorf("the guard was never asked: %v", r.asked)
+	}
+}
+
+// An id the reverse index knows still logs at info when it cannot be placed,
+// which the refusal alone cannot tell from a number that was never an anime id.
+func TestAKnownAnimeIDThatCannotBePlacedLogsAtInfo(t *testing.T) {
+	var buf bytes.Buffer
+	r := &eliminationResolver{sole: false, names: true}
+	p := &Pipeline{
+		logger: slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})),
+		anime:  r,
+	}
+
+	if _, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt2098220", 6448, 1); ok {
+		t.Fatal("converted, so the log assertion below is about the wrong path")
+	}
+	if !strings.Contains(buf.String(), "could not be converted") {
+		t.Errorf("a known anime id did not reach the info log: %q", buf.String())
+	}
+}

@@ -326,6 +326,10 @@ type indexes struct {
 	// siblings, and a sibling that names no TMDB season cannot be scanned, so
 	// the series is refused rather than read from what is left.
 	partialSeasons map[string]bool
+	// seriesEntries counts the anime entries mapping to a series, keyed the same
+	// way as seasons. Counted per entry, not per anime id, so the four ids one
+	// entry carries count once.
+	seriesEntries map[string]int
 }
 
 // animeSeasonRef is the series and aired season an anime id names.
@@ -420,6 +424,7 @@ type source struct {
 	bySeason    map[string][]seasonRow
 	partialSeas map[string]bool
 	animeSeas   map[string]animeSeasonRef
+	entriesPer  map[string]int
 }
 
 // New creates a Mapper. Datasets load lazily on first Resolve.
@@ -555,6 +560,94 @@ func (m *Mapper) SeasonFor(seriesKey string, aired int) (SeasonMapping, SeasonRe
 		}
 	}
 	return SeasonMapping{}, SeasonNoRows
+}
+
+// seriesKeysFor names the keys a target is filed under, matching how seasons is
+// keyed. A target with both ids is reachable by either.
+func seriesKeysFor(t Target) []string {
+	keys := make([]string, 0, 2)
+	if t.IMDb != "" {
+		keys = append(keys, t.IMDb)
+	}
+	if t.TMDB != 0 && t.TMDBType == "tv" {
+		keys = append(keys, "tv:"+strconv.Itoa(t.TMDB))
+	}
+	return keys
+}
+
+// entryCount returns how many anime entries map to a series.
+func (s *source) entryCount(key string) int {
+	s.ensureLoaded()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.entriesPer[key]
+}
+
+// targetFor returns what an anime id maps back to.
+func (s *source) targetFor(key string) (Target, bool) {
+	s.ensureLoaded()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e, ok := s.byAnimeID[key]
+	return e.Target, ok
+}
+
+// NamesSeries reports whether animeID resolves to seriesKey.
+//
+// This answers a question SeasonForAnimeID cannot. The season index only holds
+// entries carrying both a TVDB and a TMDB season, so an entry with neither, or
+// with only one, is absent from it and refuses as no_rows — the same answer a
+// number that was never an anime id gets. The reverse index holds every
+// renderable entry, so it separates the two.
+func (m *Mapper) NamesSeries(animeID, seriesKey string) bool {
+	service, num, ok := ParseAnimeID(animeID)
+	if !ok || seriesKey == "" {
+		return false
+	}
+	key := animeKey(service, num)
+	for _, src := range []*source{m.primary, m.supplement} {
+		if src == nil {
+			continue
+		}
+		target, found := src.targetFor(key)
+		if !found {
+			continue
+		}
+		for _, k := range seriesKeysFor(target) {
+			if k == seriesKey {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// SoleSeasonlessSeries reports whether animeID names seriesKey, that series has
+// no season recorded at all, and this is the only anime entry mapping to it.
+//
+// Then the id's episodes are the series' first season by elimination: there is
+// no other entry any later season could belong to. A series with several entries
+// refuses, because which of them is first is exactly what the missing season
+// data would have said.
+//
+// Read live rather than decided once. The dataset regenerates upstream, so an
+// entry that is sole today may not be tomorrow.
+func (m *Mapper) SoleSeasonlessSeries(animeID, seriesKey string) bool {
+	if !m.NamesSeries(animeID, seriesKey) {
+		return false
+	}
+	entries := 0
+	for _, src := range []*source{m.primary, m.supplement} {
+		if src == nil {
+			continue
+		}
+		rows, partial := src.seasonRows(seriesKey)
+		if partial || len(rows) > 0 {
+			return false
+		}
+		entries += src.entryCount(seriesKey)
+	}
+	return entries == 1
 }
 
 // KnowsTMDBSeason reports whether the dataset lists that TMDB season for the
@@ -858,6 +951,7 @@ func (s *source) loadFromDiskLocked() error {
 	}
 	s.byIMDb, s.byTMDBMovie, s.byTMDBTV, s.byAnimeID = idx.imdb, idx.movie, idx.tv, idx.reverse
 	s.bySeason, s.partialSeas, s.animeSeas = idx.seasons, idx.partialSeasons, idx.animeSeason
+	s.entriesPer = idx.seriesEntries
 	s.loadedAt = info.ModTime()
 	return nil
 }
@@ -1109,6 +1203,7 @@ func buildIndexes(data []byte) (indexes, error) {
 		seasons:        make(map[string][]seasonRow),
 		partialSeasons: make(map[string]bool),
 		animeSeason:    make(map[string]animeSeasonRef),
+		seriesEntries:  make(map[string]int),
 	}
 	ranks := make(map[string]int)
 	for _, e := range entries {
@@ -1140,6 +1235,11 @@ func buildIndexes(data []byte) (indexes, error) {
 			}
 		}
 		insertTarget(idx.reverse, ranks, ids, target, rank)
+		if renderable(ids, target) {
+			for _, k := range seriesKeysFor(target) {
+				idx.seriesEntries[k]++
+			}
+		}
 		if e.Season.tvdb > 0 && e.Season.tmdb == 0 {
 			for _, imdbID := range e.IMDbID {
 				if imdbID != "" {
