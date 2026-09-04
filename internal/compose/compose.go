@@ -241,7 +241,7 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	}
 	switch {
 	case target.IMDb != "":
-		req.MediaID = withEpisodeTail(target.IMDb, tail)
+		req.MediaID = p.seasonedEpisodeTail(ctx, target.IMDb, tail, head)
 	case target.TMDB != 0:
 		kind := "series"
 		if target.TMDBType == "movie" {
@@ -254,6 +254,35 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	p.log().DebugContext(ctx, "Resolved an anime id to its mainstream id",
 		"id", logging.RequestID(ctx), "from", head, "to", req.MediaID)
 	return req
+}
+
+// seasonedEpisodeTail turns a bare absolute episode number into a season and
+// episode, using the anime id as the season it names. An anime catalogue gives
+// each season its own id, so "kitsu:11209" is a season and ":1" counts from its
+// first episode rather than from the series'.
+//
+// Falls back to withEpisodeTail's behaviour when nothing resolves, which drops
+// the tail rather than asking a source for a season that does not exist.
+func (p *Pipeline) seasonedEpisodeTail(ctx context.Context, base, tail, animeID string) string {
+	if tail == "" || base == "" {
+		return withEpisodeTail(base, tail)
+	}
+	episode, err := strconv.Atoi(strings.TrimPrefix(tail, ":"))
+	if err != nil || episode < 1 {
+		return withEpisodeTail(base, tail)
+	}
+	resolver, ok := p.anime.(animeSeasonResolver)
+	if !ok || resolver == nil {
+		return withEpisodeTail(base, tail)
+	}
+	mapping, refusal := resolver.SeasonForAnimeID(animeID, base)
+	if refusal != animemap.SeasonResolved || !mapping.Resolved() {
+		p.log().DebugContext(ctx, "An anime season id did not convert, so the episode is dropped",
+			"id", logging.RequestID(ctx), "anime_id", animeID, "series", base,
+			"refusal", string(refusal))
+		return withEpisodeTail(base, tail)
+	}
+	return base + ":" + strconv.Itoa(mapping.TMDBSeason) + ":" + strconv.Itoa(episode+mapping.EpisodeDelta)
 }
 
 // withEpisodeTail appends an episode tail to a resolved id, keeping it only when

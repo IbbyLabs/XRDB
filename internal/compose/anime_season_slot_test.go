@@ -141,3 +141,76 @@ func TestNoResolverLeavesTheIDAlone(t *testing.T) {
 		t.Errorf("got %d/%d ok=%v, want the id untouched", season, episode, ok)
 	}
 }
+
+// targetSeasonResolver answers both the target lookup resolveAnimeID needs and
+// the season lookup, so a Kitsu episode id can be driven end to end.
+type targetSeasonResolver struct {
+	seasonSlotResolver
+	targets map[string]animemap.Target
+}
+
+func (t targetSeasonResolver) ResolveTarget(_ context.Context, id string) (animemap.Target, bool) {
+	tg, ok := t.targets[id]
+	return tg, ok
+}
+
+// The other half of mrkaon's report. "kitsu:11209:1" resolved the series and
+// then dropped the episode, because "tt5607616:1" is not a season and episode,
+// so an episode thumbnail came back as series artwork.
+func TestAKitsuEpisodeIDKeepsItsEpisode(t *testing.T) {
+	p := &Pipeline{anime: targetSeasonResolver{
+		seasonSlotResolver: seasonSlotResolver{rows: map[string]map[string]animemap.SeasonMapping{
+			"kitsu:11209": {"tt5607616": mappingFor(t, 1, 0)},
+		}},
+		targets: map[string]animemap.Target{"kitsu:11209": {IMDb: "tt5607616"}},
+	}}
+
+	got := p.resolveAnimeID(context.Background(), Request{MediaType: "thumbnail", MediaID: "kitsu:11209:1"})
+	if got.MediaID != "tt5607616:1:1" {
+		t.Errorf("media id %q, want tt5607616:1:1", got.MediaID)
+	}
+}
+
+// A season that starts partway through a TMDB season moves the episode number
+// with it, or the second cour renders the first cour's episode.
+func TestAKitsuEpisodeIDCarriesTheOffset(t *testing.T) {
+	p := &Pipeline{anime: targetSeasonResolver{
+		seasonSlotResolver: seasonSlotResolver{rows: map[string]map[string]animemap.SeasonMapping{
+			"kitsu:41182": {"tt5607616": mappingFor(t, 1, 25)},
+		}},
+		targets: map[string]animemap.Target{"kitsu:41182": {IMDb: "tt5607616"}},
+	}}
+
+	got := p.resolveAnimeID(context.Background(), Request{MediaType: "thumbnail", MediaID: "kitsu:41182:2"})
+	if got.MediaID != "tt5607616:1:27" {
+		t.Errorf("media id %q, want tt5607616:1:27", got.MediaID)
+	}
+}
+
+// Nothing to convert means the tail is dropped rather than a made-up season
+// being asked for, which is what the code did before and is still correct.
+func TestAnUnmappedAnimeSeasonDropsTheEpisode(t *testing.T) {
+	p := &Pipeline{anime: targetSeasonResolver{
+		seasonSlotResolver: seasonSlotResolver{rows: map[string]map[string]animemap.SeasonMapping{}},
+		targets:            map[string]animemap.Target{"kitsu:99999": {IMDb: "tt5607616"}},
+	}}
+
+	got := p.resolveAnimeID(context.Background(), Request{MediaType: "thumbnail", MediaID: "kitsu:99999:1"})
+	if got.MediaID != "tt5607616" {
+		t.Errorf("media id %q, want the bare series id", got.MediaID)
+	}
+}
+
+// A season and episode already in the id is left alone: it is not a bare
+// absolute episode and needs no conversion.
+func TestAnExplicitSeasonAndEpisodeIsUntouched(t *testing.T) {
+	p := &Pipeline{anime: targetSeasonResolver{
+		seasonSlotResolver: seasonSlotResolver{rows: map[string]map[string]animemap.SeasonMapping{}},
+		targets:            map[string]animemap.Target{"kitsu:11209": {IMDb: "tt5607616"}},
+	}}
+
+	got := p.resolveAnimeID(context.Background(), Request{MediaType: "thumbnail", MediaID: "kitsu:11209:2:3"})
+	if got.MediaID != "tt5607616:2:3" {
+		t.Errorf("media id %q, want tt5607616:2:3", got.MediaID)
+	}
+}
