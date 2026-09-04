@@ -255,11 +255,53 @@ func TestAnEmptyDirectoryLeavesRecordingOff(t *testing.T) {
 		scoreMovement.mu.Unlock()
 	})
 
-	SetScoreMovementPath("", nil)
+	SetScoreMovementPath("", true, nil)
 	scoreMovement.mu.Lock()
 	started := scoreMovement.samples != nil
 	scoreMovement.mu.Unlock()
 	if started {
 		t.Error("recording started with no directory to write into")
+	}
+}
+
+// The gate itself, rather than the state behind it. An earlier version guarded
+// the call site instead, so deleting the guard left every test passing: they
+// simulated "off" by clearing the channel and never exercised the decision.
+func TestRecordingStaysOffUntilTheInstanceAsks(t *testing.T) {
+	scoreMovement.mu.Lock()
+	prev := scoreMovement.samples
+	scoreMovement.samples = nil
+	scoreMovement.mu.Unlock()
+	t.Cleanup(func() {
+		scoreMovement.mu.Lock()
+		scoreMovement.samples = prev
+		scoreMovement.mu.Unlock()
+	})
+
+	SetScoreMovementPath(t.TempDir(), false, nil)
+	scoreMovement.mu.Lock()
+	started := scoreMovement.samples != nil
+	scoreMovement.mu.Unlock()
+	if started {
+		t.Fatal("recording started on an instance that did not ask for it")
+	}
+
+	// The control: a usable directory with the instance asking does start it, so
+	// the refusal above is the flag rather than the path being unusable.
+	//
+	// Its own directory rather than t.TempDir, because the writer goroutine has
+	// no stop and outlives the test. Go's own cleanup fails on a directory it
+	// is still writing into; os.RemoveAll does not care.
+	dir, err := os.MkdirTemp("", "score-movement-gate")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	SetScoreMovementPath(dir, true, nil)
+	scoreMovement.mu.Lock()
+	started = scoreMovement.samples != nil
+	scoreMovement.mu.Unlock()
+	if !started {
+		t.Error("control: recording did not start when asked, so the refusal proves nothing")
 	}
 }

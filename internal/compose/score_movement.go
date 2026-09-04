@@ -59,11 +59,15 @@ var scoreMovement struct {
 	log     *slog.Logger
 }
 
-// SetScoreMovementPath starts recording score movement into dir. An empty dir
-// leaves it off, so an instance with no cache directory records nothing rather
-// than writing beside the binary.
-func SetScoreMovementPath(dir string, logger *slog.Logger) {
-	if dir == "" {
+// SetScoreMovementPath starts recording score movement into dir when the
+// instance asked for it. An instance that did not, or that has no cache
+// directory, records nothing rather than carrying a file it will never read.
+//
+// The enabled check lives here rather than at the call site so that it is the
+// tested function that owns it. Guarding the call instead left a version where
+// deleting the guard passed every test, because the tests reached past it.
+func SetScoreMovementPath(dir string, enabled bool, logger *slog.Logger) {
+	if !enabled || dir == "" {
 		return
 	}
 	if logger == nil {

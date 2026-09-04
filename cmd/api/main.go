@@ -222,9 +222,7 @@ func main() {
 		// them is discarded on every refetch. This records it, on an instance
 		// that asked to: the file answers a question about the project rather
 		// than about the instance, and it goes nowhere on its own.
-		if cfg.RecordScoreMovement {
-			compose.SetScoreMovementPath(cfg.CacheDir, logger)
-		}
+		compose.SetScoreMovementPath(cfg.CacheDir, cfg.RecordScoreMovement, logger)
 		// SIMKL's search endpoint is not cached upstream and a resolved id never
 		// changes, so the mappings are kept permanently rather than re-searched
 		// on every restart.
