@@ -99,11 +99,11 @@ func TestRatingScaleAndAggregateColorChangeRender(t *testing.T) {
 	base := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom}
 
 	img1 := genreTestImage()
-	drawBadgesInPlace(img1, ratings, base, titleFacts{})
+	drawBadgesInPlace("", img1, ratings, base, titleFacts{})
 	scaled := base
 	scaled.RatingBadgeScale = 170
 	img2 := genreTestImage()
-	drawBadgesInPlace(img2, ratings, scaled, titleFacts{})
+	drawBadgesInPlace("", img2, ratings, scaled, titleFacts{})
 	if !imagesDiffer(img1, img2) {
 		t.Error("rating badge scale did not change the render")
 	}
@@ -111,11 +111,11 @@ func TestRatingScaleAndAggregateColorChangeRender(t *testing.T) {
 	// Aggregate bar: a custom accent color must change the fill.
 	aggBase := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, AggregateBar: true, AggregateBarPos: "bottom"}
 	a1 := genreTestImage()
-	drawAggregateBar(a1, ratings, aggBase, nil, false)
+	drawAggregateBar("", a1, ratings, aggBase, nil, false)
 	aggColor := aggBase
 	aggColor.AggregateAccentColor = "#3355ff"
 	a2 := genreTestImage()
-	drawAggregateBar(a2, ratings, aggColor, nil, false)
+	drawAggregateBar("", a2, ratings, aggColor, nil, false)
 	if !imagesDiffer(a1, a2) {
 		t.Error("aggregate accent color did not change the render")
 	}
@@ -129,25 +129,25 @@ func TestAggregateAccentModeGenre(t *testing.T) {
 	cfg.AggregateAccentMode = "genre"
 
 	bands := genreTestImage()
-	drawAggregateBar(bands, ratings, imageconfig.Config{
+	drawAggregateBar("", bands, ratings, imageconfig.Config{
 		Ratings: []string{"imdb"}, AggregateBar: true, AggregateBarPos: "bottom",
 	}, []string{"Horror"}, false)
 
 	horror := genreTestImage()
-	drawAggregateBar(horror, ratings, cfg, []string{"Horror"}, false)
+	drawAggregateBar("", horror, ratings, cfg, []string{"Horror"}, false)
 	if !imagesDiffer(bands, horror) {
 		t.Error("genre accent mode did not override the score band colour")
 	}
 
 	comedy := genreTestImage()
-	drawAggregateBar(comedy, ratings, cfg, []string{"Comedy"}, false)
+	drawAggregateBar("", comedy, ratings, cfg, []string{"Comedy"}, false)
 	if !imagesDiffer(horror, comedy) {
 		t.Error("different genre families produced the same bar colour")
 	}
 
 	// With no genres there is no family, so the bar falls back to the bands.
 	none := genreTestImage()
-	drawAggregateBar(none, ratings, cfg, nil, false)
+	drawAggregateBar("", none, ratings, cfg, nil, false)
 	if imagesDiffer(bands, none) {
 		t.Error("genre accent mode with no genres should fall back to the score bands")
 	}
@@ -163,9 +163,9 @@ func TestRatingsMaxCapsBadges(t *testing.T) {
 	capped := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}, RatingsLayout: imageconfig.LayoutBottom, RatingBadgeConfig: imageconfig.RatingBadgeConfig{RatingsMax: &one}}
 	full := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}, RatingsLayout: imageconfig.LayoutBottom}
 	imgCap := genreTestImage()
-	hCap := drawBadgesInPlace(imgCap, ratings, capped, titleFacts{})
+	hCap := drawBadgesInPlace("", imgCap, ratings, capped, titleFacts{})
 	imgFull := genreTestImage()
-	hFull := drawBadgesInPlace(imgFull, ratings, full, titleFacts{})
+	hFull := drawBadgesInPlace("", imgFull, ratings, full, titleFacts{})
 	if hCap == 0 || hFull == 0 {
 		t.Fatal("expected both to draw a strip")
 	}
@@ -246,13 +246,13 @@ func TestScorebarBandColorsAndThresholds(t *testing.T) {
 	base := imageconfig.Config{Ratings: []string{"imdb"}, AggregateBar: true, AggregateBarPos: "bottom"}
 
 	def := genreTestImage()
-	drawAggregateBar(def, ratings, base, nil, false)
+	drawAggregateBar("", def, ratings, base, nil, false)
 
 	// A custom mid-band color must change the fill for a mid score (6.5 in [5,8)).
 	midColor := base
 	midColor.ScorebarMidColor = "#8b5cf6"
 	m := genreTestImage()
-	drawAggregateBar(m, ratings, midColor, nil, false)
+	drawAggregateBar("", m, ratings, midColor, nil, false)
 	if !imagesDiffer(def, m) {
 		t.Error("scorebar mid color did not change the render")
 	}
@@ -261,7 +261,7 @@ func TestScorebarBandColorsAndThresholds(t *testing.T) {
 	thr := base
 	thr.ScorebarHighThreshold = 6.0
 	tImg := genreTestImage()
-	drawAggregateBar(tImg, ratings, thr, nil, false)
+	drawAggregateBar("", tImg, ratings, thr, nil, false)
 	if !imagesDiffer(def, tImg) {
 		t.Error("scorebar threshold change did not change the band")
 	}
@@ -295,12 +295,12 @@ func TestRatingBadgeOffsetChangesRender(t *testing.T) {
 	ratings := []provider.Rating{{Source: "imdb", Value: 8.5, Label: "8.5"}, {Source: "tmdb", Value: 7.9, Label: "7.9"}}
 	base := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom}
 	def := genreTestImage()
-	drawBadgesInPlace(def, ratings, base, titleFacts{})
+	drawBadgesInPlace("", def, ratings, base, titleFacts{})
 	off := base
 	off.RatingBadgeOffsetX = -40
 	off.RatingBadgeOffsetY = -50
 	img := genreTestImage()
-	drawBadgesInPlace(img, ratings, off, titleFacts{})
+	drawBadgesInPlace("", img, ratings, off, titleFacts{})
 	if !imagesDiffer(def, img) {
 		t.Error("rating badge offset did not change the render")
 	}
@@ -341,7 +341,7 @@ func TestEditorialPresentationRenders(t *testing.T) {
 	drawEditorialRating(img, ratings, []string{"Crime"}, cfg, 2.0, newOccupancy(img.Bounds()))
 	// Editorial draws (non-empty) and differs from the standard strip.
 	std := genreTestImage()
-	drawBadgesInPlace(std, ratings, imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom}, titleFacts{})
+	drawBadgesInPlace("", std, ratings, imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom}, titleFacts{})
 	if !imagesDiffer(img, std) {
 		t.Error("editorial presentation matched the standard strip")
 	}
@@ -355,11 +355,11 @@ func TestProviderAccentOverrideChangesRender(t *testing.T) {
 	ratings := []provider.Rating{{Source: "imdb", Value: 8.5, Label: "8.5"}}
 	base := imageconfig.Config{Ratings: []string{"imdb"}, RatingsLayout: imageconfig.LayoutBottom}
 	def := genreTestImage()
-	drawBadgesInPlace(def, ratings, base, titleFacts{})
+	drawBadgesInPlace("", def, ratings, base, titleFacts{})
 	ov := base
 	ov.RatingProviderOverrides = map[string]string{"imdb": "#8b5cf6"}
 	img := genreTestImage()
-	drawBadgesInPlace(img, ratings, ov, titleFacts{})
+	drawBadgesInPlace("", img, ratings, ov, titleFacts{})
 	if !imagesDiffer(def, img) {
 		t.Error("provider accent override did not change the render")
 	}

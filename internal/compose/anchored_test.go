@@ -24,7 +24,7 @@ func TestAnchoredTopRowSitsAgainstTheEdge(t *testing.T) {
 
 	topInk := func(cfg imageconfig.Config) int {
 		img := image.NewNRGBA(image.Rect(0, 0, 400, 600))
-		drawBadgesInPlace(img, ratings, cfg, titleFacts{})
+		drawBadgesInPlace("", img, ratings, cfg, titleFacts{})
 		for y := 0; y < 600; y++ {
 			for x := 0; x < 400; x++ {
 				if img.NRGBAAt(x, y).A > 0 {

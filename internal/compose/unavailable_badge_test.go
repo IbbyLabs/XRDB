@@ -29,7 +29,7 @@ func stripWith(ratings []provider.Rating) *image.NRGBA {
 	cfg := imageconfig.Default()
 	cfg.Ratings = []string{"imdb", "tmdb"}
 	img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
-	drawBadgesInPlace(img, ratings, cfg, titleFacts{})
+	drawBadgesInPlace("", img, ratings, cfg, titleFacts{})
 	return img
 }
 

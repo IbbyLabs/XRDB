@@ -19,7 +19,7 @@ func plainRatingBadge(glow bool) *image.NRGBA {
 	cfg.NoBackgroundBadgeOutlineGlow = glow
 
 	img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
-	drawBadgesInPlace(img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
+	drawBadgesInPlace("", img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
 	return img
 }
 
@@ -53,7 +53,7 @@ func TestThePlainRatingBadgeStillDrawsItsOutline(t *testing.T) {
 	cfg := imageconfig.Default()
 	cfg.BadgeStyle = imageconfig.BadgePlain
 	img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
-	drawBadgesInPlace(img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
+	drawBadgesInPlace("", img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
 
 	if identical(img, plainRatingBadge(false)) {
 		t.Error("the outline colour and width no longer change the plain rating badge")
@@ -73,7 +73,7 @@ func TestTheHardOutlineIsUnchanged(t *testing.T) {
 
 	draw := func(c imageconfig.Config) *image.NRGBA {
 		img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
-		drawBadgesInPlace(img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, c, titleFacts{})
+		drawBadgesInPlace("", img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, c, titleFacts{})
 		return img
 	}
 	if !identical(draw(cfg), draw(withGlow)) {

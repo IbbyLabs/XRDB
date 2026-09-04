@@ -1234,7 +1234,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// rating/age overlays sit beneath the wordmark instead of cropping it.
 		// The logo is still letterboxed, never cover-cropped.
 		logoH := dim.Height
-		if band := ratingsBandHeight(dim.Width, dim.Height, stripRatings, req.Config, facts); band > 0 {
+		if band := ratingsBandHeight(req.MediaType, dim.Width, dim.Height, stripRatings, req.Config, facts); band > 0 {
 			if maxBand := dim.Height / 2; band > maxBand {
 				band = maxBand
 			}
@@ -1304,14 +1304,14 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// Replace the badge strip with a single full-width score bar coloured by
 		// the aggregate score.
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			drawAggregateBar(composed, allRatings, req.Config, meta.Genres, meta.IsAnime)
+			drawAggregateBar(req.MediaType, composed, allRatings, req.Config, meta.Genres, meta.IsAnime)
 		}
 	default:
 		// Gated on the list it draws, not on allRatings. An outage that takes
 		// every configured source leaves allRatings empty, and gating on that
 		// drew nothing in the one case this exists for.
 		if len(stripRatings) > 0 && len(req.Config.Ratings) > 0 {
-			ratingsH = drawBadgesInPlace(composed, stripRatings, req.Config, facts)
+			ratingsH = drawBadgesInPlace(req.MediaType, composed, stripRatings, req.Config, facts)
 		}
 	}
 	if ratingsH > 0 {
@@ -1386,7 +1386,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawProviderBadges(composed, meta.WatchProviders, scale, occ, providerOptsFromConfig(req.Config))
 	}
 	if req.Config.AggregateBar {
-		drawAggregateBar(composed, allRatings, req.Config, meta.Genres, meta.IsAnime)
+		drawAggregateBar(req.MediaType, composed, allRatings, req.Config, meta.Genres, meta.IsAnime)
 	}
 	if req.Config.Trending && p.isTrending(ctx, req, meta) {
 		drawTrendingBadgeSurfaced(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle), req.Config.TrendingPos, req.Config.TrendingTextColor, req.Config.TrendingTagStyle, trendingOptsFromConfig(req.Config))

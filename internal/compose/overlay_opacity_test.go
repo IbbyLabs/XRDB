@@ -72,7 +72,7 @@ func TestBadgesLeaveThePosterOpaque(t *testing.T) {
 	// its own and so needs the same check.
 	for _, shape := range []string{"circle", "squircle", "rounded"} {
 		cases["ratings-icon-"+shape] = func(b *image.NRGBA) {
-			drawBadgesInPlace(b, strip, imageconfig.Config{
+			drawBadgesInPlace("", b, strip, imageconfig.Config{
 				Ratings:           []string{"imdb", "tmdb"},
 				RatingsLayout:     imageconfig.LayoutBottom,
 				BadgeStyle:        imageconfig.BadgePill,
@@ -86,7 +86,7 @@ func TestBadgesLeaveThePosterOpaque(t *testing.T) {
 	for _, style := range imageconfig.BadgeStyles {
 		for _, theme := range []imageconfig.BadgeTheme{imageconfig.ThemeDark, imageconfig.ThemeLight} {
 			cases["ratings-"+string(style)+"-"+string(theme)] = func(b *image.NRGBA) {
-				drawBadgesInPlace(b, strip, imageconfig.Config{
+				drawBadgesInPlace("", b, strip, imageconfig.Config{
 					Ratings:       []string{"imdb", "tmdb"},
 					RatingsLayout: imageconfig.LayoutBottom,
 					BadgeStyle:    style,

@@ -111,7 +111,7 @@ func TestBottomBandPlacement(t *testing.T) {
 	}
 
 	occ := newOccupancy(card.Bounds())
-	ratingsH := drawBadgesInPlace(card, ratings, cfg, titleFacts{})
+	ratingsH := drawBadgesInPlace("", card, ratings, cfg, titleFacts{})
 	if ratingsH > 0 {
 		b := card.Bounds()
 		const band = 20 * scale

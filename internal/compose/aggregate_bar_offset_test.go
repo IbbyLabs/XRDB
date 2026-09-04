@@ -31,7 +31,7 @@ func barAtOffset(offset int) *image.NRGBA {
 	cfg.AggregateBar = true
 	cfg.AggregateBarPos = "bottom"
 	cfg.AggregateBarOffset = offset
-	drawAggregateBar(c, ratings, cfg, nil, false)
+	drawAggregateBar("", c, ratings, cfg, nil, false)
 	return c
 }
 
@@ -65,7 +65,7 @@ func TestAggregateBarScaleChangesTheDrawnHeight(t *testing.T) {
 		cfg.AggregateBar = true
 		cfg.AggregateBarPos = "bottom"
 		cfg.AggregateBarScale = pct
-		drawAggregateBar(c, ratings, cfg, nil, false)
+		drawAggregateBar("", c, ratings, cfg, nil, false)
 		changed := 0
 		for y := c.Bounds().Min.Y; y < c.Bounds().Max.Y; y++ {
 			if c.NRGBAAt(c.Bounds().Min.X+1, y) != (color.NRGBA{R: 40, G: 40, B: 40, A: 255}) {
@@ -87,5 +87,45 @@ func TestAggregateBarScaleChangesTheDrawnHeight(t *testing.T) {
 	}
 	if got := rows(50); got >= base {
 		t.Errorf("50 percent drew %d rows against %d at the default", got, base)
+	}
+}
+
+// The bar sizes itself from the tier too, so a 4k backdrop TMDB only has at
+// 1920px drew a bar 3x the normal one on a picture 1.5x the size.
+func TestAggregateBarGrowsWithTheFrameNotTheTier(t *testing.T) {
+	rows := func(w, h int, size imageconfig.MediaSize) int {
+		c := image.NewNRGBA(image.Rect(0, 0, w, h))
+		for y := 0; y < h; y++ {
+			for x := 0; x < w; x++ {
+				c.SetNRGBA(x, y, color.NRGBA{R: 40, G: 40, B: 40, A: 255})
+			}
+		}
+		cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, Size: size}
+		cfg.AggregateBar = true
+		cfg.AggregateBarPos = "bottom"
+		drawAggregateBar("backdrop", c, []provider.Rating{
+			{Source: "imdb", Value: 8.5, Label: "8.5"},
+			{Source: "tmdb", Value: 7.9, Label: "7.9"},
+		}, cfg, nil, false)
+
+		n := 0
+		for y := 0; y < h; y++ {
+			for x := 0; x < w; x++ {
+				if c.NRGBAAt(x, y) != (color.NRGBA{R: 40, G: 40, B: 40, A: 255}) {
+					n++
+					break
+				}
+			}
+		}
+		return n
+	}
+
+	normal := rows(1280, 720, imageconfig.SizeSmall)
+	grown := rows(1920, 1080, imageconfig.Size4K)
+	if normal == 0 || grown == 0 {
+		t.Fatalf("no bar drawn: normal=%d grown=%d", normal, grown)
+	}
+	if ratio := float64(grown) / float64(normal); ratio < 1.4 || ratio > 1.6 {
+		t.Errorf("bar grew %.2fx (%d rows to %d) while the frame grew 1.5x", ratio, normal, grown)
 	}
 }

@@ -172,12 +172,12 @@ func TestSharesChangeTheRingRender(t *testing.T) {
 func TestSharesChangeTheAggregateBarRender(t *testing.T) {
 	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, AggregateBar: true, AggregateBarPos: "bottom"}
 	even := genreTestImage()
-	drawAggregateBar(even, weightTestRatings(), cfg, nil, false)
+	drawAggregateBar("", even, weightTestRatings(), cfg, nil, false)
 
 	weighted := cfg
 	weighted.RatingProviderWeights = map[string]float64{"imdb": 100, "tmdb": 0}
 	img := genreTestImage()
-	drawAggregateBar(img, weightTestRatings(), weighted, nil, false)
+	drawAggregateBar("", img, weightTestRatings(), weighted, nil, false)
 
 	if !imagesDiffer(even, img) {
 		t.Error("provider shares did not change the aggregate bar render")

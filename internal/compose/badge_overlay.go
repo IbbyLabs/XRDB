@@ -2704,7 +2704,7 @@ func aggregatePillAnchor(b image.Rectangle, pos string, split bool, w, h, pad, g
 // drawAggregateBar draws a full-width score bar on top or bottom of the image.
 // The bar fill is colored green/amber/red based on the normalised average score (0–10).
 // Filtered by the config.Ratings allowlist so only visible sources contribute.
-func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, genres []string, isAnime bool) {
+func drawAggregateBar(mediaType string, base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, genres []string, isAnime bool) {
 	if len(ratings) == 0 {
 		return
 	}
@@ -2733,7 +2733,7 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		avg = v
 	}
 
-	scale := outputScale(cfg.Size)
+	scale := frameScale(mediaType, base.Bounds().Dx(), cfg.Size)
 	// AggregateBarScale is a percent of the default height, 0 meaning 100. The
 	// parser clamps it to 25-400, which is the only bound: the old floor of 4
 	// could not be reached at any output scale and would now bind only on

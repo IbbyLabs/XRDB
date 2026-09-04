@@ -19,7 +19,7 @@ func tileBorderBadge(glow bool) *image.NRGBA {
 	cfg.RatingBadgeBorderGlow = glow
 
 	img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
-	drawBadgesInPlace(img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
+	drawBadgesInPlace("", img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
 	return img
 }
 
@@ -76,7 +76,7 @@ func TestTheBorderGlowDoesNothingWithoutABorder(t *testing.T) {
 		cfg.RatingBadgeBorderWidth = -1
 		cfg.RatingBadgeBorderGlow = glow
 		img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
-		drawBadgesInPlace(img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
+		drawBadgesInPlace("", img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
 		return img
 	}
 	if !identical(draw(false), draw(true)) {
@@ -94,7 +94,7 @@ func tileBorderAt(strength int) *image.NRGBA {
 	cfg.RatingBadgeBorderGlowStrength = strength
 
 	img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
-	drawBadgesInPlace(img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
+	drawBadgesInPlace("", img, []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}, cfg, titleFacts{})
 	return img
 }
 

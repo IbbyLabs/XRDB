@@ -97,22 +97,22 @@ func TestParityShowcase(t *testing.T) {
 		},
 		"rating-badges": {
 			{"default", func(c *image.NRGBA) {
-				drawBadgesInPlace(c, ratings, ratingCfg(func(*imageconfig.Config) {}), titleFacts{})
+				drawBadgesInPlace("", c, ratings, ratingCfg(func(*imageconfig.Config) {}), titleFacts{})
 			}},
 			{"scale 150%", func(c *image.NRGBA) {
-				drawBadgesInPlace(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.RatingBadgeScale = 150 }), titleFacts{})
+				drawBadgesInPlace("", c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.RatingBadgeScale = 150 }), titleFacts{})
 			}},
 			{"max 2", func(c *image.NRGBA) {
 				two := 2
-				drawBadgesInPlace(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.RatingsMax = &two }), titleFacts{})
+				drawBadgesInPlace("", c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.RatingsMax = &two }), titleFacts{})
 			}},
 			{"glass style", func(c *image.NRGBA) {
-				drawBadgesInPlace(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.BadgeStyle = imageconfig.BadgeGlass }), titleFacts{})
+				drawBadgesInPlace("", c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.BadgeStyle = imageconfig.BadgeGlass }), titleFacts{})
 			}},
 		},
 		"presentation-editorial": {
 			{"standard", func(c *image.NRGBA) {
-				drawBadgesInPlace(c, ratings, ratingCfg(func(*imageconfig.Config) {}), titleFacts{})
+				drawBadgesInPlace("", c, ratings, ratingCfg(func(*imageconfig.Config) {}), titleFacts{})
 			}},
 			{"editorial", func(c *image.NRGBA) {
 				drawEditorialRating(c, ratings, []string{"Crime", "Drama"}, ratingCfg(func(*imageconfig.Config) {}), 2.0, newOccupancy(c.Bounds()))
@@ -131,17 +131,17 @@ func TestParityShowcase(t *testing.T) {
 		},
 		"aggregate-bar": {
 			{"auto (score-banded)", func(c *image.NRGBA) {
-				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.AggregateBar = true; cf.AggregateBarPos = "bottom" }), nil, false)
+				drawAggregateBar("", c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.AggregateBar = true; cf.AggregateBarPos = "bottom" }), nil, false)
 			}},
 			{"custom #3355ff", func(c *image.NRGBA) {
-				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) {
+				drawAggregateBar("", c, ratings, ratingCfg(func(cf *imageconfig.Config) {
 					cf.AggregateBar = true
 					cf.AggregateBarPos = "bottom"
 					cf.AggregateAccentColor = "#3355ff"
 				}), nil, false)
 			}},
 			{"top, custom #ff8800", func(c *image.NRGBA) {
-				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) {
+				drawAggregateBar("", c, ratings, ratingCfg(func(cf *imageconfig.Config) {
 					cf.AggregateBar = true
 					cf.AggregateBarPos = "top"
 					cf.AggregateAccentColor = "#ff8800"

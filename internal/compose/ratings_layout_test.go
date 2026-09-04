@@ -56,11 +56,11 @@ func TestSingleSidedLayoutsDrawAgainstTheirEdge(t *testing.T) {
 	ratings := layoutTestRatings()
 
 	img := genreTestImage()
-	drawBadgesInPlace(img, ratings, layoutTestConfig(imageconfig.LayoutLeft), titleFacts{})
+	drawBadgesInPlace("", img, ratings, layoutTestConfig(imageconfig.LayoutLeft), titleFacts{})
 	left := paintedBounds(t, img)
 
 	img = genreTestImage()
-	drawBadgesInPlace(img, ratings, layoutTestConfig(imageconfig.LayoutRight), titleFacts{})
+	drawBadgesInPlace("", img, ratings, layoutTestConfig(imageconfig.LayoutRight), titleFacts{})
 	right := paintedBounds(t, img)
 
 	full := genreTestImage().Bounds()
@@ -115,7 +115,7 @@ func TestSideLayoutsDropNoBadges(t *testing.T) {
 // top-bottom puts a row against each edge, so it must paint near both.
 func TestTopBottomLayoutDrawsAgainstBothEdges(t *testing.T) {
 	img := genreTestImage()
-	drawBadgesInPlace(img, layoutTestRatings(), layoutTestConfig(imageconfig.LayoutTopBottom), titleFacts{})
+	drawBadgesInPlace("", img, layoutTestRatings(), layoutTestConfig(imageconfig.LayoutTopBottom), titleFacts{})
 	painted := paintedBounds(t, img)
 
 	full := genreTestImage().Bounds()
@@ -138,7 +138,7 @@ func TestEachRatingsLayoutRendersDistinctly(t *testing.T) {
 	rendered := make(map[imageconfig.RatingsLayout]*image.NRGBA, len(layouts))
 	for _, l := range layouts {
 		img := genreTestImage()
-		drawBadgesInPlace(img, ratings, layoutTestConfig(l), titleFacts{})
+		drawBadgesInPlace("", img, ratings, layoutTestConfig(l), titleFacts{})
 		rendered[l] = img
 	}
 	for i, a := range layouts {
@@ -155,11 +155,11 @@ func TestEachRatingsLayoutRendersDistinctly(t *testing.T) {
 func TestSideLayoutsReserveNoFullWidthBand(t *testing.T) {
 	ratings := layoutTestRatings()
 	for _, l := range []imageconfig.RatingsLayout{imageconfig.LayoutLeft, imageconfig.LayoutRight, imageconfig.LayoutSplitSide} {
-		if h := ratingsBandHeight(600, 900, ratings, layoutTestConfig(l), titleFacts{}); h != 0 {
+		if h := ratingsBandHeight("", 600, 900, ratings, layoutTestConfig(l), titleFacts{}); h != 0 {
 			t.Errorf("%s reserved a band of %d, want 0", l, h)
 		}
 	}
-	if h := ratingsBandHeight(600, 900, ratings, layoutTestConfig(imageconfig.LayoutBottom), titleFacts{}); h == 0 {
+	if h := ratingsBandHeight("", 600, 900, ratings, layoutTestConfig(imageconfig.LayoutBottom), titleFacts{}); h == 0 {
 		t.Error("bottom layout reserved no band")
 	}
 }
@@ -178,9 +178,9 @@ func TestStackedBadgeStyleIsTallerThanTheRowStyles(t *testing.T) {
 	stacked.BadgeStyle = imageconfig.BadgeStacked
 
 	imgPill := genreTestImage()
-	drawBadgesInPlace(imgPill, ratings, pill, titleFacts{})
+	drawBadgesInPlace("", imgPill, ratings, pill, titleFacts{})
 	imgStacked := genreTestImage()
-	drawBadgesInPlace(imgStacked, ratings, stacked, titleFacts{})
+	drawBadgesInPlace("", imgStacked, ratings, stacked, titleFacts{})
 
 	if !imagesDiffer(imgPill, imgStacked) {
 		t.Fatal("the stacked style renders the same as the pill")
@@ -199,7 +199,7 @@ func TestEachBadgeStyleRendersDistinctly(t *testing.T) {
 		cfg := layoutTestConfig(imageconfig.LayoutBottom)
 		cfg.BadgeStyle = st
 		img := genreTestImage()
-		drawBadgesInPlace(img, ratings, cfg, titleFacts{})
+		drawBadgesInPlace("", img, ratings, cfg, titleFacts{})
 		rendered[st] = img
 	}
 	for i, a := range styles {
@@ -241,7 +241,7 @@ func TestBadgeScaleIsClampedToTheFrame(t *testing.T) {
 	cfg.RatingBadgeScale = 400
 
 	img := genreTestImage()
-	drawBadgesInPlace(img, ratings, cfg, titleFacts{})
+	drawBadgesInPlace("", img, ratings, cfg, titleFacts{})
 	painted := paintedBounds(t, img)
 	frame := genreTestImage().Bounds()
 

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"xrdb_rewrite/internal/certified"
+	"xrdb_rewrite/internal/render"
 
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
@@ -404,15 +405,17 @@ func badgeFaceFor(scale float64) font.Face {
 	return lf
 }
 
-// baselineWidth is the source width a tier replaces at large and 4k, so a
-// delivered frame can be measured against what the lower tiers would have
-// fetched. Logos are never upgraded, so theirs is the width they always get.
+// baselineWidth is the normal-tier width for a media type, so a delivered frame
+// can be measured against the size the lower tier would have produced. Read from
+// the dimension table rather than restated: a second copy put thumbnails at 780
+// where they are 320, which halves every badge on them.
+//
+// An empty or unknown type has no baseline and returns 0, which frameScale reads
+// as "no cap".
 func baselineWidth(mediaType string) int {
 	switch mediaType {
-	case "backdrop":
-		return 1280
-	case "poster", "logo", "thumbnail":
-		return 780
+	case "poster", "backdrop", "thumbnail", "logo":
+		return render.DimensionsForSize(mediaType, "normal").Width
 	}
 	return 0
 }
@@ -1131,8 +1134,8 @@ func ratingStripDimsFor(scale float64, cfg imageconfig.Config) ratingStripDims {
 // resolveBadgeScale returns the scale the rating strip draws at: output scale
 // for the size, the configured percentage, then reduced to fit the frame.
 // Measuring and drawing share it so a reserved band matches its contents.
-func resolveBadgeScale(cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating, facts titleFacts) float64 {
-	scale := outputScale(cfg.Size)
+func resolveBadgeScale(mediaType string, cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating, facts titleFacts) float64 {
+	scale := frameScale(mediaType, frameW, cfg.Size)
 	if cfg.RatingBadgeScale != 0 {
 		scale *= float64(cfg.RatingBadgeScale) / 100
 	}
@@ -1208,8 +1211,8 @@ func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Confi
 // until what remains fits, which is how v2 fitted the same row. The last badge is
 // never dropped, and a strip that cannot fit even at a readable size falls back
 // to shrinking, since something legible-but-clipped is worse than something small.
-func fitBadgesToFrame(cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating, facts titleFacts) ([]provider.Rating, float64) {
-	scale := resolveBadgeScale(cfg, frameW, frameH, ratings, facts)
+func fitBadgesToFrame(mediaType string, cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating, facts titleFacts) ([]provider.Rating, float64) {
+	scale := resolveBadgeScale(mediaType, cfg, frameW, frameH, ratings, facts)
 	if scale >= legibleBadgeScale || len(ratings) < 2 {
 		return ratings, scale
 	}
@@ -1227,7 +1230,7 @@ func fitBadgesToFrame(cfg imageconfig.Config, frameW, frameH int, ratings []prov
 // ratingsBandHeight returns the vertical space (strip plus edge margins) the
 // rating strip occupies for a frameW x frameH frame, so the logo can be
 // letterboxed above a clear band.
-func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) int {
+func ratingsBandHeight(mediaType string, frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) int {
 	// Side-anchored layouts sit in a column against one edge, so they clear no
 	// full-width band for the logo to be letterboxed above.
 	if cfg.RatingsLayout == imageconfig.LayoutNone || isSideRatingsLayout(cfg.RatingsLayout) {
@@ -1245,7 +1248,7 @@ func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imagec
 	if faceValue == nil {
 		return 0
 	}
-	filtered, scale := fitBadgesToFrame(cfg, frameW, frameH, filtered, facts)
+	filtered, scale := fitBadgesToFrame(mediaType, cfg, frameW, frameH, filtered, facts)
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
 	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
@@ -1302,7 +1305,7 @@ func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imagec
 
 // drawBadgesInPlace composites rating badges onto out according to the render config.
 // Returns the pixel height consumed (zero when layout is none).
-func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) int {
+func drawBadgesInPlace(mediaType string, out *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) int {
 	if cfg.RatingsLayout == imageconfig.LayoutNone {
 		return 0
 	}
@@ -1325,7 +1328,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		filtered = filtered[:*cfg.RatingsMax]
 	}
 
-	filtered, scale := fitBadgesToFrame(cfg, out.Bounds().Dx(), out.Bounds().Dy(), filtered, facts)
+	filtered, scale := fitBadgesToFrame(mediaType, cfg, out.Bounds().Dx(), out.Bounds().Dy(), filtered, facts)
 
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
