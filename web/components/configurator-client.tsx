@@ -4,7 +4,7 @@ import {
   useState, useCallback, useRef, useId, useEffect, useMemo,
 } from 'react';
 import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2, Check, X, Save } from 'lucide-react';
-import { renderUrl, type MediaType, type Template } from '@/lib/api';
+import { renderUrl, type MediaType, type Template, type ProfilePreview } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
 import { copyText } from '@/lib/clipboard';
 import { syncShares } from '@/lib/shares';
@@ -387,6 +387,27 @@ export function ConfiguratorClient() {
     flash('info', `Template "${t.name}" applied to ${mediaType}`);
   };
 
+  // A profile carries the title it was last worked on. Only fields it actually
+
+  // names are applied, so an older profile with a partial preview keeps the
+
+  // current values for the rest rather than blanking them.
+
+  const handleLoadPreview = (preview: ProfilePreview) => {
+
+    if (preview.mediaType && MEDIA_TYPES.some(t => t.id === preview.mediaType)) {
+
+      setMediaType(preview.mediaType as MediaType);
+
+    }
+
+    if (preview.id) setMediaId(preview.id);
+
+    if (preview.title) setMediaTitle(preview.title);
+
+  };
+
+
   const handleLoadConfigs = (loaded: SurfaceConfigs) => {
     lastEditRef.current = null;
     pushHistory(configs);
@@ -704,9 +725,11 @@ export function ConfiguratorClient() {
                 configs={configs}
                 mediaType={mediaType}
                 mediaId={mediaId}
+                mediaTitle={mediaTitle}
                 loaded={loadedProfile}
                 setLoaded={setLoadedProfile}
                 onLoadConfigs={handleLoadConfigs}
+                onLoadPreview={handleLoadPreview}
                 flash={flash}
               />
             </div>

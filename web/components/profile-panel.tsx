@@ -4,7 +4,7 @@ import { useState, useEffect, useId, useRef } from 'react';
 import { Save, Download, Upload, FolderOpen, Trash2, LogOut, RefreshCw, History, Wand2, Lock } from 'lucide-react';
 import {
   createProfile, getProfile, updateProfile, deleteProfile, exportProfile, importProfiles,
-  renderOrigin, type MediaType,
+  renderOrigin, type MediaType, type ProfilePreview,
 } from '@/lib/api';
 import { toStoredConfig, fromStoredConfig, type SurfaceConfigs } from './configurator-types';
 import { migrateLegacyConfig, type MigrateResult } from '@/lib/api';
@@ -64,6 +64,10 @@ interface ProfilePanelProps {
   configs: SurfaceConfigs;
   mediaType: MediaType;
   mediaId: string;
+  mediaTitle: string;
+  /** Applies a loaded profile's own preview title, so a profile reopens on the
+   *  title it was being worked on rather than the built-in default. */
+  onLoadPreview: (preview: ProfilePreview) => void;
   loaded: LoadedProfile | null;
   setLoaded: (p: LoadedProfile | null) => void;
   onLoadConfigs: (configs: SurfaceConfigs) => void;
@@ -82,7 +86,7 @@ const PROVIDER_KEY_FIELDS = [
 ] as const;
 
 export function ProfilePanel({
-  configs, mediaType, mediaId, loaded, setLoaded, onLoadConfigs, flash,
+  configs, mediaType, mediaId, mediaTitle, loaded, setLoaded, onLoadConfigs, onLoadPreview, flash,
 }: ProfilePanelProps) {
   const uid = useId();
   const [alias, setAlias] = useState('');
@@ -162,6 +166,7 @@ export function ProfilePanel({
         type: mediaType,
         config: toStoredConfig(configs),
         password: password || undefined,
+        preview: { mediaType, id: mediaId, title: mediaTitle },
       });
       setLoaded({
         id: created.id,
@@ -198,6 +203,7 @@ export function ProfilePanel({
       const p = await getProfile(key, loadPassword || undefined);
       const loadedCfgs = fromStoredConfig(p.config);
       onLoadConfigs(loadedCfgs);
+      if (p.preview) onLoadPreview(p.preview);
       setSavedSnapshot(JSON.stringify(loadedCfgs));
       setCheckpoint(JSON.stringify(loadedCfgs));
       setLoaded({
@@ -257,6 +263,7 @@ export function ProfilePanel({
           name: loaded.name,
           type: mediaType,
           config: toStoredConfig(configs),
+          preview: { mediaType, id: mediaId, title: mediaTitle },
           // Only send keys the user actually typed, so an untouched field
           // leaves whatever is stored alone.
           ...(Object.keys(providerKeys).length > 0 ? { providerKeys } : {}),

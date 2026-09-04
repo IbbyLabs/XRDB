@@ -20,6 +20,16 @@ import (
 const schemaVersion = 1
 
 // Profile is the canonical profile record.
+// Preview names the title the configurator opens on for a profile. It sits
+// beside the config rather than in it: the config is hashed into the render
+// cache key and travels in every artwork URL, where a title someone happens to
+// be editing against means nothing.
+type Preview struct {
+	MediaType string `json:"mediaType,omitempty"`
+	ID        string `json:"id,omitempty"`
+	Title     string `json:"title,omitempty"`
+}
+
 type Profile struct {
 	ID           string          `json:"id"`
 	Name         string          `json:"name,omitempty"`
@@ -38,6 +48,9 @@ type Profile struct {
 	// KeysSet names which are configured so the UI can show that without them.
 	ProviderKeys map[string]string `json:"-"`
 	KeysSet      []string          `json:"keysSet,omitempty"`
+	// Preview is the title the configurator opens this profile on. Nil when the
+	// owner has not picked one, which leaves the built-in default.
+	Preview *Preview `json:"preview,omitempty"`
 	// VersionToken changes whenever the profile is edited. Artwork URLs carry
 	// it so an edit produces a different URL: Stremio caches poster images for
 	// 24-48h client-side no matter what TTL the server sends, so changing the
@@ -123,6 +136,8 @@ func applySchema(db *sql.DB) error {
 	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN alias TEXT NOT NULL DEFAULT ''`)
 	// The owner's own provider API keys, as a JSON object.
 	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN provider_keys TEXT NOT NULL DEFAULT '{}'`)
+	// The title the configurator opens this profile on, as a JSON object.
+	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN preview TEXT NOT NULL DEFAULT ''`)
 	_, _ = db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_alias ON profiles(alias) WHERE alias != ''`)
 	// Index the uuid so migrated v2 config-string URLs (?config=<uuid>) resolve
 	// without a table scan, and make it unique so import stays idempotent even
@@ -177,10 +192,14 @@ func (s *Store) Save(p *Profile) error {
 	if err != nil {
 		return err
 	}
+	preview, err := encodePreview(p.Preview)
+	if err != nil {
+		return err
+	}
 	_, err = s.db.Exec(
-		`INSERT INTO profiles (id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.ID, p.Name, p.Alias, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt, p.PasswordHash, sealedKeys,
+		`INSERT INTO profiles (id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys, preview)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.ID, p.Name, p.Alias, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt, p.PasswordHash, sealedKeys, preview,
 	)
 	if err != nil {
 		if isAliasConflict(err) {
@@ -199,7 +218,7 @@ func (s *Store) Save(p *Profile) error {
 // Get retrieves a profile by ID. Returns ErrNotFound if it does not exist.
 func (s *Store) Get(id string) (*Profile, error) {
 	row := s.db.QueryRow(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys, preview
 		 FROM profiles WHERE id = ?`, id,
 	)
 	return s.scanProfile(row)
@@ -219,7 +238,7 @@ func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 	}
 	key := strings.ToLower(strings.TrimSpace(idOrAlias))
 	row := s.db.QueryRow(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys, preview
 		 FROM profiles WHERE alias = ? AND alias != ''`, key,
 	)
 	p, err = s.scanProfile(row)
@@ -233,7 +252,7 @@ func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 	// v2 uuids are case-sensitive config strings. Pick the oldest on the vanishing
 	// chance two profiles share a uuid, so resolution is deterministic.
 	row = s.db.QueryRow(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys, preview
 		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at, id LIMIT 1`, strings.TrimSpace(idOrAlias),
 	)
 	return s.scanProfile(row)
@@ -249,7 +268,7 @@ func (s *Store) GetByUUID(uuid string) (*Profile, error) {
 		return nil, ErrNotFound
 	}
 	row := s.db.QueryRow(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys, preview
 		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at, id LIMIT 1`, uuid,
 	)
 	return s.scanProfile(row)
@@ -329,10 +348,14 @@ func (s *Store) Update(p *Profile) error {
 	if err != nil {
 		return err
 	}
+	preview, err := encodePreview(p.Preview)
+	if err != nil {
+		return err
+	}
 	res, err := s.db.Exec(
-		`UPDATE profiles SET name = ?, alias = ?, uuid = ?, config = ?, updated_at = ?, password_hash = ?, provider_keys = ?
+		`UPDATE profiles SET name = ?, alias = ?, uuid = ?, config = ?, updated_at = ?, password_hash = ?, provider_keys = ?, preview = ?
 		 WHERE id = ?`,
-		p.Name, p.Alias, p.UUID, string(cfg), now, p.PasswordHash, sealedKeys, p.ID,
+		p.Name, p.Alias, p.UUID, string(cfg), now, p.PasswordHash, sealedKeys, preview, p.ID,
 	)
 	if err != nil {
 		if isAliasConflict(err) {
@@ -372,7 +395,7 @@ type ExportEnvelope struct {
 // List returns all profiles ordered by created_at ascending.
 func (s *Store) List() ([]*Profile, error) {
 	rows, err := s.db.Query(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys, preview
 		 FROM profiles ORDER BY created_at ASC`,
 	)
 	if err != nil {
@@ -382,14 +405,15 @@ func (s *Store) List() ([]*Profile, error) {
 	var out []*Profile
 	for rows.Next() {
 		var p Profile
-		var cfgStr, keysStr string
-		if err := rows.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash, &keysStr); err != nil {
+		var cfgStr, keysStr, previewStr string
+		if err := rows.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash, &keysStr, &previewStr); err != nil {
 			return nil, fmt.Errorf("scan profile: %w", err)
 		}
 		p.Config = json.RawMessage(cfgStr)
 		p.HasPassword = p.PasswordHash != ""
 		p.ProviderKeys = s.decodeProviderKeys(keysStr)
 		p.KeysSet = configuredKeyNames(p.ProviderKeys)
+		p.Preview = decodePreview(previewStr)
 		p.VersionToken = versionToken(p.ID, p.UpdatedAt)
 		out = append(out, &p)
 	}
@@ -398,8 +422,8 @@ func (s *Store) List() ([]*Profile, error) {
 
 func (s *Store) scanProfile(row *sql.Row) (*Profile, error) {
 	var p Profile
-	var cfgStr, keysStr string
-	err := row.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash, &keysStr)
+	var cfgStr, keysStr, previewStr string
+	err := row.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash, &keysStr, &previewStr)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -410,8 +434,40 @@ func (s *Store) scanProfile(row *sql.Row) (*Profile, error) {
 	p.HasPassword = p.PasswordHash != ""
 	p.ProviderKeys = s.decodeProviderKeys(keysStr)
 	p.KeysSet = configuredKeyNames(p.ProviderKeys)
+	p.Preview = decodePreview(previewStr)
 	p.VersionToken = versionToken(p.ID, p.UpdatedAt)
 	return &p, nil
+}
+
+// encodePreview serializes the configurator's preview title. A nil preview, or
+// one naming no title, stores the empty string so "never chosen" and "chosen
+// then cleared" read the same on the way back.
+func encodePreview(pv *Preview) (string, error) {
+	if pv == nil || (pv.ID == "" && pv.Title == "" && pv.MediaType == "") {
+		return "", nil
+	}
+	b, err := json.Marshal(pv)
+	if err != nil {
+		return "", fmt.Errorf("encode preview: %w", err)
+	}
+	return string(b), nil
+}
+
+// decodePreview reads a stored preview. Unparseable content returns nil rather
+// than an error: a profile whose preview cannot be read still loads, and the
+// configurator falls back to its built-in title.
+func decodePreview(raw string) *Preview {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var pv Preview
+	if err := json.Unmarshal([]byte(raw), &pv); err != nil {
+		return nil
+	}
+	if pv.ID == "" && pv.Title == "" && pv.MediaType == "" {
+		return nil
+	}
+	return &pv
 }
 
 // encodeProviderKeys serializes the owner's keys for storage, dropping blanks

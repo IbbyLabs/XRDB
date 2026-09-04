@@ -23,6 +23,15 @@ export async function adminAccessStatus(adminKey?: string): Promise<'open' | 'lo
 
 export type MediaType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
+/** The title the configurator opens a profile on. Stored beside the config
+ *  rather than in it: the config is hashed into the render cache key and
+ *  travels in every artwork URL, where an editing title means nothing. */
+export interface ProfilePreview {
+  mediaType?: string;
+  id?: string;
+  title?: string;
+}
+
 export interface Profile {
   id: string;
   name: string;
@@ -40,6 +49,8 @@ export interface Profile {
   /** Changes on every edit; artwork URLs carry it so downstream image caches
    *  see a new URL rather than serving the old render. */
   versionToken?: string;
+  /** Absent when the owner has not picked one, leaving the built-in default. */
+  preview?: ProfilePreview;
 }
 
 function profilePasswordHeaders(password?: string): Record<string, string> {
@@ -138,6 +149,7 @@ export interface CreateProfileInput {
   type: string;
   config: Record<string, unknown>;
   password?: string; // hashed server-side, never stored in plaintext
+  preview?: ProfilePreview;
 }
 
 export async function createProfile(data: CreateProfileInput): Promise<Profile> {

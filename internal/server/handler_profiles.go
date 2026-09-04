@@ -187,6 +187,10 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				// ProviderKeys is write-only: omitted keeps what is stored, a
 				// named entry replaces it, and an empty value clears that one.
 				ProviderKeys map[string]string `json:"providerKeys"`
+				// Omitted keeps the stored preview; an object with no fields
+				// clears it. Without this an update that does not mention the
+				// preview would drop it, and every autosave is such an update.
+				Preview *profile.Preview `json:"preview"`
 			}
 			if err := json.Unmarshal(body, &extra); err != nil {
 				http.Error(w, "invalid JSON", http.StatusBadRequest)
@@ -207,6 +211,9 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			}
 			if extra.Alias == nil {
 				p.Alias = existing.Alias
+			}
+			if extra.Preview == nil {
+				p.Preview = existing.Preview
 			}
 			// Credentials are only ever stored behind a password. An
 			// unprotected profile is readable by anyone holding its id, so
