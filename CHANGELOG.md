@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.107.1](https://github.com/IbbyLabs/XRDB/compare/v3.107.0...v3.107.1) (2026-09-04)
+
+
+### Fixed
+
+* **compose:** BUG-286 place a seasonless sole anime entry in season one ([fede03b](https://github.com/IbbyLabs/XRDB/commit/fede03b99e72b5c6f197a9fd6171a437574cab49))
+* **compose:** BUG-286 place an episode from a stated TMDB season ([7638dd3](https://github.com/IbbyLabs/XRDB/commit/7638dd3f00ea58e0e3cdb9494ef67f2256500d7b))
+
 ## [3.107.0](https://github.com/IbbyLabs/XRDB/compare/v3.106.2...v3.107.0) (2026-09-04)
 
 
