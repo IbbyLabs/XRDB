@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.106.2](https://github.com/IbbyLabs/XRDB/compare/v3.106.1...v3.106.2) (2026-09-04)
+
+
+### Fixed
+
+* **imageconfig:** re-render for the BUG-285 badge scale ([960a774](https://github.com/IbbyLabs/XRDB/commit/960a774df1937d5f17e0c36c551e37d1dd69e136))
+
 ## [3.106.1](https://github.com/IbbyLabs/XRDB/compare/v3.106.0...v3.106.1) (2026-09-04)
 
 
