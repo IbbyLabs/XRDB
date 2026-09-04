@@ -2,6 +2,17 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.106.1](https://github.com/IbbyLabs/XRDB/compare/v3.106.0...v3.106.1) (2026-09-04)
+
+
+### Fixed
+
+* **compose:** BUG-285 scale the rating strip and bar from the frame too ([2dccc34](https://github.com/IbbyLabs/XRDB/commit/2dccc340e0ac41613914476377fbe3b2255c4883))
+* **mal:** classify a per-title gateway error by its body, not our clock ([1b80c28](https://github.com/IbbyLabs/XRDB/commit/1b80c28f51867eae741a024f55526a01aff73d72))
+* **mal:** complete a Jikan base URL that names the API root ([f005c41](https://github.com/IbbyLabs/XRDB/commit/f005c41ba8f9c699ab1ee7fa650f8f54afe4436e))
+* **server:** say when the status panel is off and why ([4f69cad](https://github.com/IbbyLabs/XRDB/commit/4f69cad18d4dc03126e75ff2b819815ff00fee29))
+* **server:** say which condition switched an optional subsystem off ([23c9949](https://github.com/IbbyLabs/XRDB/commit/23c9949ace71eae2a00391efe9f04cb124531f6f))
+
 ## [3.106.0](https://github.com/IbbyLabs/XRDB/compare/v3.105.0...v3.106.0) (2026-09-04)
 
 
