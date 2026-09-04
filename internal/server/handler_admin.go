@@ -107,6 +107,22 @@ func memoryLimitMBFromEnv() int64 {
 	return n
 }
 
+// degradedSources counts the sources a live render cannot currently reach.
+//
+// Counted from the hold rather than from Healthy. Healthy means the last event
+// was not a failure, so a source that failed once and has answered since still
+// reads unhealthy, and one that has never produced a rating reads healthy
+// because it has never failed. A hold is what actually stops a render.
+func degradedSources(snapshot []provider.SourceHealth) int {
+	n := 0
+	for _, s := range snapshot {
+		if s.CoolingOff {
+			n++
+		}
+	}
+	return n
+}
+
 // registerAdminRoutes mounts all /api/admin/* handlers onto mux.
 func registerAdminRoutes(
 	mux *http.ServeMux,
@@ -196,12 +212,7 @@ func registerAdminRoutes(
 			health = pipeline.Health()
 		}
 		snapshot := health.Snapshot()
-		degraded := 0
-		for _, s := range snapshot {
-			if !s.Healthy {
-				degraded++
-			}
-		}
+		degraded := degradedSources(snapshot)
 		writeJSON(w, http.StatusOK, sourcesResponse{
 			Sources:           snapshot,
 			RememberedResults: health.RememberedResults(),
