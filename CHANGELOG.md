@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.107.0](https://github.com/IbbyLabs/XRDB/compare/v3.106.2...v3.107.0) (2026-09-04)
+
+
+### Added
+
+* **compose:** say why an anime season slot was left alone ([adb08b9](https://github.com/IbbyLabs/XRDB/commit/adb08b90e069ab79bf02d3a46d57e5380f8f224f))
+
+
+### Fixed
+
+* **compose:** BUG-287 fall back to the series artwork for an episode id ([5efa8ce](https://github.com/IbbyLabs/XRDB/commit/5efa8ce874fc62aa200f54449e49a45c54df73e6))
+
 ## [3.106.2](https://github.com/IbbyLabs/XRDB/compare/v3.106.1...v3.106.2) (2026-09-04)
 
 
