@@ -1518,7 +1518,7 @@ func parseEpisodeID(id string) (series string, season, episode int, ok bool) {
 // A candidate is accepted only when the id maps to this same series, so a number
 // that happens to be another title's id is refused rather than rendering the
 // wrong programme. Services disagreeing about the same number refuse too.
-func (p *Pipeline) recoverAnimeSeasonSlot(series string, season, episode int) (int, int, bool) {
+func (p *Pipeline) recoverAnimeSeasonSlot(ctx context.Context, series string, season, episode int) (int, int, bool) {
 	resolver, ok := p.anime.(animeSeasonResolver)
 	if !ok || resolver == nil || series == "" || season <= 0 {
 		return season, episode, false
@@ -1532,20 +1532,48 @@ func (p *Pipeline) recoverAnimeSeasonSlot(series string, season, episode int) (i
 	}
 	var found animemap.SeasonMapping
 	any := false
+	refusals := make([]string, 0, 4)
+	named := false
 	for _, service := range []string{"kitsu", "mal", "anilist", "anidb"} {
 		m, refusal := resolver.SeasonForAnimeID(service+":"+strconv.Itoa(season), series)
 		if refusal != animemap.SeasonResolved || !m.Resolved() {
+			refusals = append(refusals, service+"="+string(refusal))
+			if refusal != animemap.SeasonNoRows {
+				named = true
+			}
 			continue
 		}
 		if any && (m.TMDBSeason != found.TMDBSeason || m.EpisodeDelta != found.EpisodeDelta) {
+			p.logSeasonSlotDeclined(ctx, series, season, []string{"services_disagree"}, true)
 			return season, episode, false
 		}
 		found, any = m, true
 	}
 	if !any {
+		p.logSeasonSlotDeclined(ctx, series, season, refusals, named)
 		return season, episode, false
 	}
 	return found.TMDBSeason, episode + found.EpisodeDelta, true
+}
+
+// logSeasonSlotDeclined records a recovery that did not happen, which is
+// otherwise invisible: the render simply 404s with no artwork.
+//
+// named is true when at least one service held the id and the season could still
+// not be used. That is the population a fix would reach, so it goes to info.
+// Everything else is at debug, because an ordinary episode of a series the anime
+// dataset has never heard of reaches here too and there are far more of those.
+// Reading a rate off the info lines alone therefore undercounts: no_rows covers
+// both a number that was never an anime id and one whose series carries no
+// season rows at all.
+func (p *Pipeline) logSeasonSlotDeclined(ctx context.Context, series string, season int, refusals []string, named bool) {
+	log, msg := p.log().DebugContext, "Left an unrecognised season number alone"
+	if named {
+		log, msg = p.log().InfoContext, "An anime id in the season position could not be converted"
+	}
+	log(ctx, msg,
+		"id", logging.RequestID(ctx), "series", series,
+		"season_slot", season, "refusals", strings.Join(refusals, ","))
 }
 
 // looksLikeTitleID reports whether s can stand alone as a title id: a tt-id, or
@@ -1716,7 +1744,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 		series, season, episode, ok = p.identifyEpisode(ctx, req.MediaID)
 	}
 	if ok {
-		if s2, e2, recovered := p.recoverAnimeSeasonSlot(series, season, episode); recovered {
+		if s2, e2, recovered := p.recoverAnimeSeasonSlot(ctx, series, season, episode); recovered {
 			p.log().InfoContext(ctx, "An anime catalogue id was sitting in the season position; converted it",
 				"id", logging.RequestID(ctx), "media_id", req.MediaID,
 				"season", s2, "episode", e2)

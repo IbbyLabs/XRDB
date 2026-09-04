@@ -1,7 +1,10 @@
 package compose
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
+	"strings"
 	"testing"
 
 	"xrdb_rewrite/internal/provider/animemap"
@@ -58,7 +61,7 @@ func TestAnAnimeIDInTheSeasonSlotIsConverted(t *testing.T) {
 		"kitsu:11209": {"tt5607616": mappingFor(t, 1, 0)},
 	}}}
 
-	season, episode, ok := p.recoverAnimeSeasonSlot("tt5607616", 11209, 1)
+	season, episode, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 11209, 1)
 	if !ok || season != 1 || episode != 1 {
 		t.Errorf("got season %d episode %d recovered=%v, want 1/1 recovered", season, episode, ok)
 	}
@@ -71,7 +74,7 @@ func TestTheEpisodeOffsetIsApplied(t *testing.T) {
 		"kitsu:41182": {"tt5607616": mappingFor(t, 1, 25)},
 	}}}
 
-	season, episode, ok := p.recoverAnimeSeasonSlot("tt5607616", 41182, 2)
+	season, episode, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 41182, 2)
 	if !ok || season != 1 || episode != 27 {
 		t.Errorf("got season %d episode %d recovered=%v, want 1/27 recovered", season, episode, ok)
 	}
@@ -84,7 +87,7 @@ func TestAnIDBelongingToAnotherSeriesIsRefused(t *testing.T) {
 		"kitsu:11209": {"tt0000001": mappingFor(t, 4, 0)},
 	}}}
 
-	season, episode, ok := p.recoverAnimeSeasonSlot("tt5607616", 11209, 1)
+	season, episode, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 11209, 1)
 	if ok || season != 11209 || episode != 1 {
 		t.Errorf("an id mapping to another series was accepted: season %d episode %d ok=%v", season, episode, ok)
 	}
@@ -99,7 +102,7 @@ func TestASeasonTheDatasetNamesIsNeverConverted(t *testing.T) {
 		known: map[string][]int{"tt5607616": {1, 2}},
 	}}
 
-	got, _, ok := p.recoverAnimeSeasonSlot("tt5607616", 2, 1)
+	got, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 2, 1)
 	if ok || got != 2 {
 		t.Errorf("season 2 is a real season of this series and was rewritten to %d", got)
 	}
@@ -113,7 +116,7 @@ func TestALargeSeasonTheDatasetNamesIsKept(t *testing.T) {
 		known: map[string][]int{"tt5607616": {600}},
 	}}
 
-	got, _, ok := p.recoverAnimeSeasonSlot("tt5607616", 600, 1)
+	got, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 600, 1)
 	if ok || got != 600 {
 		t.Errorf("a season the dataset names was rewritten to %d", got)
 	}
@@ -127,7 +130,7 @@ func TestServicesDisagreeingAboutTheSameNumberRefuse(t *testing.T) {
 		"mal:11209":   {"tt5607616": mappingFor(t, 3, 0)},
 	}}}
 
-	season, _, ok := p.recoverAnimeSeasonSlot("tt5607616", 11209, 1)
+	season, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 11209, 1)
 	if ok || season != 11209 {
 		t.Errorf("an ambiguous number was converted to season %d", season)
 	}
@@ -136,7 +139,7 @@ func TestServicesDisagreeingAboutTheSameNumberRefuse(t *testing.T) {
 // A pipeline with no season resolver leaves the id alone rather than failing.
 func TestNoResolverLeavesTheIDAlone(t *testing.T) {
 	p := &Pipeline{}
-	season, episode, ok := p.recoverAnimeSeasonSlot("tt5607616", 11209, 1)
+	season, episode, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 11209, 1)
 	if ok || season != 11209 || episode != 1 {
 		t.Errorf("got %d/%d ok=%v, want the id untouched", season, episode, ok)
 	}
@@ -212,5 +215,46 @@ func TestAnExplicitSeasonAndEpisodeIsUntouched(t *testing.T) {
 	got := p.resolveAnimeID(context.Background(), Request{MediaType: "thumbnail", MediaID: "kitsu:11209:2:3"})
 	if got.MediaID != "tt5607616:2:3" {
 		t.Errorf("media id %q, want tt5607616:2:3", got.MediaID)
+	}
+}
+
+// A declined recovery ends as a 404 with no artwork, so without a line saying
+// why, the difference between a number that was never an anime id and one we
+// held and could not use is invisible from outside.
+func TestADeclinedRecoverySaysWhyWhenTheIDWasFound(t *testing.T) {
+	var buf bytes.Buffer
+	p := &Pipeline{
+		logger: slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})),
+		anime: seasonSlotResolver{rows: map[string]map[string]animemap.SeasonMapping{
+			"kitsu:11209": {"tt9999999": mappingFor(t, 1, 0)},
+		}},
+	}
+
+	if _, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 11209, 1); ok {
+		t.Fatal("recovered against the wrong series, which the refusal exists to prevent")
+	}
+	out := buf.String()
+	if !strings.Contains(out, "could not be converted") {
+		t.Errorf("no info line for a found-but-unusable id, got %q", out)
+	}
+	if !strings.Contains(out, string(animemap.SeasonWrongSeries)) {
+		t.Errorf("line does not name the refusal, got %q", out)
+	}
+}
+
+// The same path is reached by every episode of every series the anime dataset
+// has never heard of, so that case must stay off the info log.
+func TestANumberThatIsNotAnAnimeIDIsSilentAtInfo(t *testing.T) {
+	var buf bytes.Buffer
+	p := &Pipeline{
+		logger: slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})),
+		anime:  seasonSlotResolver{rows: map[string]map[string]animemap.SeasonMapping{}},
+	}
+
+	if _, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 3, 18); ok {
+		t.Fatal("recovered a season nothing maps, so the silence below proves nothing")
+	}
+	if out := buf.String(); out != "" {
+		t.Errorf("an ordinary season number logged at info: %q", out)
 	}
 }
