@@ -36,13 +36,34 @@ func NewMAL() *MAL {
 // NewMALWithURL creates a MAL provider with a custom Jikan base URL.
 // Pass an empty string to use the default public endpoint.
 func NewMALWithURL(baseURL string) *MAL {
-	if baseURL == "" {
-		baseURL = jikanBaseURL
-	}
+	baseURL = normalizeJikanURL(baseURL)
 	return &MAL{
 		httpClient: newHTTPClient("mal", 10*time.Second),
 		baseURL:    baseURL,
 	}
+}
+
+// normalizeJikanURL turns what someone reasonably puts in XRDB_JIKAN_URL into
+// the base an id is appended to. The variable names the Jikan instance, so a
+// reader supplies the API root; the code needs the anime collection with a
+// trailing slash, and concatenating an id onto anything else builds a path that
+// looks nothing like a rating source failing.
+//
+// Completes a version root to the collection and guarantees the trailing slash.
+// Anything else is left as given but for that slash: inventing path segments
+// would rewrite a base that is already complete, including a proxy on its own
+// path, and a wrong guess fails the same silent way the missing slash did.
+// Empty gives the public instance.
+func normalizeJikanURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return jikanBaseURL
+	}
+	trimmed := strings.TrimRight(raw, "/")
+	if strings.HasSuffix(trimmed, "/v4") {
+		return trimmed + "/anime/"
+	}
+	return trimmed + "/"
 }
 
 // instantRefusal bounds how quickly a gateway error must arrive to be read as a
