@@ -2,6 +2,38 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.106.0](https://github.com/IbbyLabs/XRDB/compare/v3.105.0...v3.106.0) (2026-09-04)
+
+
+### Added
+
+* **animemap:** map an aired anime season onto its TMDB season ([ec77e49](https://github.com/IbbyLabs/XRDB/commit/ec77e49d1c9aa621506336c725cbf05e718b3154))
+* **animemap:** resolve an anime id sitting in a season position ([9905d64](https://github.com/IbbyLabs/XRDB/commit/9905d6473c4ea8a3fff25748bbecabc0e1288a9d))
+* **compose:** report which rating badges any source can still serve ([270b813](https://github.com/IbbyLabs/XRDB/commit/270b81398d36c0ce9e14949def6b31754786f5cb))
+* **compose:** serve a held-out source from the ratings cache ([d0aecb2](https://github.com/IbbyLabs/XRDB/commit/d0aecb2307a6b15e91f777e7e8b54f33324483cb))
+* **mdblist:** answer from the second host when the first is unreachable ([3465fc5](https://github.com/IbbyLabs/XRDB/commit/3465fc5d4b40d66d26eca10c3e32cf445bb8e719))
+* **profile:** FR-208 remember the title a profile was previewing ([8087324](https://github.com/IbbyLabs/XRDB/commit/8087324714412068d3e317033acd2bef30be1ce0))
+* **server:** keep a public panel naming what a render cannot reach ([4d853dd](https://github.com/IbbyLabs/XRDB/commit/4d853dd0482cb40054afefceb25c8aa294087c07))
+
+
+### Fixed
+
+* **animemap:** require the series key a recovery is checked against ([a77a845](https://github.com/IbbyLabs/XRDB/commit/a77a84592d087023289f84db17ade6ef578c4378))
+* **compose:** BUG-284 convert an anime id sitting in the season slot ([0cf7e1c](https://github.com/IbbyLabs/XRDB/commit/0cf7e1c014489242ffe725dab923527a345d2fef))
+* **compose:** BUG-284 keep the episode on a kitsu episode id ([81271da](https://github.com/IbbyLabs/XRDB/commit/81271da45d516bfc34e08100251281c7eab248dd))
+* **compose:** BUG-285 scale badges from the frame that arrived ([41bacf9](https://github.com/IbbyLabs/XRDB/commit/41bacf9acc6ef4a11aa33380dc06556ac5834994))
+* **compose:** FR-209 stop marking a source that was held out ([41f8083](https://github.com/IbbyLabs/XRDB/commit/41f8083e8875e2a7107406f4443b0f2c677e334f))
+* **provider:** read a source as failing between its holds, not only inside them ([174427a](https://github.com/IbbyLabs/XRDB/commit/174427a41175f073874bc73dd6f12b5a2b78173e))
+* **provider:** time a queue wait from before the pacer, not after it ([0047733](https://github.com/IbbyLabs/XRDB/commit/0047733fc8d005031b08c3501dcefdc974fb2cd8))
+* **server:** count a degraded source by its hold, not its health flag ([9bdd29c](https://github.com/IbbyLabs/XRDB/commit/9bdd29cfdca35b2ffe8269f2bc77724844f80b27))
+* **web:** capitalise a rating label's qualifier consistently ([f5e52ae](https://github.com/IbbyLabs/XRDB/commit/f5e52ae6e26d2bee5b65267d40b98d97adb6f370))
+
+
+### Documentation
+
+* **compose:** state the measured share of age-scaled ratings terms ([ea30c47](https://github.com/IbbyLabs/XRDB/commit/ea30c472591421c9a1b4714dfd8699cdf598a5b9))
+* **context:** the second MDBList host and the public status channel ([ef901ca](https://github.com/IbbyLabs/XRDB/commit/ef901cad2aa5eeb517bd54e8e738736d213f71d2))
+
 ## [3.105.0](https://github.com/IbbyLabs/XRDB/compare/v3.104.0...v3.105.0) (2026-09-03)
 
 
