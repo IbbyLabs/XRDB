@@ -175,6 +175,14 @@ type animeTargetResolver interface {
 	ResolveTarget(ctx context.Context, id string) (animemap.Target, bool)
 }
 
+// animeSeasonResolver maps an anime catalogue id that names a season onto the
+// TMDB season holding its episodes. Optional: a mapper without it leaves an id
+// carrying one alone.
+type animeSeasonResolver interface {
+	SeasonForAnimeID(animeID, seriesKey string) (animemap.SeasonMapping, animemap.SeasonRefusal)
+	KnowsTMDBSeason(seriesKey string, season int) bool
+}
+
 // animeKitsuResolver answers for the titles animeTargetResolver cannot: a row
 // with a Kitsu id and no mainstream one. Separate interface so a resolver that
 // predates it still satisfies the first.
@@ -1496,6 +1504,44 @@ func parseEpisodeID(id string) (series string, season, episode int, ok bool) {
 	return series, s, e, true
 }
 
+// recoverAnimeSeasonSlot corrects an episode id whose season position holds an
+// anime catalogue id, as "tt5607616:11209:1" does: 11209 is Re:Zero's Kitsu id
+// and no series has a season 11209. Callers outside XRDB build this shape by
+// joining a resolved IMDb id to the tail of a Kitsu episode id.
+//
+// A candidate is accepted only when the id maps to this same series, so a number
+// that happens to be another title's id is refused rather than rendering the
+// wrong programme. Services disagreeing about the same number refuse too.
+func (p *Pipeline) recoverAnimeSeasonSlot(series string, season, episode int) (int, int, bool) {
+	resolver, ok := p.anime.(animeSeasonResolver)
+	if !ok || resolver == nil || series == "" || season <= 0 {
+		return season, episode, false
+	}
+	// A number the dataset names as a season of this series is a season, however
+	// large. Asking the data rather than bounding the number means a series with
+	// a small catalogue id keeps its own seasons, and one with six hundred of
+	// them keeps those too.
+	if resolver.KnowsTMDBSeason(series, season) {
+		return season, episode, false
+	}
+	var found animemap.SeasonMapping
+	any := false
+	for _, service := range []string{"kitsu", "mal", "anilist", "anidb"} {
+		m, refusal := resolver.SeasonForAnimeID(service+":"+strconv.Itoa(season), series)
+		if refusal != animemap.SeasonResolved || !m.Resolved() {
+			continue
+		}
+		if any && (m.TMDBSeason != found.TMDBSeason || m.EpisodeDelta != found.EpisodeDelta) {
+			return season, episode, false
+		}
+		found, any = m, true
+	}
+	if !any {
+		return season, episode, false
+	}
+	return found.TMDBSeason, episode + found.EpisodeDelta, true
+}
+
 // looksLikeTitleID reports whether s can stand alone as a title id: a tt-id, or
 // one whose last colon-segment is numeric. A bare scheme name cannot.
 func looksLikeTitleID(s string) bool {
@@ -1661,6 +1707,14 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	series, season, episode, ok := parseEpisodeID(req.MediaID)
 	if !ok {
 		series, season, episode, ok = p.identifyEpisode(ctx, req.MediaID)
+	}
+	if ok {
+		if s2, e2, recovered := p.recoverAnimeSeasonSlot(series, season, episode); recovered {
+			p.log().InfoContext(ctx, "An anime catalogue id was sitting in the season position; converted it",
+				"id", logging.RequestID(ctx), "media_id", req.MediaID,
+				"season", s2, "episode", e2)
+			season, episode = s2, e2
+		}
 	}
 	episodeRatingID := ""
 	var episodeRating *provider.Rating

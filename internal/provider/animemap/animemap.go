@@ -356,6 +356,13 @@ type SeasonMapping struct {
 // using the fields.
 func (m SeasonMapping) Resolved() bool { return m.resolved }
 
+// NewSeasonMapping builds a resolved mapping. The resolved flag is unexported so
+// a zero value cannot be mistaken for an answer, which leaves callers outside
+// this package unable to express one; a stand-in resolver needs to.
+func NewSeasonMapping(tmdbSeason, episodeDelta int) SeasonMapping {
+	return SeasonMapping{TMDBSeason: tmdbSeason, EpisodeDelta: episodeDelta, resolved: true}
+}
+
 // SeasonRefusal names why a conversion did not resolve. A refusal and a title
 // nobody has ever recorded produce the same render, so the reason is returned
 // rather than inferred from an absence.
@@ -548,6 +555,28 @@ func (m *Mapper) SeasonFor(seriesKey string, aired int) (SeasonMapping, SeasonRe
 		}
 	}
 	return SeasonMapping{}, SeasonNoRows
+}
+
+// KnowsTMDBSeason reports whether the dataset lists that TMDB season for the
+// series. A caller deciding whether a number in the season position is a season
+// or a catalogue id uses this rather than a size threshold: a real season is one
+// the data names, however large it is.
+//
+// False for a series the dataset does not cover at all, so it says "not known to
+// be a season" rather than "not a season".
+func (m *Mapper) KnowsTMDBSeason(seriesKey string, season int) bool {
+	for _, src := range []*source{m.primary, m.supplement} {
+		if src == nil {
+			continue
+		}
+		rows, _ := src.seasonRows(seriesKey)
+		for _, r := range rows {
+			if r.tmdbSeason == season {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // SeasonForAnimeID maps an anime id that names a season onto the TMDB season
