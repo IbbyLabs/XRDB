@@ -1711,6 +1711,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	// and replacing it with the series number is what made an episode render as
 	// its series.
 	series, season, episode, ok := parseEpisodeID(req.MediaID)
+	parsed := ok
 	if !ok {
 		series, season, episode, ok = p.identifyEpisode(ctx, req.MediaID)
 	}
@@ -1744,7 +1745,12 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 		if meta != nil && len(meta.Ratings) > 0 {
 			episodeRating = &meta.Ratings[0]
 		}
-		if !strings.HasPrefix(req.MediaID, "tt") {
+		// A parsed id carries a season and episode the sources below cannot use,
+		// so it is replaced by the series whatever scheme it names: the tt
+		// prefix makes the first field acceptable, not the whole string. An
+		// identified id carries no tail and is already one they index, and the
+		// series it resolved to is a bare number that names no kind.
+		if parsed {
 			req.MediaID = series
 		}
 	}
