@@ -31,11 +31,14 @@ func StartRatingsCacheSnapshots(ctx context.Context, pipeline *compose.Pipeline,
 // SIMKL's search endpoint is not cached upstream, so a restart that discarded
 // them made the service re-search the whole catalogue.
 func StartSIMKLIDCacheSnapshots(ctx context.Context, simkl *provider.SIMKL, logger *slog.Logger) {
-	if simkl == nil {
-		return
-	}
 	if logger == nil {
 		logger = slog.Default()
+	}
+	// nil when SIMKL is not in the registry, which means it is not configured
+	// rather than that something failed. Said rather than returned in silence.
+	if simkl == nil {
+		logger.InfoContext(ctx, "SIMKL id caching is off", "reason", "SIMKL is not configured")
+		return
 	}
 	startSnapshotLoop(ctx, logger, "the remembered SIMKL ids", func() error {
 		// Logged with the write so the saving is observable. Nothing else reports

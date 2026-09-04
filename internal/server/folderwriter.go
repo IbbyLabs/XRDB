@@ -177,12 +177,26 @@ func StartFolderWriterSchedule(
 	logger *slog.Logger,
 ) {
 	runner := sharedFolderWriter
-	if !cfg.FolderWriter || cfg.FolderWriterInterval <= 0 || len(cfg.LibraryRoots) == 0 {
-		return
-	}
 	if logger == nil {
 		logger = slog.Default()
 	}
+	// Said rather than returned in silence. Turning this on and forgetting the
+	// library roots produces no files and no explanation, which is the same
+	// shape as the status panel shipping switched off with nothing in any log.
+	if !cfg.FolderWriter || cfg.FolderWriterInterval <= 0 || len(cfg.LibraryRoots) == 0 {
+		reason := "it is not enabled"
+		switch {
+		case cfg.FolderWriter && cfg.FolderWriterInterval <= 0:
+			reason = "its interval is not a positive duration"
+		case cfg.FolderWriter && len(cfg.LibraryRoots) == 0:
+			reason = "no library roots are configured"
+		}
+		logger.InfoContext(ctx, "The folder writer is off", "reason", reason)
+		return
+	}
+	logger.InfoContext(ctx, "The folder writer is on",
+		"interval_seconds", int(cfg.FolderWriterInterval.Seconds()),
+		"library_roots", len(cfg.LibraryRoots))
 	go func() {
 		ticker := time.NewTicker(cfg.FolderWriterInterval)
 		defer ticker.Stop()

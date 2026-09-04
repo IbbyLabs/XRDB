@@ -58,11 +58,25 @@ func StartCacheWarmSchedule(
 	logger *slog.Logger,
 ) {
 	cw := cfg.CacheWarm
-	if !cw.Enabled || len(cw.Surfaces()) == 0 || pipeline == nil || renderCache == nil {
-		return
-	}
 	if logger == nil {
 		logger = slog.Default()
+	}
+	// Said rather than returned in silence. A feature that never runs because a
+	// setting is missing reads exactly like one that is working quietly, which
+	// is how the status panel shipped switched off for six hours.
+	//
+	// The nil guards below are not reported: main builds both unconditionally
+	// and exits if either fails, so a line naming them could never fire.
+	if !cw.Enabled || len(cw.Surfaces()) == 0 {
+		reason := "it is not enabled"
+		if cw.Enabled {
+			reason = "no surfaces are selected"
+		}
+		logger.InfoContext(ctx, "Cache warming is off", "reason", reason)
+		return
+	}
+	if pipeline == nil || renderCache == nil {
+		return
 	}
 	client := &warm.Client{HTTP: &http.Client{Timeout: 30 * time.Second}}
 	// Seeded from the startup config rather than shared with the request
