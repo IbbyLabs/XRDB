@@ -66,6 +66,10 @@ func (p *Pipeline) ArtworkFallbackReachable() bool {
 }
 
 // reachable reports whether an interactive render can currently call name.
+//
+// Failing rather than CoolingOff: a source refusing every call is inside its
+// hold for part of each cycle, so a panel sampling the hold on a timer would
+// report it working for part of every outage.
 func (p *Pipeline) reachable(name string) bool {
-	return p.health == nil || !p.health.CoolingOff(name, provider.CallerInteractive)
+	return p.health == nil || !p.health.Failing(name, provider.CallerInteractive)
 }

@@ -10,6 +10,9 @@ import (
 // "was the last event a failure", and the two disagree in both directions: a
 // source that failed once hours ago and has answered since reads unhealthy, and
 // one that has never produced a rating reads healthy.
+//
+// Failing rather than the hold on its own, because a source refusing every call
+// spends part of each cycle outside its hold.
 func TestDegradedCountsHoldsRatherThanTheHealthyFlag(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -19,7 +22,7 @@ func TestDegradedCountsHoldsRatherThanTheHealthyFlag(t *testing.T) {
 		{
 			name: "a held-out source counts",
 			snapshot: []provider.SourceHealth{
-				{Source: "mdblist", Healthy: false, CoolingOff: true},
+				{Source: "mdblist", Healthy: false, CoolingOff: true, Failing: true},
 			},
 			want: 1,
 		},
@@ -41,6 +44,17 @@ func TestDegradedCountsHoldsRatherThanTheHealthyFlag(t *testing.T) {
 			want: 0,
 		},
 		{
+			// mdblist on 2026-09-04 at 05:50Z: ten consecutive 502s with the
+			// hold expired between calls. Counting the hold alone reports a
+			// source that is refusing everything as reachable.
+			name: "a source failing every call between holds counts",
+			snapshot: []provider.SourceHealth{
+				{Source: "mdblist", Healthy: false, CoolingOff: false,
+					ConsecutiveFail: 10, Failing: true},
+			},
+			want: 1,
+		},
+		{
 			// The bulk hold is a catalogue sweep waiting its turn, not a source
 			// a live render cannot reach.
 			name: "a bulk-only hold does not count",
@@ -52,7 +66,7 @@ func TestDegradedCountsHoldsRatherThanTheHealthyFlag(t *testing.T) {
 		{
 			name: "the reading that produced this change",
 			snapshot: []provider.SourceHealth{
-				{Source: "mdblist", Healthy: false, CoolingOff: true},
+				{Source: "mdblist", Healthy: false, CoolingOff: true, Failing: true},
 				{Source: "cinemeta", Healthy: false, CoolingOff: false},
 				{Source: "mediux", Healthy: true, CoolingOff: false},
 				{Source: "imdb_local", Healthy: true, CoolingOff: false},

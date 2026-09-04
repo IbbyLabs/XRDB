@@ -99,9 +99,13 @@ type SourceHealth struct {
 	ConsecutiveFail  int `json:"consecutiveFailures"`
 	// BreakerTrips sets how long the next failure hold lasts, doubling each
 	// round. A source recovering at full speed sits at zero between failures.
-	BreakerTrips int   `json:"breakerTrips"`
-	Successes    int64 `json:"successes"`
-	Failures     int64 `json:"failures"`
+	BreakerTrips int `json:"breakerTrips"`
+	// Failing is CoolingOff widened to cover the gaps between holds. A source
+	// refusing every call is inside its hold for part of each cycle and outside
+	// it for the rest, so CoolingOff read on a timer reports it as fine.
+	Failing   bool  `json:"failing"`
+	Successes int64 `json:"successes"`
+	Failures  int64 `json:"failures"`
 	// StaleServes counts how often a render fell back to a remembered value,
 	// for any reason: the live fetch failed, or the source was held out and
 	// never called. So it rises alongside Failures when a source is broken, and
@@ -481,6 +485,26 @@ func (h *HealthTracker) CoolingOff(source string, class CallerClass) bool {
 	return ok && time.Now().Before(st.cooldownUntil[class])
 }
 
+// Failing reports whether a source can currently be relied on for a render.
+// Wider than CoolingOff: a source refusing every call sits inside its hold for
+// part of each cycle and outside it for the rest, so a caller sampling
+// CoolingOff on a timer sees it as working for part of every outage.
+func (h *HealthTracker) Failing(source string, class CallerClass) bool {
+	if h == nil {
+		return false
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	st, ok := h.sources[source]
+	return ok && st.failingLocked(class)
+}
+
+// failingLocked is Failing for one already-held state. Called with h.mu held.
+func (st *sourceState) failingLocked(class CallerClass) bool {
+	return time.Now().Before(st.cooldownUntil[class]) ||
+		st.consecutiveFail >= failureBreakerThreshold
+}
+
 // LastGood returns a remembered result for key, if one is still valid. It
 // counts the fallback against the source so an operator can see that renders
 // are only still correct because they are being served from memory.
@@ -577,6 +601,7 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 			CoolingOff: time.Now().Before(st.cooldownUntil[CallerInteractive]) ||
 				time.Now().Before(st.cooldownUntil[CallerUnknown]),
 			CoolingOffBulk:         time.Now().Before(st.cooldownUntil[CallerBulk]),
+			Failing:                st.failingLocked(CallerInteractive) || st.failingLocked(CallerUnknown),
 			Cooldowns:              st.cooldowns,
 			HeldOutEmpty:           copyCounts(st.heldOutEmpty),
 			HeldOutEmptyOwnerKeyed: copyCounts(st.heldOutEmptyOwner),
