@@ -128,8 +128,8 @@ export const TREND_STYLE_OPTIONS = [
 export const RATING_OPTIONS: { id: string; label: string; accent: string; icon: string; group?: string }[] = [
   { id: 'imdb',           label: 'IMDb',            accent: '#f5c518', icon: '/rating-logos/imdb.svg' },
   { id: 'tmdb',           label: 'TMDB',            accent: '#01b4e4', icon: '/rating-logos/tmdb.svg' },
-  { id: 'rt',             label: 'RT critics',      accent: '#fa320a', icon: '/rating-logos/rt.svg' },
-  { id: 'rtaudience',     label: 'RT audience',     accent: '#fa320a', icon: '/rating-logos/rtaudience.svg' },
+  { id: 'rt',             label: 'RT Critics',      accent: '#fa320a', icon: '/rating-logos/rt.svg' },
+  { id: 'rtaudience',     label: 'RT Audience',     accent: '#fa320a', icon: '/rating-logos/rtaudience.svg' },
   { id: 'metacritic',     label: 'Metacritic',      accent: '#ffcc34', icon: '/rating-logos/metacritic.svg' },
   { id: 'metacriticuser', label: 'Metacritic User', accent: '#ffcc34', icon: '/rating-logos/metacriticuser.svg' },
   { id: 'letterboxd',     label: 'Letterboxd',      accent: '#00a99d', icon: '/rating-logos/letterboxd.svg' },

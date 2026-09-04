@@ -21,7 +21,7 @@ import { fetchGenreFamilies, type GenreFamily } from '@/lib/api';
 const MIN_VOTE_SOURCES = [
   { id: 'imdb', label: 'IMDb' },
   { id: 'letterboxd', label: 'Letterboxd' },
-  { id: 'metacriticuser', label: 'Metacritic users' },
+  { id: 'metacriticuser', label: 'Metacritic User' },
   { id: 'trakt', label: 'Trakt' },
   { id: 'tmdb', label: 'TMDB' },
   { id: 'simkl', label: 'SIMKL' },
