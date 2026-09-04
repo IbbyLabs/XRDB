@@ -25,6 +25,7 @@ ignored, so this header text costs nothing.
 - Only the sources a config actually asks for are fetched, which is what keeps a cold render fast.
 - Anime titles resolve through MAL, AniList and Kitsu ids, so anime keeps its ratings.
 - A source that is rate-limited or erroring falls back to its last good answer rather than dropping its badge.
+- MDBList is served from two hosts. When the first cannot be reached XRDB asks the second, so the badges MDBList supplies survive an outage of one of them. The awards summary is only on the first, so an awards badge can be missing while the ratings are not.
 - MDBList meters by the day, so XRDB paces it from the allowance MDBList reports on every response: what is left is spread evenly over the rest of the day, with a quarter of the day's budget held in reserve so a catalogue crawl or a mass re-render cannot finish it. A page of a few dozen titles still goes out at once; only a sustained flood is paced. `XRDB_MDBLIST_RESERVE_PCT`, `XRDB_MDBLIST_MAX_RPS` and `XRDB_MDBLIST_BURST` tune it. Any older answer saying MDBList is paced at a fixed 10 requests a second is out of date.
 - The ring's centre disc can be made invisible, so the score sits on the artwork with no plate behind it. It is the **Center disc** control on the rating ring: Default keeps the disc, Invisible removes it, Custom sets an opacity. Any older answer saying the centre can only be made fainter is out of date.
 - The empty rating ring drawn for a title with no score can take a colour of its own, set beside the ring colour in the configurator as **Empty ring color**. Left on **Faint outline** it draws the faint circle it always has, so a config that does not set it is unchanged.
@@ -115,3 +116,4 @@ ignored, so this header text costs nothing.
 - Check the running version at `https://extendedratings.com/healthz` before telling anyone a fix is live.
 - The developer build is `https://dev.extendedratings.com` and moves ahead of the stable one.
 - Point bug reports at `/bug report` and feature requests at `/feat submit` rather than collecting them in chat.
+- A public Discord channel names the rating badges and artwork sources XRDB cannot currently reach. It is edited when that set changes rather than on a timer, so a panel saying everything works is a current answer and not a stale one. Send anyone asking why a badge is missing there before guessing at their config.
