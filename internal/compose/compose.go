@@ -710,6 +710,17 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 				"outcome", outcomeRemembered, "age_ms", age.Milliseconds())
 			return good, true, nil
 		}
+		// The ratings cache is the larger of the two memories and the fetch path
+		// below is the only thing that reads it, so a hold-out reached this
+		// return with an answer sitting unread. Peeked rather than fetched: the
+		// source it would fetch from is the one being held out.
+		if cached, age, ok := p.ratings.peek(key); ok {
+			p.log().InfoContext(ctx, "A ratings source is held out; serving a cached rating",
+				"id", logging.RequestID(ctx), "source", prov.Name(),
+				"media_id", req.MediaID, "gate", gate,
+				"outcome", outcomeCached, "age_ms", age.Milliseconds())
+			return cached, true, nil
+		}
 		return nil, false, fmt.Errorf("%s: %w", prov.Name(), heldOut)
 	}
 	// A catalogue sweep draws on the same daily allowance a person's render
@@ -727,6 +738,13 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 					"outcome", outcomeRemembered, "age_ms", age.Milliseconds())
 				return good, true, nil
 			}
+		}
+		if cached, age, ok := p.ratings.peek(key); ok {
+			p.log().InfoContext(ctx, "A ratings source is held out; serving a cached rating",
+				"id", logging.RequestID(ctx), "source", prov.Name(),
+				"media_id", req.MediaID, "gate", provider.GateBulkAllowance,
+				"outcome", outcomeCached, "age_ms", age.Milliseconds())
+			return cached, true, nil
 		}
 		return nil, false, fmt.Errorf("%s: %w", prov.Name(), provider.ErrBulkAllowanceHeld)
 	}
@@ -1011,6 +1029,10 @@ const (
 	// A refresh that failed behind a served cache entry. Nobody lost a badge to
 	// it; it names spend and queue contention the render lines cannot show.
 	outcomeRefreshHeldOut = "refresh_held_out"
+	// Served from the ratings cache while the source was held out. Distinct from
+	// remembered, which names the health tracker's smaller store, so the two can
+	// be counted apart.
+	outcomeCached = "cached"
 )
 
 // unavailableSources turns the providers held out of a render into the rating

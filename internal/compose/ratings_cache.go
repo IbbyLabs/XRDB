@@ -155,6 +155,33 @@ func newRatingsCache(ttl time.Duration, logger *slog.Logger) *ratingsCache {
 	}
 }
 
+// peek returns a live remembered answer for key without fetching one.
+//
+// The hold-out path needs this: it cannot call do, because do fetches on a miss
+// and the source it would fetch from is the one being held out. It also does not
+// refresh ahead, for the same reason.
+//
+// The trusted guard comes across unchanged, so a remembered empty is believed
+// only while the source is demonstrably answering for that kind of title. During
+// an outage it is not, which is the case this is reached in, so an absence is
+// declined and only a real answer is served.
+func (c *ratingsCache) peek(key string) (*provider.MediaMeta, time.Duration, bool) {
+	if c == nil {
+		return nil, 0, false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	e, ok := c.entries[key]
+	if !ok || !time.Now().Before(e.ExpiresAt) || !c.trusted(key, e) {
+		return nil, 0, false
+	}
+	term := e.TTL
+	if term <= 0 {
+		term = c.ttl
+	}
+	return e.Meta, time.Since(e.ExpiresAt.Add(-term)), true
+}
+
 // do returns the remembered answer for key, or runs fetch to produce one.
 // Only successful answers carrying ratings are remembered: a failure is the
 // case the health tracker's fallback exists for, and caching an empty answer
