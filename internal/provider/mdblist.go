@@ -18,6 +18,16 @@ import (
 
 const mdblistBase = "https://api.mdblist.com"
 
+// mdblistAltBase is MDBList's other host for the same data. It answers movies
+// and shows from one call, reports a missing title as a 200 with response
+// false, and carries no awards field.
+const mdblistAltBase = "https://mdblist.com/api"
+
+// errHostUnreachable marks a failure of api.mdblist.com itself rather than of
+// the request or the key. Only these are worth retrying on the other host: a
+// refusal is metered against the key, which both hosts share.
+var errHostUnreachable = errors.New("mdblist: host unreachable")
+
 // MDBList is the MDBList metadata provider.
 // It accepts an IMDb tt-prefixed ID and returns ratings from multiple sources
 // (IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt, and MDBList's own aggregate).
@@ -25,6 +35,7 @@ type MDBList struct {
 	mu         sync.RWMutex
 	keys       *keyRing
 	baseURL    string // overrides mdblistBase; set in tests
+	altBaseURL string // overrides mdblistAltBase; set in tests
 	httpClient *http.Client
 	// knownType remembers which endpoint answered for a title. A bare
 	// /poster/tt... request carries no content type, so a series would otherwise
@@ -102,13 +113,75 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 	if errors.Is(err, errNotFound) {
 		if meta, err = m.fetchType(ctx, secondary, id); err == nil {
 			m.knownType.Store(id, secondary)
+			return meta, nil
 		}
-		return meta, err
+		return m.orAlternate(ctx, id, meta, err)
 	}
 	if err == nil {
 		m.knownType.Store(id, primary)
+		return meta, nil
 	}
-	return meta, err
+	return m.orAlternate(ctx, id, meta, err)
+}
+
+// orAlternate answers from MDBList's other host when the first one could not be
+// reached. Anything else is returned as it stands: a refused key and a title
+// that does not exist give the same answer on both hosts, and asking twice
+// spends an allowance to learn nothing.
+func (m *MDBList) orAlternate(ctx context.Context, id string, meta *MediaMeta, err error) (*MediaMeta, error) {
+	if !errors.Is(err, errHostUnreachable) {
+		return meta, err
+	}
+	alt, altErr := m.fetchAlternate(ctx, id)
+	if altErr != nil {
+		m.log().WarnContext(ctx, "Both MDBList hosts failed, so its ratings are missing from this render",
+			"id", logging.RequestID(ctx), "media_id", id,
+			"primary_error", err, "alternate_error", altErr)
+		return meta, err
+	}
+	m.log().InfoContext(ctx, "MDBList answered from its second host, the first was unreachable",
+		"id", logging.RequestID(ctx), "media_id", id, "primary_error", err)
+	return alt, nil
+}
+
+// fetchAlternate queries mdblist.com/api, which answers for movies and shows
+// from one call. Its failures do not arrive the way the first host's do: a
+// missing title is a 200 whose body says otherwise, and it carries no awards
+// field at all, so a render wanting the awards badge gets nothing rather than a
+// wrong answer.
+func (m *MDBList) fetchAlternate(ctx context.Context, id string) (*MediaMeta, error) {
+	base := mdblistAltBase
+	if m.altBaseURL != "" {
+		base = m.altBaseURL
+	}
+	params := url.Values{"apikey": {m.key(ctx)}, "i": {id}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/?"+params.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := m.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("mdblist alternate: request: %w", redactHTTPErr(err))
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		// This host answers 503 to a spent allowance and to a bad key alike, so
+		// the status cannot say which. Reported as a fault rather than guessed at.
+		return nil, HTTPFault("mdblist", resp.StatusCode)
+	}
+	var payload mdblistPayload
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, fmt.Errorf("mdblist alternate: decode response: %w", err)
+	}
+	if payload.Response != nil && !*payload.Response {
+		return nil, fmt.Errorf("mdblist alternate: %q: %s: %w", id, payload.Error, errNotFound)
+	}
+	return &MediaMeta{
+		Ratings:       parseMDBListRatings(payload),
+		ContentRating: commonSenseAge(payload),
+		Awards:        ParseAwards(payload.Awards),
+	}, nil
 }
 
 // fetchType queries one MDBList endpoint (mdbType is "movie" or "show"). It
@@ -128,17 +201,21 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 
 	resp, err := m.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("mdblist: request: %w", redactHTTPErr(err))
+		return nil, fmt.Errorf("mdblist: request: %w: %w", redactHTTPErr(err), errHostUnreachable)
 	}
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusTooManyRequests, http.StatusServiceUnavailable:
+		// 503 is how MDBList refuses a spent allowance, not how a host fails.
 		return nil, m.refusal(ctx, resp, used)
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return nil, fmt.Errorf("mdblist: unauthorized (check api key)")
 	case http.StatusNotFound:
 		return nil, fmt.Errorf("mdblist: %s not found for %q: %w", mdbType, id, errNotFound)
+	}
+	if resp.StatusCode >= 500 {
+		return nil, fmt.Errorf("%w: %w", HTTPFault("mdblist", resp.StatusCode), errHostUnreachable)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, HTTPFault("mdblist", resp.StatusCode)
@@ -215,10 +292,14 @@ func (m *MDBList) refusal(ctx context.Context, resp *http.Response, used string)
 func (m *MDBList) log() *slog.Logger { return slog.Default() }
 
 type mdblistPayload struct {
-	Score       float64         `json:"score"`
-	Ratings     []mdblistRating `json:"ratings"`
-	Awards      string          `json:"awards"`
-	AgeRating   *int            `json:"age_rating"`
+	Score   float64         `json:"score"`
+	Ratings []mdblistRating `json:"ratings"`
+	Awards  string          `json:"awards"`
+	// Response and Error carry mdblist.com/api's verdict, which it reports in
+	// the body with a 200 rather than in the status.
+	Response    *bool  `json:"response"`
+	Error       string `json:"error"`
+	AgeRating   *int   `json:"age_rating"`
 	CommonSense *struct {
 		CommonSense *int `json:"common_sense"`
 	} `json:"commonsense_media"`
@@ -312,9 +393,9 @@ func normalizeMDBSource(raw string) string {
 		return "imdb"
 	case "tomatoes":
 		return "rt"
-	case "tomatoes_audience", "popcorn", "popcornmeter", "popcorntime":
-		// MDBList reports the Rotten Tomatoes audience (popcornmeter) score under
-		// the "popcorn" source; "tomatoes_audience" is kept for compatibility.
+	case "tomatoes_audience", "tomatoesaudience", "popcorn", "popcornmeter", "popcorntime":
+		// api.mdblist.com sends "popcorn"; mdblist.com/api sends
+		// "tomatoesaudience". The underscored spelling is kept for compatibility.
 		return "rtaudience"
 	case "metacritic":
 		return "metacritic"
