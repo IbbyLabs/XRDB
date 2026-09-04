@@ -304,6 +304,7 @@ func main() {
 	defer stopSchedule()
 	server.StartFolderWriterSchedule(scheduleCtx, cfg, pipeline, store, logger)
 	server.StartCacheWarmSchedule(scheduleCtx, cfg, pipeline, renderCache, logger)
+	server.StartStatusPanel(scheduleCtx, cfg, pipeline, logger)
 	server.StartRatingsCacheSnapshots(scheduleCtx, pipeline, logger)
 	server.StartSIMKLIDCacheSnapshots(scheduleCtx, simklProvider, logger)
 	server.StartDailyBudgetSnapshots(scheduleCtx, logger)

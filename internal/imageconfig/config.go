@@ -54,6 +54,20 @@ const (
 	ArtworkMediux   ArtworkSource = "mediux"
 )
 
+// ArtworkSourceNames lists the artwork sources a profile can name that a
+// provider answers for. ArtworkRandom is omitted: it selects among the others
+// rather than being one.
+func ArtworkSourceNames() []string {
+	return []string{
+		string(ArtworkTMDB),
+		string(ArtworkFanart),
+		string(ArtworkCinemeta),
+		string(ArtworkOMDB),
+		string(ArtworkKitsu),
+		string(ArtworkMediux),
+	}
+}
+
 // TextPreference controls which poster text variant is selected.
 type TextPreference string
 

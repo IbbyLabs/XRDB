@@ -1,10 +1,6 @@
 package compose
 
-import (
-	"sort"
-
-	"xrdb_rewrite/internal/provider"
-)
+import "sort"
 
 // RatingAvailability reports, per rating badge, whether any source that can
 // supply it is currently reachable.
@@ -29,8 +25,13 @@ func (p *Pipeline) RatingAvailability() map[string]bool {
 		if !ok {
 			continue
 		}
-		reachable := p.health == nil ||
-			!p.health.CoolingOff(name, provider.CallerInteractive)
+		// A provider this instance never configured is absent rather than
+		// unavailable. A badge whose only supplier is unready gets no entry at
+		// all, because nothing is broken: it was never on offer.
+		if !providerReady(prov) {
+			continue
+		}
+		reachable := p.reachable(name)
 		for _, rating := range sourcer.RatingSources() {
 			if rating == "" {
 				continue

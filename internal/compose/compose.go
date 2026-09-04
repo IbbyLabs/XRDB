@@ -1921,7 +1921,7 @@ func (p *Pipeline) artworkOrderFor(primary, surface, mediaID string) []string {
 	if primary != "" {
 		order = append(order, primary)
 	}
-	for _, name := range []string{"fanart", "tmdb", "cinemeta"} {
+	for _, name := range generalArtworkSources {
 		if name != primary {
 			order = append(order, name)
 		}

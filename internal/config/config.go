@@ -3,6 +3,7 @@ package config
 import (
 	"math"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -66,6 +67,48 @@ func cacheWarmFromEnv() CacheWarm {
 	return w
 }
 
+// StatusPanel describes the panel XRDB keeps in a public Discord channel,
+// naming the sources a render cannot currently reach. Off unless a webhook is
+// configured, so an instance nobody set this up for posts nothing.
+//
+// The webhook URL is a credential: anyone holding it can post as the panel and
+// rename it. It is never logged.
+type StatusPanel struct {
+	WebhookURL string
+	// Interval is how often the state is recomputed. The panel is edited only
+	// when that state differs from what was last posted.
+	Interval time.Duration
+	// StatePath holds the posted message id across restarts. Without it a
+	// restart posts a second panel instead of editing the first.
+	StatePath string
+	// TrackerChannelID is linked in the footer for the question this panel
+	// cannot answer about itself: whether XRDB is up at all.
+	TrackerChannelID string
+}
+
+// Enabled reports whether the panel has somewhere to post.
+func (s StatusPanel) Enabled() bool { return strings.TrimSpace(s.WebhookURL) != "" }
+
+// statusPanelFromEnv reads the panel schedule. dataDir is where the message id
+// is kept, alongside the database rather than in the working directory.
+func statusPanelFromEnv(dataDir string) StatusPanel {
+	p := StatusPanel{
+		WebhookURL:       strings.TrimSpace(os.Getenv("XRDB_STATUS_WEBHOOK_URL")),
+		Interval:         2 * time.Minute,
+		StatePath:        os.Getenv("XRDB_STATUS_PANEL_STATE"),
+		TrackerChannelID: strings.TrimSpace(os.Getenv("XRDB_STATUS_TRACKER_CHANNEL_ID")),
+	}
+	if raw := os.Getenv("XRDB_STATUS_PANEL_INTERVAL_SECONDS"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			p.Interval = time.Duration(n) * time.Second
+		}
+	}
+	if p.StatePath == "" {
+		p.StatePath = filepath.Join(dataDir, "status-panel.json")
+	}
+	return p
+}
+
 func envTruthy(name string) bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(name))) {
 	case "1", "true", "yes", "on":
@@ -90,11 +133,13 @@ func (w CacheWarm) Surfaces() map[string]string {
 type Config struct {
 	// CacheWarm pre-renders an addon's catalogues on a schedule.
 	CacheWarm CacheWarm
-	Address   string
-	Version   string
-	DBPath    string
-	CacheDir  string
-	CacheTTL  time.Duration
+	// StatusPanel keeps a public panel naming the sources a render cannot reach.
+	StatusPanel StatusPanel
+	Address     string
+	Version     string
+	DBPath      string
+	CacheDir    string
+	CacheTTL    time.Duration
 	// RPDBMaxSize caps the output size on the RPDB compatibility route. Stremio
 	// caps a meta poster at 100KB, and a 4K one is ten times that, so the route
 	// caps what the profile behind it asked for. Empty caps nothing.
@@ -605,6 +650,7 @@ func Load() Config {
 	}
 	return Config{
 		CacheWarm:             cacheWarmFromEnv(),
+		StatusPanel:           statusPanelFromEnv(filepath.Dir(dbPath)),
 		Address:               addr,
 		Version:               version,
 		DBPath:                dbPath,
