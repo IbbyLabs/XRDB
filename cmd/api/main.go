@@ -219,8 +219,12 @@ func main() {
 		provider.SetDailyBudgetPath(cfg.CacheDir, logger)
 		// FR-210. The age multipliers deciding how long a rating is kept are not
 		// anchored to how fast a score moves, and the sample that would anchor
-		// them is discarded on every refetch. This records it.
-		compose.SetScoreMovementPath(cfg.CacheDir, logger)
+		// them is discarded on every refetch. This records it, on an instance
+		// that asked to: the file answers a question about the project rather
+		// than about the instance, and it goes nowhere on its own.
+		if cfg.RecordScoreMovement {
+			compose.SetScoreMovementPath(cfg.CacheDir, logger)
+		}
 		// SIMKL's search endpoint is not cached upstream and a resolved id never
 		// changes, so the mappings are kept permanently rather than re-searched
 		// on every restart.

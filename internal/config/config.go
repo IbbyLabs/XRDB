@@ -256,6 +256,13 @@ type Config struct {
 	// default and deliberately so: it is the only feature that modifies a
 	// user's files, and leaving it off keeps that guarantee intact.
 	FolderWriter bool
+	// RecordScoreMovement appends a sample every time an expired rating is
+	// replaced, to derive the cache's age multipliers from how far scores
+	// actually move. Off by default: the file answers a question about this
+	// project rather than about anyone's instance, and it never leaves the disk
+	// it is written on, so a self-hosted instance would carry the cost of it and
+	// none of the use.
+	RecordScoreMovement bool
 	// LibraryRoots are the directories the folder writer walks.
 	LibraryRoots []string
 	// FolderWriterSurfaces limits which artwork is written; empty means poster
@@ -705,6 +712,7 @@ func Load() Config {
 		TrustedProxies:        os.Getenv("XRDB_TRUSTED_PROXIES"),
 		TrustProxyHeaders:     boolEnv("XRDB_TRUST_PROXY_HEADERS"),
 		FolderWriter:          boolEnv("XRDB_FOLDER_WRITER"),
+		RecordScoreMovement:   boolEnv("XRDB_RECORD_SCORE_MOVEMENT"),
 		LibraryRoots:          listEnv("XRDB_LIBRARY_ROOTS"),
 		FolderWriterSurfaces:  listEnv("XRDB_FOLDER_WRITER_SURFACES"),
 		FolderWriterProfile:   os.Getenv("XRDB_FOLDER_WRITER_PROFILE"),

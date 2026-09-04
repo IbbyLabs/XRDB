@@ -208,3 +208,58 @@ func TestARestartAppendsRatherThanTruncating(t *testing.T) {
 		t.Errorf("after two runs the file holds %d lines, want 2: %q", len(lines), string(data))
 	}
 }
+
+// An instance that did not ask to record gets nothing: no file, no goroutine,
+// no cost. The recorder is opt-in because the samples answer a question about
+// this project rather than about anyone's own instance, and they never leave the
+// disk they are written on.
+func TestNothingIsRecordedWhenTheInstanceDidNotAskForIt(t *testing.T) {
+	scoreMovement.mu.Lock()
+	prev := scoreMovement.samples
+	scoreMovement.samples = nil
+	scoreMovement.mu.Unlock()
+	t.Cleanup(func() {
+		scoreMovement.mu.Lock()
+		scoreMovement.samples = prev
+		scoreMovement.mu.Unlock()
+	})
+
+	before := scoreMovement.dropped.Load()
+	c := newRatingsCache(time.Hour, nil)
+	key := provider.GoodKey("imdb", "poster", "tt9")
+	c.mu.Lock()
+	c.storeLocked(key, ratingOf("imdb", 5.0), true, titleAge{year: 1999})
+	e := c.entries[key]
+	e.ExpiresAt = time.Now().Add(-time.Minute)
+	e.TTL = time.Hour
+	c.entries[key] = e
+	c.storeLocked(key, ratingOf("imdb", 5.5), true, titleAge{year: 1999})
+	c.mu.Unlock()
+
+	if scoreMovement.dropped.Load() != before {
+		t.Errorf("an instance that never opted in counted %d drops, want none",
+			scoreMovement.dropped.Load()-before)
+	}
+}
+
+// SetScoreMovementPath with no directory leaves it off rather than writing
+// beside the binary.
+func TestAnEmptyDirectoryLeavesRecordingOff(t *testing.T) {
+	scoreMovement.mu.Lock()
+	prev := scoreMovement.samples
+	scoreMovement.samples = nil
+	scoreMovement.mu.Unlock()
+	t.Cleanup(func() {
+		scoreMovement.mu.Lock()
+		scoreMovement.samples = prev
+		scoreMovement.mu.Unlock()
+	})
+
+	SetScoreMovementPath("", nil)
+	scoreMovement.mu.Lock()
+	started := scoreMovement.samples != nil
+	scoreMovement.mu.Unlock()
+	if started {
+		t.Error("recording started with no directory to write into")
+	}
+}
