@@ -406,6 +406,10 @@ type throttledTransport struct {
 	// read since process start can confirm the guard actually fired rather than
 	// the source simply having no foreign traffic.
 	withheld atomic.Int64
+	// abandoned counts requests whose caller gave up while they were still in our
+	// queue. Without it the only trace is the caller's own error, which says a
+	// render failed and not that it failed waiting for us.
+	abandoned atomic.Int64
 	// queued counts requests that waited in our own queue rather than going out
 	// at once, so the wait is countable without a debug level.
 	queued atomic.Int64
@@ -423,6 +427,19 @@ func (t *throttledTransport) log() *slog.Logger {
 	return t.logger
 }
 
+// logAbandonedWait records a request that never went out because its caller
+// stopped waiting. Reported once and then each order of magnitude, matching the
+// other counters on this path.
+func (t *throttledTransport) logAbandonedWait(ctx context.Context, stage string, waited time.Duration, err error) {
+	n := t.abandoned.Add(1)
+	if n != 1 && !isPowerOfTen(n) {
+		return
+	}
+	t.log().WarnContext(ctx, "A request was given up on while waiting in our own queue",
+		"source", t.source, "stage", stage, "waited_ms", waited.Milliseconds(),
+		"error", err, "total", n)
+}
+
 func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	base := t.base
 	if base == nil {
@@ -437,11 +454,16 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 	var lastStatus int
 	for attempt := 0; ; attempt++ {
+		// Stamped before the pacer rather than after it. Both waits are ours and
+		// a caller cannot tell them apart, so a figure that starts after one of
+		// them describes a queue nobody stood in.
+		queued := time.Now()
 		if err := t.pacer.wait(req.Context()); err != nil {
+			t.logAbandonedWait(req.Context(), "pacer", time.Since(queued), err)
 			return nil, err
 		}
-		queued := time.Now()
 		if err := t.governor.wait(req.Context()); err != nil {
+			t.logAbandonedWait(req.Context(), "governor", time.Since(queued), err)
 			return nil, err
 		}
 		inQueue := time.Since(queued)
