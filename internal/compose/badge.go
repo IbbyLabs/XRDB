@@ -404,6 +404,42 @@ func badgeFaceFor(scale float64) font.Face {
 	return lf
 }
 
+// baselineWidth is the source width a tier replaces at large and 4k, so a
+// delivered frame can be measured against what the lower tiers would have
+// fetched. Logos are never upgraded, so theirs is the width they always get.
+func baselineWidth(mediaType string) int {
+	switch mediaType {
+	case "backdrop":
+		return 1280
+	case "poster", "logo", "thumbnail":
+		return 780
+	}
+	return 0
+}
+
+// frameScale sizes overlays from the width that actually arrived rather than
+// from the tier that was asked for.
+//
+// Large and 4k fetch TMDB's original upload, which is whatever the uploader
+// made. A tier-derived scale assumes the picture grew by the same factor, and
+// on an original no larger than the lower tier's fixed width it did not grow at
+// all. The tier stays a ceiling, so no render's overlays can be larger than
+// they are today.
+func frameScale(mediaType string, frameW int, size imageconfig.MediaSize) float64 {
+	tier := outputScale(size)
+	if size != imageconfig.SizeLarge && size != imageconfig.Size4K {
+		return tier
+	}
+	base := baselineWidth(mediaType)
+	if base <= 0 || frameW <= 0 {
+		return tier
+	}
+	if grew := float64(frameW) / float64(base); grew < tier {
+		return grew
+	}
+	return tier
+}
+
 // outputScale maps the configured size to a badge scale factor so overlays
 // stay proportional on large/4k renders.
 func outputScale(size imageconfig.MediaSize) float64 {

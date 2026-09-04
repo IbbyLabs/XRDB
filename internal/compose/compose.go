@@ -1248,7 +1248,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		timings.recordOverlapped("resize", earlyTook)
 	}
 
-	scale := overlayScale(outputScale(req.Config.Size), composed.Bounds().Dy())
+	scale := overlayScale(frameScale(req.MediaType, composed.Bounds().Dx(), req.Config.Size), composed.Bounds().Dy())
 
 	// occ tracks regions claimed by overlays so corner-anchored badges and the
 	// average-rating ring are placed without overlapping one another or, on the
