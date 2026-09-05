@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.108.0](https://github.com/IbbyLabs/XRDB/compare/v3.107.1...v3.108.0) (2026-09-04)
+
+
+### Added
+
+* **compose:** FR-210 record how far a score moves over a known interval ([b948486](https://github.com/IbbyLabs/XRDB/commit/b9484861d9f7b79240c09d2c56347fde80609f40))
+* **config:** FR-210 record score movement only when asked ([a56bb8a](https://github.com/IbbyLabs/XRDB/commit/a56bb8a17967b4f02922df6fa26ddedca7c1a140))
+
+
+### Changed
+
+* **compose:** let the recorder own whether it records ([809f0dc](https://github.com/IbbyLabs/XRDB/commit/809f0dce5d97489bd6a67159bf3c12062d3e06c1))
+
 ## [3.107.1](https://github.com/IbbyLabs/XRDB/compare/v3.107.0...v3.107.1) (2026-09-04)
 
 
