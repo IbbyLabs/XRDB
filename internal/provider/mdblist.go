@@ -46,10 +46,14 @@ type MDBList struct {
 
 // NewMDBList creates an MDBList provider.
 func NewMDBList(apiKey string) *MDBList {
-	return &MDBList{
+	m := &MDBList{
 		keys:       newKeyRing(apiKey),
 		httpClient: newHTTPClient("mdblist", 10*time.Second),
 	}
+	// The budget counts every key's calls together, so it needs to know how many
+	// there are to hold its reserve against the ring rather than one key.
+	noteKeyRingSize("mdblist", m.keys.size())
+	return m
 }
 
 func (m *MDBList) Name() string { return "mdblist" }
@@ -60,6 +64,7 @@ func (m *MDBList) UpdateCredentials(apiKey string) {
 	m.mu.Lock()
 	m.keys.set(apiKey)
 	m.mu.Unlock()
+	noteKeyRingSize("mdblist", m.keys.size())
 }
 
 // HasCredentials reports whether the provider can make authenticated requests.

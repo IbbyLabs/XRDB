@@ -1,9 +1,12 @@
 package provider
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"log/slog"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -57,6 +60,11 @@ type dailyBudget struct {
 	day      time.Time
 	reported time.Time
 	spent    int
+	// observedLimits is what each credential reported, and ringSize how many
+	// there are. spent counts every key together, so the limit it is compared
+	// against has to be the whole ring's, not whichever key answered last.
+	observedLimits map[string]int
+	ringSize       int
 	// reservePct scales the reserve with the limit for a source whose limit is
 	// discovered rather than known. Zero keeps reserve as given.
 	reservePct float64
@@ -84,28 +92,108 @@ func newDailyBudget(source string, limit, reserve int) *dailyBudget {
 // setLimit records a limit the source reported. A limit that arrives from the
 // service is the only one worth holding a reserve against: the allowance goes by
 // plan, so a number compiled in is right for one plan and wrong for the rest.
-func (b *dailyBudget) setLimit(limit int) {
+func (b *dailyBudget) setLimit(key string, limit int) {
 	if b == nil || limit <= 0 {
 		return
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.limit == limit {
+	if key != "" {
+		if b.observedLimits == nil {
+			b.observedLimits = map[string]int{}
+		}
+		b.observedLimits[key] = limit
+	}
+	total := b.ringLimitLocked(limit)
+	if b.limit == total {
 		return
 	}
 	was := b.limit
-	b.limit = limit
+	b.limit = total
 	if b.reservePct > 0 {
-		b.reserve = int(float64(limit) * b.reservePct / 100)
+		b.reserve = int(float64(total) * b.reservePct / 100)
 	}
 	b.log().Info("A source reported its daily allowance",
-		"source", b.source, "limit", limit, "previous_limit", was, "reserve", b.reserve)
+		"source", b.source, "limit", total, "previous_limit", was, "reserve", b.reserve,
+		"keys_observed", len(b.observedLimits), "ring_size", b.ringSize)
+}
+
+// ringLimitLocked is what the whole ring may spend. A key that has not answered
+// yet is projected at the smallest limit seen, because the ring only reaches it
+// once the keys before it are spent, which the reserve itself can prevent for
+// the life of the process. Projecting low can only stop sweeps early; projecting
+// high overruns the reserve on the last key, which is the one case where an
+// interactive caller loses the source with nothing behind it.
+func (b *dailyBudget) ringLimitLocked(latest int) int {
+	if len(b.observedLimits) == 0 {
+		return latest
+	}
+	total, smallest := 0, 0
+	for _, l := range b.observedLimits {
+		total += l
+		if smallest == 0 || l < smallest {
+			smallest = l
+		}
+	}
+	if unseen := b.ringSize - len(b.observedLimits); unseen > 0 {
+		total += unseen * smallest
+	}
+	return total
+}
+
+// setRingSize tells the budget how many credentials exist. Pushed in by the
+// provider that owns the ring, which the budget cannot see from here.
+func (b *dailyBudget) setRingSize(n int) {
+	if b == nil || n <= 0 {
+		return
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.ringSize = n
 }
 
 // noteObservedDailyLimit hands a limit read from a response to the source's
 // budget. Called from the governor, which sees the headers.
-func noteObservedDailyLimit(source string, limit int) {
-	dailyBudgetFor(source).setLimit(limit)
+func noteObservedDailyLimit(source, key string, limit int) {
+	dailyBudgetFor(source).setLimit(keyFingerprint(key), limit)
+}
+
+// credentialParam names the query parameter each metered source carries its
+// credential in. The budget counts every key together, so it has to know which
+// one answered, and the two sources spell it differently.
+var credentialParam = map[string]string{
+	"mdblist": "apikey",
+	"simkl":   "client_id",
+}
+
+// credentialFromRequest reads the credential a request used, empty when the
+// source does not carry one in the URL. An unnamed source records no key, which
+// leaves the budget on a single limit rather than guessing.
+func credentialFromRequest(source string, u *url.URL) string {
+	if u == nil {
+		return ""
+	}
+	param, ok := credentialParam[strings.ToLower(source)]
+	if !ok {
+		return ""
+	}
+	return u.Query().Get(param)
+}
+
+// keyFingerprint identifies a credential without holding it. The budget only
+// needs to tell two keys apart, and a map keyed on the secret itself puts it
+// somewhere a dump or a stray log line could reach.
+func keyFingerprint(key string) string {
+	if key == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(sum[:6])
+}
+
+// noteKeyRingSize records how many credentials a source rotates through.
+func noteKeyRingSize(source string, n int) {
+	dailyBudgetFor(source).setRingSize(n)
 }
 
 func (b *dailyBudget) log() *slog.Logger {

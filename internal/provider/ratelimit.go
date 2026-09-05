@@ -498,6 +498,13 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		// allowance. Owner-keyed renders never mutate shared source state.
 		if !HasOwnerKey(req.Context(), t.source) {
 			t.governor.observe(req.Context(), resp.Header)
+			// The daily budget is told separately from the governor, because it
+			// needs to know which credential answered and the governor does not.
+			// spent counts every key together, so the limit it is measured
+			// against has to be the ring's rather than whichever key replied.
+			if limit, ok := headerNumber(resp.Header, "X-RateLimit-Limit"); ok && limit > 0 {
+				noteObservedDailyLimit(t.source, credentialFromRequest(t.source, req.URL), int(limit))
+			}
 		} else if t.governor != nil {
 			// Record that the guard fired. Logging the first and then each
 			// order-of-magnitude keeps a hot path quiet while leaving a line a

@@ -74,6 +74,7 @@ func (s *SIMKL) UpdateCredentials(clientID string) {
 	s.mu.Lock()
 	s.keys.set(clientID)
 	s.mu.Unlock()
+	noteKeyRingSize("simkl", s.keys.size())
 }
 
 // noteQuota moves to the next credential when SIMKL says the allowance is gone.
@@ -109,12 +110,16 @@ func (s *SIMKL) cred(ctx context.Context) string {
 
 // NewSIMKL creates a SIMKL provider with the given Client-ID.
 func NewSIMKL(clientID string) *SIMKL {
-	return &SIMKL{
+	s := &SIMKL{
 		keys:       newKeyRing(clientID),
 		httpClient: newHTTPClient("simkl", 10*time.Second),
 		// Replaced by the on-disk store once a cache directory is set.
 		store: openMemorySIMKLIDStore(),
 	}
+	// The budget counts every key's calls together, so it needs the ring size to
+	// hold its reserve against the ring rather than one credential.
+	noteKeyRingSize("simkl", s.keys.size())
+	return s
 }
 
 func (s *SIMKL) Name() string { return "simkl" }

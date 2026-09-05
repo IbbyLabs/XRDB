@@ -2,6 +2,7 @@ package provider
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
@@ -43,7 +44,7 @@ func TestTheReserveFollowsTheReportedLimit(t *testing.T) {
 	b.limit, b.reserve, b.reservePct = 100000, 25000, 25
 	b.mu.Unlock()
 
-	b.setLimit(1000)
+	b.setLimit("", 1000)
 
 	b.mu.Lock()
 	limit, reserve := b.limit, b.reserve
@@ -56,24 +57,44 @@ func TestTheReserveFollowsTheReportedLimit(t *testing.T) {
 	}
 }
 
-// The header is where the real number lives, so the governor has to hand it on.
-func TestObservingAResponseRecordsTheLimit(t *testing.T) {
+// The header is where the real number lives, so it has to reach the budget.
+//
+// It travels through the transport rather than the governor: the budget counts
+// every key together and so needs to know which credential answered, and the
+// governor is handed only the headers. Driven through a real request because the
+// key is read off the query string, which no test of the governor would exercise.
+func TestARequestsHeaderRecordsTheLimitAgainstItsKey(t *testing.T) {
 	b := mdbBudget(t)
 	b.mu.Lock()
-	b.limit, b.reservePct = 100000, 25
+	b.limit, b.reservePct, b.ringSize, b.observedLimits = 100000, 25, 1, nil
 	b.mu.Unlock()
 
-	g := newBudgetGovernor("mdblist")
-	h := http.Header{}
-	h.Set("X-RateLimit-Limit", "5000")
-	h.Set("X-RateLimit-Remaining", "4000")
-	h.Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10))
-	g.observe(t.Context(), h)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-RateLimit-Limit", "5000")
+		w.Header().Set("X-RateLimit-Remaining", "4000")
+		w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10))
+		_, _ = w.Write([]byte("{}"))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := newHTTPClient("mdblist", 5*time.Second)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.URL+"?apikey=key-a", nil)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("do: %v", err)
+	}
+	_ = resp.Body.Close()
 
 	b.mu.Lock()
-	limit := b.limit
+	limit, observed := b.limit, len(b.observedLimits)
 	b.mu.Unlock()
 	if limit != 5000 {
 		t.Errorf("limit = %d, want the reported 5000", limit)
+	}
+	if observed != 1 {
+		t.Errorf("observed %d keys, want the one the request used", observed)
 	}
 }
