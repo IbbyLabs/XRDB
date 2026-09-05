@@ -86,8 +86,11 @@ func TestTheBudgetDoesNotHoldTheCredential(t *testing.T) {
 	if got := keyFingerprint(secret); got == secret || got == "" {
 		t.Fatalf("fingerprint = %q, want a short digest that is not the key", got)
 	}
-	if keyFingerprint(secret) != keyFingerprint(secret) {
-		t.Errorf("fingerprint is not stable for one key")
+	// Two calls rather than one expression: the same fingerprint has to come
+	// back on a later call, and staticcheck reads f(x) != f(x) as vacuous.
+	first, again := keyFingerprint(secret), keyFingerprint(secret)
+	if first != again {
+		t.Errorf("fingerprint = %q then %q, want it stable for one key", first, again)
 	}
 	if keyFingerprint("a") == keyFingerprint("b") {
 		t.Errorf("two keys share a fingerprint")
