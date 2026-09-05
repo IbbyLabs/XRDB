@@ -306,6 +306,31 @@ func (t *TMDB) IdentifyEpisode(ctx context.Context, id string) (string, int, int
 	return match.ID, match.Season, match.Episode, true, nil
 }
 
+// SeasonCount returns how many seasons TMDB lists for a series, and false when
+// it cannot say.
+//
+// Read from the series record's own count rather than by counting the seasons
+// array, which carries specials as season 0 and would make every series that has
+// any look like it has one more.
+func (t *TMDB) SeasonCount(ctx context.Context, seriesID string) (int, bool) {
+	if apiKey, readToken := t.credentials(ctx); apiKey == "" && readToken == "" {
+		return 0, false
+	}
+	// seriesID may be a tt-id, as it may be for FetchEpisode beside it, so it is
+	// resolved rather than pasted into the path.
+	tmdbID, _, _, _, err := t.resolveID(ctx, "series", seriesID)
+	if err != nil {
+		return 0, false
+	}
+	var out struct {
+		NumberOfSeasons int `json:"number_of_seasons"`
+	}
+	if err := t.get(ctx, t.base()+"/tv/"+tmdbID, &out); err != nil {
+		return 0, false
+	}
+	return out.NumberOfSeasons, out.NumberOfSeasons > 0
+}
+
 // findByExternalID resolves an external identifier (an IMDb tt-id or a TVDB id)
 // to a TMDB id via TMDB's /find endpoint. found is false when TMDB returns no
 // match; err is non-nil only on a transport/decoding failure.

@@ -191,6 +191,12 @@ type animeSeriesNamer interface {
 	SoleSeasonlessSeries(animeID, seriesKey string) bool
 }
 
+// seriesSeasonCounter answers how many seasons a series has. Separate interface
+// for the same reason as the others, and satisfied by the TMDB provider.
+type seriesSeasonCounter interface {
+	SeasonCount(ctx context.Context, seriesID string) (int, bool)
+}
+
 // animeStatedSeasonResolver reads a TMDB season an anime id names outright.
 // Separate interface for the same reason as the two above.
 type animeStatedSeasonResolver interface {
@@ -1615,6 +1621,18 @@ func (p *Pipeline) statedSeasonFor(series string, season int) (int, bool) {
 	return 0, false
 }
 
+// seriesHasOneSeason reports whether TMDB files the series under exactly one
+// season. False when it cannot say, so an unreachable or unknown series leaves
+// the render exactly as it is today.
+func (p *Pipeline) seriesHasOneSeason(ctx context.Context, series string) bool {
+	counter, ok := p.providers.Get("tmdb").(seriesSeasonCounter)
+	if !ok || counter == nil || series == "" {
+		return false
+	}
+	n, ok := counter.SeasonCount(ctx, strings.TrimPrefix(series, "tmdb:"))
+	return ok && n == 1
+}
+
 // firstSeasonByElimination places an anime id whose series records no season at
 // all. Nothing states which season it is, and nothing else could be: it is the
 // only entry mapping to that series, so its episodes are the first season.
@@ -1677,7 +1695,11 @@ func looksLikeTitleID(s string) bool {
 // episode's own IMDb tconst when known, so their ratings are per-episode too).
 // handled is false when this isn't resolvable as an episode, so the caller
 // falls back to normal series-level artwork.
-func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string, season, episode int) ([]byte, *provider.MediaMeta, string, string, bool) {
+// The last result says the still was absent rather than unreachable: TMDB
+// answered and had none. Only that is safe to retry against another season, so
+// a timeout or a failed download does not spend further requests on a source
+// that is already failing.
+func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string, season, episode int) ([]byte, *provider.MediaMeta, string, string, bool, bool) {
 	// "series" mode skips the episode still and falls through to the normal
 	// series artwork path. "still"/"streaming" (and the default) use the still —
 	// v3 has no separate streaming-thumbnail source, so streaming maps to still.
@@ -1691,11 +1713,11 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 		if rating != nil {
 			meta = &provider.MediaMeta{Ratings: []provider.Rating{*rating}}
 		}
-		return nil, meta, id, "", false
+		return nil, meta, id, "", false, false
 	}
 	tmdb := p.TMDBClient()
 	if tmdb == nil {
-		return nil, nil, "", "", false
+		return nil, nil, "", "", false, false
 	}
 	seriesID := strings.TrimPrefix(series, "tmdb:")
 	info, err := tmdb.FetchEpisode(ctx, seriesID, season, episode, provider.ArtworkOptions{
@@ -1703,12 +1725,15 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 		FallbackLanguage: req.Config.FallbackLanguage,
 		Size:             string(req.Config.Size),
 	})
-	if err != nil || info == nil || info.StillURL == "" {
-		return nil, nil, "", "", false
+	if err != nil {
+		return nil, nil, "", "", false, false
+	}
+	if info == nil || info.StillURL == "" {
+		return nil, nil, "", "", false, true
 	}
 	data, err := p.fetcher.Fetch(ctx, info.StillURL)
 	if err != nil || len(data) == 0 {
-		return nil, nil, "", "", false
+		return nil, nil, "", "", false, false
 	}
 	meta := &provider.MediaMeta{}
 	if info.Rating != nil {
@@ -1718,7 +1743,7 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 	if info.IMDbID != "" {
 		ratingID = info.IMDbID
 	}
-	return data, meta, ratingID, info.StillURL, true
+	return data, meta, ratingID, info.StillURL, true, false
 }
 
 // episodeRatingFor is the id the rating sources should be asked about for one
@@ -1836,7 +1861,30 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	episodeRatingID := ""
 	var episodeRating *provider.Rating
 	if ok {
-		data, meta, ratingID, stillURL, handled := p.fetchEpisode(ctx, req, series, season, episode)
+		data, meta, ratingID, stillURL, handled, absent := p.fetchEpisode(ctx, req, series, season, episode)
+		if absent && season > 1 {
+			// BUG-286 case 1. Callers outside XRDB put a catalogue id where the
+			// season belongs, and for most of the anime dataset nothing maps it
+			// back, so no conversion is possible. A series TMDB files under one
+			// season has only one place the episode can be, whatever the number
+			// said, so ask and retry there.
+			//
+			// Asked here rather than beside the other season-slot arms because
+			// this one costs a request. Here it is reached only where TMDB
+			// answered and had no still, which is rare; there it would run on
+			// every episode of every series the anime dataset does not cover.
+			//
+			// Season 0 is excluded rather than only season 1: TMDB numbers
+			// specials as season 0, and a special with no still would otherwise
+			// be answered with a different episode's artwork.
+			if p.seriesHasOneSeason(ctx, series) {
+				if d2, m2, r2, u2, ok2, _ := p.fetchEpisode(ctx, req, series, 1, episode); ok2 {
+					p.log().InfoContext(ctx, "An unplaceable season number fell back to the only season the series has",
+						"id", logging.RequestID(ctx), "media_id", req.MediaID, "season_slot", season)
+					data, meta, ratingID, stillURL, handled = d2, m2, r2, u2, ok2
+				}
+			}
+		}
 		if handled {
 			// The episode still comes from TMDB whatever the configured source is.
 			return data, meta, ratingID, "tmdb", stillURL, nil

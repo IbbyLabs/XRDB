@@ -127,3 +127,183 @@ func TestAnEpisodeWithNoStillFallsBackToTheSeriesArtwork(t *testing.T) {
 		})
 	}
 }
+
+// tmdbOneSeason answers as TMDB does for a series it files under a single
+// season: the asked-for season has no episode still, season 1 does, and the
+// series record says how many seasons there are.
+func tmdbOneSeason(t *testing.T, seasons int, asked *[]string) *httptest.Server {
+	t.Helper()
+	var mu sync.Mutex
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		mu.Lock()
+		*asked = append(*asked, p)
+		mu.Unlock()
+		switch {
+		case strings.Contains(p, "/find/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"tv_results": []map[string]any{{"id": 4242, "name": "A Series"}},
+			})
+		case strings.Contains(p, "/season/1/episode/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"name": "The Only Season", "still_path": "/the-right-still.jpg",
+			})
+		case strings.Contains(p, "/season/") && strings.Contains(p, "/episode/"):
+			// Any other season: TMDB knows of no episode there.
+			_ = json.NewEncoder(w).Encode(map[string]any{"name": "", "still_path": ""})
+		case strings.Contains(p, "/tv/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id": 4242, "name": "A Series",
+				"number_of_seasons": seasons,
+				"poster_path":       "/series-poster.jpg",
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func oneSeasonPipeline(t *testing.T, srv *httptest.Server) *Pipeline {
+	t.Helper()
+	tmdb := provider.NewTMDBAt("k", "", srv.URL)
+	tmdb.SetHTTPClient(srv.Client())
+	reg := provider.NewRegistry()
+	reg.Register(tmdb)
+	return &Pipeline{providers: reg,
+		fetcher: &stubImageFetcher{data: makeTestPNG(600, 900, color.NRGBA{R: 10, G: 10, B: 10, A: 255})}}
+}
+
+// BUG-286 case 1. Callers outside XRDB put a catalogue id where the season
+// belongs, and for most of the anime dataset nothing maps it back, so no
+// conversion is possible. A series TMDB files under one season has only one
+// place the episode can be, whatever the number said.
+func TestAnUnplaceableSeasonFallsBackToTheOnlySeason(t *testing.T) {
+	var asked []string
+	p := oneSeasonPipeline(t, tmdbOneSeason(t, 1, &asked))
+
+	_, _, _, _, url, err := p.fetchSourceImageAndMeta(context.Background(), Request{
+		MediaType: "thumbnail", ContentType: "series",
+		MediaID: "tt3603454:50551:1", Config: imageconfig.Default(),
+	})
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if !strings.Contains(url, "the-right-still") {
+		t.Errorf("artwork url = %q, want the season 1 still", url)
+	}
+	if !strings.Contains(strings.Join(asked, " "), "/season/1/episode/1") {
+		t.Errorf("season 1 was never asked for: %v", asked)
+	}
+}
+
+// The control. Same request against a series with two seasons: the count is
+// consulted and the retry refused, so the number is what decides rather than the
+// retry firing whenever a still is missing.
+func TestAMultiSeasonSeriesDoesNotFallBackToSeasonOne(t *testing.T) {
+	var asked []string
+	p := oneSeasonPipeline(t, tmdbOneSeason(t, 2, &asked))
+
+	_, _, _, _, url, err := p.fetchSourceImageAndMeta(context.Background(), Request{
+		MediaType: "thumbnail", ContentType: "series",
+		MediaID: "tt3603454:50551:1", Config: imageconfig.Default(),
+	})
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if strings.Contains(url, "the-right-still") {
+		t.Errorf("placed an episode in season 1 of a two-season series: %q", url)
+	}
+	if strings.Contains(strings.Join(asked, " "), "/season/1/episode/1") {
+		t.Errorf("season 1 was asked for despite the series having two: %v", asked)
+	}
+}
+
+// An episode already asking for season 1 must not spend a request asking how
+// many seasons there are, since the retry could only repeat what just failed.
+func TestSeasonOneDoesNotAskForTheCount(t *testing.T) {
+	var asked []string
+	p := oneSeasonPipeline(t, tmdbOneSeason(t, 1, &asked))
+
+	if _, _, _, _, _, err := p.fetchSourceImageAndMeta(context.Background(), Request{
+		MediaType: "thumbnail", ContentType: "series",
+		MediaID: "tt3603454:1:9", Config: imageconfig.Default(),
+	}); err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	for _, path := range asked {
+		if strings.HasSuffix(path, "/tv/4242") {
+			t.Errorf("asked for the season count on a season 1 request: %v", asked)
+			break
+		}
+	}
+}
+
+// TMDB numbers a special as season 0, so a special with no still must not be
+// answered with season 1's artwork. That would be a wrong image rather than a
+// missing one, which is the failure this whole area is about.
+func TestASpecialIsNotAnsweredWithSeasonOne(t *testing.T) {
+	var asked []string
+	p := oneSeasonPipeline(t, tmdbOneSeason(t, 1, &asked))
+
+	_, _, _, _, url, err := p.fetchSourceImageAndMeta(context.Background(), Request{
+		MediaType: "thumbnail", ContentType: "series",
+		MediaID: "tt3603454:0:3", Config: imageconfig.Default(),
+	})
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if strings.Contains(url, "the-right-still") {
+		t.Errorf("a special was given season 1's still: %q", url)
+	}
+	if strings.Contains(strings.Join(asked, " "), "/season/1/episode/") {
+		t.Errorf("season 1 was fetched for a special: %v", asked)
+	}
+}
+
+// A TMDB failure is not an absence. During an outage every episode request
+// fails, and retrying each one would spend further requests on the source that
+// is already failing.
+func TestATMDBFailureDoesNotSpendMoreRequests(t *testing.T) {
+	var mu sync.Mutex
+	var asked []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		asked = append(asked, r.URL.Path)
+		mu.Unlock()
+		if strings.Contains(r.URL.Path, "/find/") {
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"tv_results": []map[string]any{{"id": 4242, "name": "A Series"}},
+			})
+			return
+		}
+		// Everything else is the outage.
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(srv.Close)
+	p := oneSeasonPipeline(t, srv)
+
+	if _, _, _, _, _, err := p.fetchSourceImageAndMeta(context.Background(), Request{
+		MediaType: "thumbnail", ContentType: "series",
+		MediaID: "tt3603454:50551:1", Config: imageconfig.Default(),
+	}); err == nil {
+		// A failure here is fine; what matters is what was asked for.
+		_ = err
+	}
+	// The series-artwork fallback legitimately asks for /tv/4242, and the season
+	// count would use the same path, so the count is what separates them: one
+	// visit is the fallback, two means the retry also asked.
+	visits := 0
+	for _, path := range asked {
+		if strings.HasSuffix(path, "/tv/4242") {
+			visits++
+		}
+		if strings.Contains(path, "/season/1/episode/") {
+			t.Errorf("retried season 1 while TMDB was failing: %v", asked)
+		}
+	}
+	if visits > 1 {
+		t.Errorf("asked for the series %d times while TMDB was failing, want 1: %v", visits, asked)
+	}
+}
