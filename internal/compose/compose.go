@@ -1870,9 +1870,11 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 			// said, so ask and retry there.
 			//
 			// Asked here rather than beside the other season-slot arms because
-			// this one costs a request. Here it is reached only where TMDB
-			// answered and had no still, which is rare; there it would run on
-			// every episode of every series the anime dataset does not cover.
+			// this one costs requests: a series lookup to resolve the id and the
+			// series fetch itself, so two unless the resolution is already
+			// cached. Here it is reached only where TMDB answered and had no
+			// still, which is rare; there it would run on every episode of every
+			// series the anime dataset does not cover.
 			//
 			// Season 0 is excluded rather than only season 1: TMDB numbers
 			// specials as season 0, and a special with no still would otherwise

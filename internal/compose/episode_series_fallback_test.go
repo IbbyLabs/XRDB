@@ -284,13 +284,13 @@ func TestATMDBFailureDoesNotSpendMoreRequests(t *testing.T) {
 	t.Cleanup(srv.Close)
 	p := oneSeasonPipeline(t, srv)
 
-	if _, _, _, _, _, err := p.fetchSourceImageAndMeta(context.Background(), Request{
+	_, _, _, _, _, err := p.fetchSourceImageAndMeta(context.Background(), Request{
 		MediaType: "thumbnail", ContentType: "series",
 		MediaID: "tt3603454:50551:1", Config: imageconfig.Default(),
-	}); err == nil {
-		// A failure here is fine; what matters is what was asked for.
-		_ = err
-	}
+	})
+	// A failure here is fine either way: what is under test is what was asked
+	// for, not what came back.
+	_ = err
 	// The series-artwork fallback legitimately asks for /tv/4242, and the season
 	// count would use the same path, so the count is what separates them: one
 	// visit is the fallback, two means the retry also asked.
