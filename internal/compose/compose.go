@@ -1726,7 +1726,10 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 		Size:             string(req.Config.Size),
 	})
 	if err != nil {
-		return nil, nil, "", "", false, false
+		// TMDB saying this episode is not there is an absence the caller may act
+		// on. Anything else, including a 404 while resolving the series, is TMDB
+		// not answering about the episode at all.
+		return nil, nil, "", "", false, errors.Is(err, provider.ErrEpisodeNotFound)
 	}
 	if info == nil || info.StillURL == "" {
 		return nil, nil, "", "", false, true

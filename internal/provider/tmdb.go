@@ -49,6 +49,20 @@ func (e *tmdbStatusError) Error() string {
 	return fmt.Sprintf("tmdb http %d for %s", e.Code, e.Path)
 }
 
+// ErrEpisodeNotFound is TMDB answering that this series has no such episode.
+//
+// Narrower than "a 404 happened somewhere in the call" on purpose. A 404 while
+// resolving the series says nothing about the episode, and a caller acting on
+// it would go on to ask further questions about a series TMDB has never heard
+// of. This is only ever the episode endpoint's own answer.
+var ErrEpisodeNotFound = errors.New("tmdb: episode not found")
+
+// isNotFound reports whether err is TMDB's 404 rather than a failure to answer.
+func isNotFound(err error) bool {
+	var status *tmdbStatusError
+	return errors.As(err, &status) && status.Code == http.StatusNotFound
+}
+
 func (t *TMDB) log() *slog.Logger { return slog.Default() }
 
 // base returns the API root for this client.
@@ -501,6 +515,9 @@ func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episod
 		} `json:"external_ids"`
 	}
 	if err := t.get(ctx, path, &result); err != nil {
+		if isNotFound(err) {
+			return nil, fmt.Errorf("tmdb: %s season %d episode %d: %w", tmdbID, season, episode, ErrEpisodeNotFound)
+		}
 		return nil, err
 	}
 	info := &EpisodeInfo{Name: result.Name, IMDbID: result.ExternalIDs.IMDbID}

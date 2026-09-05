@@ -149,8 +149,12 @@ func tmdbOneSeason(t *testing.T, seasons int, asked *[]string) *httptest.Server 
 				"name": "The Only Season", "still_path": "/the-right-still.jpg",
 			})
 		case strings.Contains(p, "/season/") && strings.Contains(p, "/episode/"):
-			// Any other season: TMDB knows of no episode there.
-			_ = json.NewEncoder(w).Encode(map[string]any{"name": "", "still_path": ""})
+			// Any other season: TMDB answers 404 for a season it does not have,
+			// which is what a catalogue id in the season slot asks for. An
+			// earlier version of this stub answered 200 with an empty still,
+			// a shape TMDB never sends, and the feature passed its test while
+			// doing nothing in production.
+			http.NotFound(w, r)
 		case strings.Contains(p, "/tv/"):
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id": 4242, "name": "A Series",
@@ -305,5 +309,34 @@ func TestATMDBFailureDoesNotSpendMoreRequests(t *testing.T) {
 	}
 	if visits > 1 {
 		t.Errorf("asked for the series %d times while TMDB was failing, want 1: %v", visits, asked)
+	}
+}
+
+// A 404 while resolving the series is not the episode saying it is not there.
+// Acting on it would send a season-count request about a series TMDB has never
+// heard of, to learn nothing.
+func TestAnUnknownSeriesIsNotAnEpisodeAbsence(t *testing.T) {
+	var mu sync.Mutex
+	var asked []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		asked = append(asked, r.URL.Path)
+		mu.Unlock()
+		// TMDB knows nothing about this id, at any endpoint.
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(srv.Close)
+	p := oneSeasonPipeline(t, srv)
+
+	_, _, _, _, _, err := p.fetchSourceImageAndMeta(context.Background(), Request{
+		MediaType: "thumbnail", ContentType: "series",
+		MediaID: "tt3603454:50551:1", Config: imageconfig.Default(),
+	})
+	_ = err
+	for _, path := range asked {
+		if strings.Contains(path, "/season/1/episode/") {
+			t.Errorf("retried season 1 for a series TMDB does not have: %v", asked)
+			break
+		}
 	}
 }
