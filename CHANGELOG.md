@@ -2,6 +2,21 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.108.1](https://github.com/IbbyLabs/XRDB/compare/v3.108.0...v3.108.1) (2026-09-05)
+
+
+### Fixed
+
+* **compose:** BUG-286 place an episode in a series' only season ([b48b5ef](https://github.com/IbbyLabs/XRDB/commit/b48b5ef6eff411b53993d72ea3352e94abff84c4))
+* **compose:** BUG-286 treat a TMDB 404 as an episode absence ([6780cbf](https://github.com/IbbyLabs/XRDB/commit/6780cbffeba514797c1358840eab177fd8031deb))
+
+
+### Documentation
+
+* **compose:** BUG-286 say the season fallback costs two requests ([92e121e](https://github.com/IbbyLabs/XRDB/commit/92e121e033701ee3d974bcc73df0b9b56c38a777))
+* **context:** BUG-286 and BUG-287 episode artwork answers ([5835e71](https://github.com/IbbyLabs/XRDB/commit/5835e71127e55185dcb2bfafbc9b7c270e208c4e))
+* **context:** BUG-286 say where an unplaceable episode lands ([90e4126](https://github.com/IbbyLabs/XRDB/commit/90e4126d68e4f0855b5e537a6954de2bad267a18))
+
 ## [3.108.0](https://github.com/IbbyLabs/XRDB/compare/v3.107.1...v3.108.0) (2026-09-04)
 
 

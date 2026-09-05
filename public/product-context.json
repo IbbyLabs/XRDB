@@ -1,7 +1,7 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
-  "xrdbTag": "3.108.0",
+  "xrdbTag": "3.108.1",
   "generatedAt": "2026-09-05T13:02:52Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
@@ -41,7 +41,7 @@
         "AlloCiné is paced at one request every two seconds. It answers a burst and then refuses for a while, and unpaced sweeps were being refused on most of what was sent. A self-hosted instance can change it with `XRDB_ALLOCINE_MIN_INTERVAL_SECONDS`, as with any source. Any older answer saying AlloCiné is unpaced is out of date.",
         "A rating source named in a config that XRDB does not recognise is ignored, and the poster draws the rest. Nothing on the render marks it, so such a config looks like one that never asked for the source. A self-hosted instance logs the dropped name at warn.",
         "v2's rating source names still work where a config is converted: the v2-style query parameters (`?posterRatings=tomatoes`) and a saved profile carried over from v2 both translate `tomatoes` to `rt`, `tomatoesaudience` to `rtaudience` and `myanimelist` to `mal`. An inline `?config=` blob is not converted, so those three names are dropped there rather than translated. Any older answer saying `tomatoes` no longer works is out of date.",
-        "A self-hosted instance can set a rating source's cache TTL in hours with `XRDB_TTL_\u003cSOURCE\u003e`. Twelve sources take one: TMDB, MDBList, OMDb, Fanart, Trakt, SIMKL, MAL, AniList, Kitsu, IMDb (`XRDB_TTL_IMDBLOCAL`), AlloCiné and Filmweb. A name outside that list and the four surface variables is written to the log as unread at startup, so a typo or an unsupported source no longer looks like a setting that took effect. Any older answer implying every provider takes one is out of date.",
+        "A self-hosted instance can set a rating source's cache TTL in hours with `XRDB_TTL_<SOURCE>`. Twelve sources take one: TMDB, MDBList, OMDb, Fanart, Trakt, SIMKL, MAL, AniList, Kitsu, IMDb (`XRDB_TTL_IMDBLOCAL`), AlloCiné and Filmweb. A name outside that list and the four surface variables is written to the log as unread at startup, so a typo or an unsupported source no longer looks like a setting that took effect. Any older answer implying every provider takes one is out of date.",
         "A self-hosted instance can set how long each artwork surface is cached, separately from the rating sources behind it: `XRDB_TTL_SURFACE_POSTER`, `_BACKDROP`, `_THUMBNAIL` and `_LOGO`, in hours. A surface with one set uses it instead of the shortest TTL among its rating sources, so thumbnails can be kept longer than posters or the other way about. A render that lost a badge is still cached briefly whatever the surface.",
         "A profile's own API keys for MDBList, OMDb and SIMKL accept several credentials separated by commas. Those three meter by the day, so when one key's allowance is spent the next is used and the profile keeps its own limits rather than falling back to the server's. The other providers take a single key and refuse a list rather than accepting one and using only the first: rotation multiplies a daily quota and does nothing for a per-second rate.",
         "Ratings are remembered for a day, and longer for older titles: twice that once the release year is at least one year behind the current one, three times once it is at least three behind. The comparison is between years rather than dates, so a film released in December counts as a year older from the following January. A score barely moves years after release, which is what the longer term is for. An answer that is missing a source is kept for ten minutes whatever the title's age, so a source that ran out of its allowance is re-asked shortly rather than pinned for days.",
@@ -164,8 +164,8 @@
         "XRDB_SHARED_PROFILE_ALIASES (default aios,cimofam)",
         "XRDB_DEFAULT_PROFILE (unset by default)",
         "XRDB_LABEL_LANGUAGES_DIR (unset by default)",
-        "XRDB_\u003cSOURCE\u003e_PROXY (unset by default)",
-        "XRDB_\u003cSOURCE\u003e_MIN_INTERVAL_SECONDS (default per source)",
+        "XRDB_<SOURCE>_PROXY (unset by default)",
+        "XRDB_<SOURCE>_MIN_INTERVAL_SECONDS (default per source)",
         "XRDB_MDBLIST_SWEEP_RESERVE_PCT (default 40)",
         "XRDB_MDBLIST_DAILY_LIMIT (default reported)",
         "XRDB_RATINGS_CACHE_TTL_HOURS (default 24)",
@@ -204,8 +204,8 @@
         "XRDB_MDBLIST_BURST (default 30)",
         "XRDB_SIMKL_DAILY_LIMIT (default 15000)",
         "XRDB_SIMKL_BULK_RESERVE (default 6000)",
-        "XRDB_TTL_\u003cPROVIDER\u003e (default global TTL)",
-        "XRDB_TTL_SURFACE_\u003cSURFACE\u003e (unset by default)",
+        "XRDB_TTL_<PROVIDER> (default global TTL)",
+        "XRDB_TTL_SURFACE_<SURFACE> (unset by default)",
         "NEXT_PUBLIC_API_BASE_URL (default API origin the web app calls. Unset in the single-container image (same origin). Set for split deployments or local dev (`http://localhost:8787`).)"
       ]
     }
