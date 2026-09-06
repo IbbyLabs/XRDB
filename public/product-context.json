@@ -1,7 +1,7 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
-  "xrdbTag": "3.108.1",
+  "xrdbTag": "3.108.2",
   "generatedAt": "2026-09-05T13:02:52Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",

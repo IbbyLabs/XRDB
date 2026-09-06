@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.108.2](https://github.com/IbbyLabs/XRDB/compare/v3.108.1...v3.108.2) (2026-09-06)
+
+
+### Fixed
+
+* **provider:** FR-186 hold the sweep reserve against the whole key ring ([e57aa8e](https://github.com/IbbyLabs/XRDB/commit/e57aa8eb499fda265ce5e1a0a3bf741405f60a09))
+
+
+### Documentation
+
+* **context:** FR-186 the sweep reserve covers the whole key ring ([931b86b](https://github.com/IbbyLabs/XRDB/commit/931b86b6539784b2d973d1059bcc47443c8b90f8))
+
 ## [3.108.1](https://github.com/IbbyLabs/XRDB/compare/v3.108.0...v3.108.1) (2026-09-05)
 
 
