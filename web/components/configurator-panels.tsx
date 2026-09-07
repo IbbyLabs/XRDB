@@ -104,6 +104,68 @@ function SourceRow({ r, active, failed, onToggle, onLogoError }: {
   );
 }
 
+// Swap id with its neighbour in dir; unchanged when it cannot move.
+function moved(list: string[], id: string, dir: -1 | 1): string[] {
+  const i = list.indexOf(id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return list;
+  const out = [...list];
+  [out[i], out[j]] = [out[j], out[i]];
+  return out;
+}
+
+function SourceOrderList({ ids, labelId, logoFailed, onLogoError, onMove }: {
+  ids: string[];
+  labelId: string;
+  logoFailed: Record<string, boolean>;
+  onLogoError: (id: string) => void;
+  onMove: (id: string, dir: -1 | 1) => void;
+}) {
+  return (
+    <ol className="src-order" aria-labelledby={labelId}>
+      {ids.map((id, i) => {
+        const opt = RATING_OPTIONS.find(o => o.id === id);
+        return (
+          <li className="src-order-row" key={id}>
+            <span className="src-order-num" aria-hidden>{i + 1}</span>
+            {opt?.icon && !logoFailed[id] ? (
+              <img
+                className="src-logo"
+                src={opt.icon}
+                alt=""
+                aria-hidden
+                width={18}
+                height={18}
+                loading="lazy"
+                onError={() => onLogoError(id)}
+              />
+            ) : (
+              <span className="src-dot" style={{ background: opt?.accent }} aria-hidden />
+            )}
+            <span className="src-label">{opt?.label ?? id}</span>
+            <button
+              className="src-order-btn"
+              onClick={() => onMove(id, -1)}
+              disabled={i === 0}
+              aria-label={`Move ${opt?.label ?? id} earlier`}
+            >
+              <ChevronUp size={13} aria-hidden />
+            </button>
+            <button
+              className="src-order-btn"
+              onClick={() => onMove(id, 1)}
+              disabled={i === ids.length - 1}
+              aria-label={`Move ${opt?.label ?? id} later`}
+            >
+              <ChevronDown size={13} aria-hidden />
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRating, fine }: RatingsPanelProps) {
   // Track source logos that fail to load so we fall back to the accent dot.
   const [logoFailed, setLogoFailed] = useState<Record<string, boolean>>({});
@@ -353,47 +415,13 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                 rating for the title. With a maximum set, put the sources you
                 want first at the top.
               </span>
-              <ol className="src-order" aria-labelledby={`${uid}-order-label`}>
-                {config.ratings.map((id, i) => {
-                  const opt = RATING_OPTIONS.find(o => o.id === id);
-                  return (
-                    <li className="src-order-row" key={id}>
-                      <span className="src-order-num" aria-hidden>{i + 1}</span>
-                      {opt?.icon && !logoFailed[id] ? (
-                        <img
-                          className="src-logo"
-                          src={opt.icon}
-                          alt=""
-                          aria-hidden
-                          width={18}
-                          height={18}
-                          loading="lazy"
-                          onError={() => setLogoFailed(prev => ({ ...prev, [id]: true }))}
-                        />
-                      ) : (
-                        <span className="src-dot" style={{ background: opt?.accent }} aria-hidden />
-                      )}
-                      <span className="src-label">{opt?.label ?? id}</span>
-                      <button
-                        className="src-order-btn"
-                        onClick={() => onMoveRating(id, -1)}
-                        disabled={i === 0}
-                        aria-label={`Move ${opt?.label ?? id} earlier`}
-                      >
-                        <ChevronUp size={13} aria-hidden />
-                      </button>
-                      <button
-                        className="src-order-btn"
-                        onClick={() => onMoveRating(id, 1)}
-                        disabled={i === config.ratings.length - 1}
-                        aria-label={`Move ${opt?.label ?? id} later`}
-                      >
-                        <ChevronDown size={13} aria-hidden />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
+              <SourceOrderList
+                ids={config.ratings}
+                labelId={`${uid}-order-label`}
+                logoFailed={logoFailed}
+                onLogoError={id => setLogoFailed(prev => ({ ...prev, [id]: true }))}
+                onMove={onMoveRating}
+              />
             </div>
           )}
         </fieldset>
@@ -448,6 +476,18 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                     />
                   ))}
                 </div>
+                {chosen.length > 1 && (
+                  <div className="field" style={{ marginTop: 'var(--sp-2)' }}>
+                    <span className="label" id={`${uid}-${t.key}-order-label`}>{t.label} order</span>
+                    <SourceOrderList
+                      ids={chosen}
+                      labelId={`${uid}-${t.key}-order-label`}
+                      logoFailed={logoFailed}
+                      onLogoError={id => setLogoFailed(prev => ({ ...prev, [id]: true }))}
+                      onMove={(id, dir) => onUpdate(t.key, moved(chosen, id, dir))}
+                    />
+                  </div>
+                )}
               </div>
               );
             })}
