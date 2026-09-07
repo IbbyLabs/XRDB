@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.110.0](https://github.com/IbbyLabs/XRDB/compare/v3.109.0...v3.110.0) (2026-09-07)
+
+
+### Added
+
+* **web:** FR-214 reorder sources in per-type pickers ([9ed3ef0](https://github.com/IbbyLabs/XRDB/commit/9ed3ef048775428a15b76806d251b83e8b6c4822))
+
 ## [3.109.0](https://github.com/IbbyLabs/XRDB/compare/v3.108.2...v3.109.0) (2026-09-07)
 
 
