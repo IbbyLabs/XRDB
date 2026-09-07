@@ -191,9 +191,9 @@ func (r RateLimit) queueWait() time.Duration {
 //     accumulated window. One second holds it to 60 a minute. The figure is a
 //     floor derived from a single refusal, not a published limit. Its queue
 //     ceiling is 5s rather than the shared 2s: a person scrolling a catalogue
-//     fires a burst that a 2s queue refuses two thirds of (measured 2026-09-05
-//     and 2026-09-06), and 5s plus the worst observed call stays inside the
-//     10s client timeout. Queueing longer never raises the request rate.
+//     fires ten renders inside two seconds, and at one a second a 2s queue
+//     serves three and refuses the rest. 5s plus the worst observed call stays
+//     inside the 10s client timeout, and queueing longer never raises the rate.
 //   - AlloCiné answers a burst and then refuses for a while. Measured
 //     2026-09-02: unpaced sweeps were refused on 54 to 72 percent of what was
 //     sent; at one request every two seconds, 209 answers in an hour and none
