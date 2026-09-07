@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.109.0](https://github.com/IbbyLabs/XRDB/compare/v3.108.2...v3.109.0) (2026-09-07)
+
+
+### Added
+
+* **provider:** give trakt its own 5s queue ceiling ([89222b4](https://github.com/IbbyLabs/XRDB/commit/89222b478f6e819a11cde42b60315bee50dfc315))
+
+
+### Documentation
+
+* **provider:** state the trakt queue ceiling as arithmetic, not one window's rate ([94e3c84](https://github.com/IbbyLabs/XRDB/commit/94e3c84fc7a810725b0264e119bae6f650566509))
+
 ## [3.108.2](https://github.com/IbbyLabs/XRDB/compare/v3.108.1...v3.108.2) (2026-09-06)
 
 
