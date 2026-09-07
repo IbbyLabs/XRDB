@@ -163,6 +163,17 @@ type RateLimit struct {
 	// afford, not the one the source asked for. A longer wait ends the attempt
 	// and the refusal puts the source in cooldown instead.
 	MaxRetryWait time.Duration
+	// MaxQueueWait caps how long a render queues for this source before the
+	// request is refused. Zero takes XRDB_RATINGS_MAX_QUEUE_SECONDS.
+	MaxQueueWait time.Duration
+}
+
+// queueWait is the ceiling a render queues against for this source.
+func (r RateLimit) queueWait() time.Duration {
+	if r.MaxQueueWait > 0 {
+		return r.MaxQueueWait
+	}
+	return pacerMaxWait()
 }
 
 // rateLimits holds the per-source policy. Anything not listed gets
@@ -178,7 +189,11 @@ type RateLimit struct {
 //     minute from a standing start earned one, and 351 inside five minutes
 //     with the preceding 85 empty, so it is a burst limit rather than an
 //     accumulated window. One second holds it to 60 a minute. The figure is a
-//     floor derived from a single refusal, not a published limit.
+//     floor derived from a single refusal, not a published limit. Its queue
+//     ceiling is 5s rather than the shared 2s: a person scrolling a catalogue
+//     fires a burst that a 2s queue refuses two thirds of (measured 2026-09-05
+//     and 2026-09-06), and 5s plus the worst observed call stays inside the
+//     10s client timeout. Queueing longer never raises the request rate.
 //   - AlloCiné answers a burst and then refuses for a while. Measured
 //     2026-09-02: unpaced sweeps were refused on 54 to 72 percent of what was
 //     sent; at one request every two seconds, 209 answers in an hour and none
@@ -190,7 +205,7 @@ var rateLimits = map[string]RateLimit{
 	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	"mdblist": {MaxRetries: 3, MaxRetryWait: renderRetryBudget},
-	"trakt":   {MinInterval: time.Second, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+	"trakt":   {MinInterval: time.Second, MaxRetries: 3, MaxRetryWait: renderRetryBudget, MaxQueueWait: 5 * time.Second},
 	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	// A SPARQL query is expensive to serve and the Wikidata Query Service
@@ -762,7 +777,7 @@ func newHTTPClient(source string, timeout time.Duration) *http.Client {
 	transport := &throttledTransport{
 		source: source,
 		policy: policy,
-		pacer:  &pacer{interval: policy.MinInterval, maxWait: pacerMaxWait()},
+		pacer:  &pacer{interval: policy.MinInterval, maxWait: policy.queueWait()},
 	}
 	if source == "mdblist" {
 		transport.governor = newBudgetGovernor(source)
