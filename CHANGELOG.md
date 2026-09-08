@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.112.0](https://github.com/IbbyLabs/XRDB/compare/v3.111.0...v3.112.0) (2026-09-08)
+
+
+### Added
+
+* **web:** point new users at the ElfHosted public instance ([8e7ac18](https://github.com/IbbyLabs/XRDB/commit/8e7ac18db3c3bbdf800a90c0fb9a4d68d64494b5))
+
 ## [3.111.0](https://github.com/IbbyLabs/XRDB/compare/v3.110.0...v3.111.0) (2026-09-08)
 
 
