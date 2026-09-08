@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const cinemetaBaseURL = "https://v3-cinemeta.strem.io"
+var cinemetaBaseURL = sourceBaseURL("CINEMETA", "https://v3-cinemeta.strem.io")
 const metahubImageBase = "https://images.metahub.space"
 
 // Cinemeta is the Stremio Cinemeta metadata/artwork provider.

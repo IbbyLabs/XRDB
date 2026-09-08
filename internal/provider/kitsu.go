@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const kitsuBaseURL = "https://kitsu.io/api/edge/anime/"
+var kitsuBaseURL = sourceBaseURL("KITSU", "https://kitsu.io/api/edge/anime/")
 
 // Kitsu is the Kitsu.io metadata provider (no auth required for public queries).
 // IDs must be prefixed with "kitsu:" e.g. "kitsu:7442".

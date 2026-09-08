@@ -16,12 +16,12 @@ import (
 	"xrdb_rewrite/internal/logging"
 )
 
-const mdblistBase = "https://api.mdblist.com"
+var mdblistBase = sourceBaseURL("MDBLIST", "https://api.mdblist.com")
 
 // mdblistAltBase is MDBList's other host for the same data. It answers movies
 // and shows from one call, reports a missing title as a 200 with response
 // false, and carries no awards field.
-const mdblistAltBase = "https://mdblist.com/api"
+var mdblistAltBase = sourceBaseURL("MDBLIST_ALT", "https://mdblist.com/api")
 
 // errHostUnreachable marks a failure of api.mdblist.com itself rather than of
 // the request or the key. Only these are worth retrying on the other host: a

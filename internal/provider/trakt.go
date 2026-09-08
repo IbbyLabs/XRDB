@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const traktBaseURL = "https://api.trakt.tv"
+var traktBaseURL = sourceBaseURL("TRAKT", "https://api.trakt.tv")
 
 var traktIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
 

@@ -19,7 +19,7 @@ import (
 	"xrdb_rewrite/internal/logging"
 )
 
-const tmdbBaseURL = "https://api.themoviedb.org/3"
+var tmdbBaseURL = sourceBaseURL("TMDB", "https://api.themoviedb.org/3")
 const tmdbImageBase = "https://image.tmdb.org/t/p"
 
 // TMDB is the TMDB metadata provider.

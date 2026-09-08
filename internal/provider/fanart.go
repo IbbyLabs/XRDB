@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-const fanartMoviesURL = "https://webservice.fanart.tv/v3/movies/"
-const fanartTVURL = "https://webservice.fanart.tv/v3/tv/"
+var fanartMoviesURL = sourceBaseURL("FANART_MOVIES", "https://webservice.fanart.tv/v3/movies/")
+var fanartTVURL = sourceBaseURL("FANART_TV", "https://webservice.fanart.tv/v3/tv/")
 
 // Fanart is the Fanart.tv metadata provider.
 // It returns high-quality logos, posters, and art images.
