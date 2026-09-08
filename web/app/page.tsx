@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { LayoutGrid, ExternalLink } from 'lucide-react';
-import { BRAND_NAME, BRAND_DISCORD_URL, BRAND_SUPPORT_URL, PUBLIC_INSTANCE_NAME, PUBLIC_INSTANCE_URL } from '@/lib/brand';
+import { LayoutGrid } from 'lucide-react';
+import { BRAND_NAME, BRAND_DISCORD_URL, BRAND_SUPPORT_URL } from '@/lib/brand';
+import { PublicInstanceCard } from '@/components/public-instance-card';
 
 export default function HomePage() {
   return (
@@ -26,25 +27,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="panel home-public" aria-labelledby="home-public-title">
-        <div className="panel-body">
-          <h2 className="home-public-title" id="home-public-title">Public instance, hosted by {PUBLIC_INSTANCE_NAME}</h2>
-          <p className="home-public-copy">
-            New here? Use the public instance at{' '}
-            <a href={PUBLIC_INSTANCE_URL} target="_blank" rel="noreferrer">xrdb.elfhosted.com</a>, run free by {PUBLIC_INSTANCE_NAME} at
-            the author&apos;s invitation on far more capacity than this server has. Configure and save your profile there.
-          </p>
-          <p className="home-public-copy hint">
-            Profiles do not carry across. One saved here stays here, and every artwork URL it feeds keeps working.
-          </p>
-          <div className="home-actions">
-            <a href={PUBLIC_INSTANCE_URL} className="btn btn-primary" target="_blank" rel="noreferrer">
-              <ExternalLink size={15} aria-hidden="true" />
-              Use the public instance
-            </a>
-          </div>
-        </div>
-      </section>
+      <PublicInstanceCard />
 
       <footer className="home-footer">
         <span className="home-footer-brand">

@@ -5,6 +5,7 @@ import { Rocket, ExternalLink } from 'lucide-react';
 import { installToAIOM, renderOrigin } from '@/lib/api';
 import { CopyButton } from './copy-button';
 import { PUBLIC_INSTANCE_NAME, PUBLIC_INSTANCE_URL } from '@/lib/brand';
+import { useIsCanonicalHost } from './public-instance-card';
 
 const PUBLIC_INSTANCES = [
   { label: 'ElfHosted', url: 'https://aiometadata.elfhosted.com' },
@@ -97,6 +98,7 @@ interface InstallPanelProps {
 }
 
 export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyChange, onNotice }: InstallPanelProps) {
+  const canonicalHost = useIsCanonicalHost();
   const uid = useId();
   const [selectedInstance, setSelectedInstance] = useState(PUBLIC_INSTANCES[0].url);
   const [customUrl, setCustomUrl] = useState('');
@@ -139,6 +141,7 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
+        {canonicalHost && (
         <div className="field">
           <span className="label">Not saved a profile yet?</span>
           <span className="hint" style={{ marginTop: 0 }}>
@@ -147,6 +150,7 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
             far more capacity than this server. Configure and save there instead. Profiles do not carry across: one saved here stays here.
           </span>
         </div>
+        )}
         <div className="field">
           <label className="label" htmlFor={`${uid}-instance-key`}>Instance API key</label>
           <input
@@ -315,9 +319,11 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
             Editing this profile updates the art in place — no need to reinstall.
           </span>
         </div>
+        {canonicalHost && (
         <span className="hint" style={{ marginTop: 0 }}>
           Already on {PUBLIC_INSTANCE_NAME}? Save your profile on the public instance and use the manifest it gives you.
         </span>
+        )}
 
         <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
           <span className="label">Manual setup</span>

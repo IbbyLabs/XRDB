@@ -16,3 +16,12 @@ export const BRAND_DEVELOPER_URL = 'https://ibbylabs.dev';
  *  store is its own: a profile saved here does not exist there. */
 export const PUBLIC_INSTANCE_NAME = 'ElfHosted';
 export const PUBLIC_INSTANCE_URL = 'https://xrdb.elfhosted.com';
+
+/** The hosts this deployment answers on. The public-instance card is for our
+ *  own visitors only; a self-hosted XRDB serving the same pages must not
+ *  advertise another host. */
+export const CANONICAL_HOST = 'extendedratings.com';
+export function isCanonicalHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return h === CANONICAL_HOST || h.endsWith('.' + CANONICAL_HOST);
+}
