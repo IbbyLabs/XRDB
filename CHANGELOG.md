@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.112.1](https://github.com/IbbyLabs/XRDB/compare/v3.112.0...v3.112.1) (2026-09-08)
+
+
+### Fixed
+
+* **web:** show the public-instance card on our own host only ([b1efc20](https://github.com/IbbyLabs/XRDB/commit/b1efc201ce07f15843b1eae75d51ede3e24c86e2))
+
 ## [3.112.0](https://github.com/IbbyLabs/XRDB/compare/v3.111.0...v3.112.0) (2026-09-08)
 
 
