@@ -126,22 +126,22 @@ export const TREND_STYLE_OPTIONS = [
 ] as const;
 
 export const RATING_OPTIONS: { id: string; label: string; accent: string; icon: string; group?: string }[] = [
-  { id: 'imdb',           label: 'IMDb',            accent: '#f5c518', icon: '/rating-logos/imdb.svg' },
+  { id: 'imdb',           label: 'IMDb',            accent: '#f5c518', icon: '/rating-logos/imdb.png' },
   { id: 'tmdb',           label: 'TMDB',            accent: '#01b4e4', icon: '/rating-logos/tmdb.svg' },
   { id: 'rt',             label: 'RT Critics',      accent: '#fa320a', icon: '/rating-logos/rt.svg' },
   { id: 'rtaudience',     label: 'RT Audience',     accent: '#fa320a', icon: '/rating-logos/rtaudience.svg' },
-  { id: 'metacritic',     label: 'Metacritic',      accent: '#ffcc34', icon: '/rating-logos/metacritic.svg' },
+  { id: 'metacritic',     label: 'Metacritic',      accent: '#ffcc34', icon: '/rating-logos/metacritic.png' },
   { id: 'metacriticuser', label: 'Metacritic User', accent: '#ffcc34', icon: '/rating-logos/metacriticuser.svg' },
-  { id: 'letterboxd',     label: 'Letterboxd',      accent: '#00a99d', icon: '/rating-logos/letterboxd.svg' },
-  { id: 'mdblist',        label: 'MDBList',         accent: '#8b5cf6', icon: '/rating-logos/mdblist.svg' },
+  { id: 'letterboxd',     label: 'Letterboxd',      accent: '#00a99d', icon: '/rating-logos/letterboxd.png' },
+  { id: 'mdblist',        label: 'MDBList',         accent: '#8b5cf6', icon: '/rating-logos/mdblist.png' },
   { id: 'trakt',          label: 'Trakt',           accent: '#ed1c24', icon: '/rating-logos/trakt.svg' },
   { id: 'simkl',          label: 'SIMKL',           accent: '#1cb0f6', icon: '/rating-logos/simkl.svg' },
   { id: 'rogerebert',     label: 'Roger Ebert',     accent: '#c1121f', icon: '/rating-logos/rogerebert.png' },
   { id: 'allocine',       label: 'AlloCiné',        accent: '#fecc00', icon: '/rating-logos/allocine.svg' },
   { id: 'allocinepress',  label: 'AlloCiné Press',  accent: '#f59e0b', icon: '/rating-logos/allocinepress.svg' },
   { id: 'filmweb',        label: 'Filmweb',         accent: '#ecb014', icon: '/rating-logos/filmweb.png' },
-  { id: 'mal',            label: 'MyAnimeList',     accent: '#2c6fbb', icon: '/rating-logos/mal.svg', group: 'anime' },
-  { id: 'anilist',        label: 'AniList',         accent: '#02a9ff', icon: '/rating-logos/anilist.svg', group: 'anime' },
+  { id: 'mal',            label: 'MyAnimeList',     accent: '#2c6fbb', icon: '/rating-logos/mal.png', group: 'anime' },
+  { id: 'anilist',        label: 'AniList',         accent: '#02a9ff', icon: '/rating-logos/anilist.png', group: 'anime' },
   { id: 'kitsu',          label: 'Kitsu',           accent: '#f76e18', icon: '/rating-logos/kitsu.svg', group: 'anime' },
 ];
 

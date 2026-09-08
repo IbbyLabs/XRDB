@@ -39,7 +39,7 @@ export function SiteFooter() {
             title="IMDb"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/rating-logos/imdb.svg" alt="IMDb" width={32} height={32} />
+            <img src="/rating-logos/imdb.png" alt="IMDb" width={32} height={32} />
           </a>
           <p>
             Information courtesy of{' '}
