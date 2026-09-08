@@ -96,6 +96,12 @@ type Store struct {
 
 // Open opens (or creates) the SQLite database at path and applies the schema.
 func Open(path string) (*Store, error) {
+	// A postgres DSN in XRDB_PROFILE_DSN moves the profile table -- and only
+	// the profile table -- off SQLite, so that several replicas can share one.
+	// See postgres.go for why this table and no other.
+	if dsn := postgresDSNFromEnv(); dsn != "" {
+		return openPostgres(dsn)
+	}
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
@@ -534,9 +540,22 @@ func isConflict(err error) bool {
 	}
 	msg := err.Error()
 	return strings.Contains(msg, "UNIQUE constraint failed") ||
-		strings.Contains(msg, "constraint failed: profiles.id")
+		strings.Contains(msg, "constraint failed: profiles.id") ||
+		// Postgres phrasing for the same thing. SQLSTATE 23505 names the
+		// index rather than the column: "duplicate key value violates unique
+		// constraint \"profiles_pkey\"" for the id, or idx_profiles_uuid for
+		// a re-imported legacy identity.
+		strings.Contains(msg, "duplicate key value violates unique constraint")
 }
 
 func isAliasConflict(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "profiles.alias")
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	// Save tests this before isConflict, which is what keeps an alias clash
+	// reported as ErrAliasTaken on postgres too -- the generic phrase above
+	// matches this error as well, and the order decides which one wins.
+	return strings.Contains(msg, "profiles.alias") ||
+		strings.Contains(msg, "idx_profiles_alias")
 }
