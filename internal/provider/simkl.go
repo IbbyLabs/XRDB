@@ -16,7 +16,7 @@ import (
 
 var simklNumericIDRe = regexp.MustCompile(`^\d+$`)
 
-const simklBaseURL = "https://api.simkl.com"
+var simklBaseURL = sourceBaseURL("SIMKL", "https://api.simkl.com")
 
 var simklIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
 

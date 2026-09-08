@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const anilistGraphQLURL = "https://graphql.anilist.co"
+var anilistGraphQLURL = sourceBaseURL("ANILIST", "https://graphql.anilist.co")
 
 // AniList is the AniList.co GraphQL metadata provider (no auth required for public queries).
 // IDs must be prefixed with "al:" e.g. "al:21".
