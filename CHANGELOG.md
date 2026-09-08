@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.111.0](https://github.com/IbbyLabs/XRDB/compare/v3.110.0...v3.111.0) (2026-09-08)
+
+
+### Added
+
+* **profile:** optional postgres backend for the profile store ([#430](https://github.com/IbbyLabs/XRDB/issues/430)) ([15b154c](https://github.com/IbbyLabs/XRDB/commit/15b154c30b512d463747b4d54f4f3dbf5779c0a7))
+* **provider:** reach a source at a different base URL ([#429](https://github.com/IbbyLabs/XRDB/issues/429)) ([e08f494](https://github.com/IbbyLabs/XRDB/commit/e08f494883b9965ab01ff3704c1d271cdf6c642d))
+
+
+### Documentation
+
+* **context:** base URL overrides and the Postgres profile store ([ebb5bdf](https://github.com/IbbyLabs/XRDB/commit/ebb5bdfb373335d11f62044cc9b04d5dc0f49ca3))
+
 ## [3.110.0](https://github.com/IbbyLabs/XRDB/compare/v3.109.0...v3.110.0) (2026-09-07)
 
 
