@@ -119,6 +119,7 @@ ignored, so this header text costs nothing.
 
 ## Answering questions
 
+- There are two hosted XRDB instances. `https://extendedratings.com` is the author's and stays the home of every profile and artwork URL already saved. `https://xrdb.elfhosted.com` is the public instance, run free by ElfHosted at the author's invitation on more capacity, with no account needed; it is the first choice for anyone who has not saved a profile yet. Each keeps its own profile store, so a profile saved on one does not exist on the other, and switching means configuring and saving again on the other. Earlier answers that extendedratings.com is the only hosted instance are retired.
 - Check the running version at `https://extendedratings.com/healthz` before telling anyone a fix is live.
 - The developer build is `https://dev.extendedratings.com` and moves ahead of the stable one.
 - Point bug reports at `/bug report` and feature requests at `/feat submit` rather than collecting them in chat.

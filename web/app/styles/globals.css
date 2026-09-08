@@ -1856,6 +1856,19 @@ textarea.input { min-height: 0; line-height: 1.5; }
   flex-wrap: wrap;
 }
 
+.home-public {
+  max-width: 560px;
+  margin: var(--sp-6) auto 0;
+  text-align: left;
+}
+.home-public-title {
+  margin: 0 0 var(--sp-2);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.home-public-copy { margin: 0 0 var(--sp-2); }
+.home-public .home-actions { margin-top: var(--sp-3); justify-content: flex-start; }
+
 .home-footer {
   border-top: 1px solid var(--border);
   margin-top: var(--sp-6);

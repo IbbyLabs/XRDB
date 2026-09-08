@@ -4,6 +4,7 @@ import { useState, useId } from 'react';
 import { Rocket, ExternalLink } from 'lucide-react';
 import { installToAIOM, renderOrigin } from '@/lib/api';
 import { CopyButton } from './copy-button';
+import { PUBLIC_INSTANCE_NAME, PUBLIC_INSTANCE_URL } from '@/lib/brand';
 
 const PUBLIC_INSTANCES = [
   { label: 'ElfHosted', url: 'https://aiometadata.elfhosted.com' },
@@ -138,6 +139,14 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
+        <div className="field">
+          <span className="label">Not saved a profile yet?</span>
+          <span className="hint" style={{ marginTop: 0 }}>
+            The public instance at{' '}
+            <a href={PUBLIC_INSTANCE_URL} target="_blank" rel="noreferrer">xrdb.elfhosted.com</a>, hosted by {PUBLIC_INSTANCE_NAME}, has
+            far more capacity than this server. Configure and save there instead. Profiles do not carry across: one saved here stays here.
+          </span>
+        </div>
         <div className="field">
           <label className="label" htmlFor={`${uid}-instance-key`}>Instance API key</label>
           <input
@@ -306,6 +315,9 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
             Editing this profile updates the art in place — no need to reinstall.
           </span>
         </div>
+        <span className="hint" style={{ marginTop: 0 }}>
+          Already on {PUBLIC_INSTANCE_NAME}? Save your profile on the public instance and use the manifest it gives you.
+        </span>
 
         <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
           <span className="label">Manual setup</span>
