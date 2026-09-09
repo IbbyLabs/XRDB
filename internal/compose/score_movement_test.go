@@ -152,6 +152,27 @@ func TestAFullQueueDropsRatherThanBlocks(t *testing.T) {
 // The samples have to outlive the container log, which retains well under an
 // hour at production volume while the multipliers need a week. So the writer is
 // asserted to put them on disk rather than only onto a channel.
+// sampleLines returns the sample lines of a recorder file, dropping the run
+// marks. A mark carries an event and no source.
+func sampleLines(t *testing.T, data []byte) []string {
+	t.Helper()
+	var out []string
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		if line == "" {
+			continue
+		}
+		var row map[string]any
+		if err := json.Unmarshal([]byte(line), &row); err != nil {
+			t.Fatalf("line is not JSON: %q", line)
+		}
+		if row["event"] != nil && row["source"] == nil {
+			continue
+		}
+		out = append(out, line)
+	}
+	return out
+}
+
 func TestSamplesAreWrittenToDiskAsOneJSONObjectPerLine(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, scoreMovementFile)
@@ -171,9 +192,11 @@ func TestSamplesAreWrittenToDiskAsOneJSONObjectPerLine(t *testing.T) {
 	if err != nil {
 		t.Fatalf("no file was written: %v", err)
 	}
-	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	// The writer marks each run before any sample, so a reader of this file
+	// counts samples by skipping marks rather than by counting lines.
+	lines := sampleLines(t, data)
 	if len(lines) != 2 {
-		t.Fatalf("wrote %d lines, want 2: %q", len(lines), string(data))
+		t.Fatalf("wrote %d samples, want 2: %q", len(lines), string(data))
 	}
 	var first scoreMovementSample
 	if err := json.Unmarshal([]byte(lines[0]), &first); err != nil {
@@ -204,8 +227,8 @@ func TestARestartAppendsRatherThanTruncating(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if lines := strings.Split(strings.TrimSpace(string(data)), "\n"); len(lines) != 2 {
-		t.Errorf("after two runs the file holds %d lines, want 2: %q", len(lines), string(data))
+	if lines := sampleLines(t, data); len(lines) != 2 {
+		t.Errorf("after two runs the file holds %d samples, want 2: %q", len(lines), string(data))
 	}
 }
 
@@ -303,5 +326,55 @@ func TestRecordingStaysOffUntilTheInstanceAsks(t *testing.T) {
 	scoreMovement.mu.Unlock()
 	if !started {
 		t.Error("control: recording did not start when asked, so the refusal proves nothing")
+	}
+}
+
+
+// A reader has to tell a quiet stretch from one where the process died with
+// samples still queued, and only the file can say which it was.
+func TestScoreMovementFileMarksWhereRecordingRestarted(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, scoreMovementFile)
+
+	for run := 0; run < 2; run++ {
+		samples := make(chan scoreMovementSample, 1)
+		done := make(chan struct{})
+		go func() {
+			writeScoreMovement(path, samples, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			close(done)
+		}()
+		samples <- scoreMovementSample{At: time.Now().UTC(), Source: "tmdb", Rating: "8.1", MediaID: "tt1", Old: 8.0, New: 8.1}
+		close(samples)
+		<-done
+	}
+
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read the file: %v", err)
+	}
+	var markers, samples int
+	for _, line := range strings.Split(strings.TrimSpace(string(body)), "\n") {
+		var row map[string]any
+		if err := json.Unmarshal([]byte(line), &row); err != nil {
+			t.Fatalf("line is not JSON: %q", line)
+		}
+		if row["event"] == "recorder-start" {
+			markers++
+			if _, ok := row["source"]; ok {
+				t.Error("a marker carries a source, so a reader cannot tell it from a sample")
+			}
+			continue
+		}
+		if row["source"] == nil {
+			t.Errorf("a line is neither marker nor sample: %q", line)
+		}
+		samples++
+	}
+	// Two runs, so two marks and two samples, and the first mark comes first.
+	if markers != 2 || samples != 2 {
+		t.Fatalf("markers = %d, samples = %d, want 2 and 2", markers, samples)
+	}
+	if !strings.HasPrefix(strings.TrimSpace(string(body)), `{"at":`) {
+		t.Error("the file does not start with the first run's mark")
 	}
 }

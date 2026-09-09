@@ -51,6 +51,14 @@ type scoreMovementSample struct {
 	New         float64   `json:"new"`
 }
 
+// scoreMovementMarker records that recording (re)started, so a reader can
+// exclude the minutes either side of a restart rather than reading a gap as
+// stillness. Samples carry a source; this does not.
+type scoreMovementMarker struct {
+	At    time.Time `json:"at"`
+	Event string    `json:"event"`
+}
+
 var scoreMovement struct {
 	mu      sync.Mutex
 	samples chan scoreMovementSample
@@ -108,6 +116,15 @@ func writeScoreMovement(path string, samples <-chan scoreMovementSample, logger 
 	}
 	full := false
 	enc := json.NewEncoder(f)
+
+	// A process that dies loses whatever is queued, so a reader cannot tell a
+	// quiet minute from a lost one. This line marks where the record broke.
+	// It carries no source, which is how a reader tells it from a sample.
+	if err := enc.Encode(scoreMovementMarker{At: time.Now().UTC(), Event: "recorder-start"}); err != nil {
+		logger.Error("Could not mark the start of a score movement run", "path", path, "error", err)
+	} else if info, err := f.Stat(); err == nil {
+		size = info.Size()
+	}
 	for s := range samples {
 		if full {
 			continue
