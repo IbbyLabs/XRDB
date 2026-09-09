@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.112.2](https://github.com/IbbyLabs/XRDB/compare/v3.112.1...v3.112.2) (2026-09-09)
+
+
+### Fixed
+
+* **web:** point six rating logos at the files that actually ship ([#436](https://github.com/IbbyLabs/XRDB/issues/436)) ([b5d147a](https://github.com/IbbyLabs/XRDB/commit/b5d147a42ab6a0f3ebf8ae2f269f36d379579635))
+
 ## [3.112.1](https://github.com/IbbyLabs/XRDB/compare/v3.112.0...v3.112.1) (2026-09-08)
 
 
