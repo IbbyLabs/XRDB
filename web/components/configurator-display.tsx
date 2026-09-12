@@ -67,18 +67,21 @@ export function Field({ label, hint, htmlFor, children }: {
 
 // ── Toggle row ────────────────────────────────────────────────────────────────
 
-function ToggleRow({ label, hint, checked, onChange }: {
+function ToggleRow({ label, hint, checked, onChange, disabled, note }: {
   label: string; hint: string; checked: boolean; onChange: () => void;
+  disabled?: boolean; note?: string;
 }) {
   return (
     <div className="toggle-row">
       <div>
         <span className="label" style={{ marginBottom: 0 }}>{label}</span>
         <span className="hint" style={{ marginTop: 0 }}>{hint}</span>
+        {note && <span className="hint hint-warn" style={{ marginTop: 0 }}>{note}</span>}
       </div>
       <button
         role="switch"
         aria-checked={checked}
+        disabled={disabled}
         className={`toggle${checked ? ' toggle--on' : ''}`}
         onClick={onChange}
         aria-label={`Toggle ${label.toLowerCase()}`}
@@ -100,9 +103,15 @@ interface DisplayPanelProps {
   onReset: () => void;
   /** Reveals the per-badge scale, offset and colour controls in place. */
   fine: boolean;
+  /** From the instance's healthz; undefined when unread or unreadable. */
+  features?: Record<string, boolean>;
 }
 
-export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, onReset, fine }: DisplayPanelProps) {
+export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, onReset, fine, features }: DisplayPanelProps) {
+  // Greyed only on an explicit false: an older instance omits the key and a
+  // failed read leaves the control live. An inline config in a URL carries
+  // topRated regardless of what this shows.
+  const topRatedOff = features?.imdbTopRated === false;
   const suppressed = suppressedQualityBadges(config.badges);
   const supersededLabels = Object.keys(suppressed)
     .map(id => QUALITY_BADGE_OPTIONS.find(o => o.id === id)?.label)
@@ -448,9 +457,11 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           hint="Mark films in the top-rated ranking. Needs the IMDb dataset with XRDB_IMDB_TOP_RATED enabled on the server."
           checked={config.topRated}
           onChange={() => onUpdate('topRated', !config.topRated)}
+          disabled={topRatedOff}
+          note={topRatedOff ? 'Not enabled on this instance. Whoever runs it can switch it on with XRDB_IMDB_TOP_RATED and the IMDb dataset.' : undefined}
         />
 
-        {config.topRated && (
+        {config.topRated && !topRatedOff && (
           <Field label="Top rated badge position" htmlFor={`${uid}-toppos`}>
             <select
               id={`${uid}-toppos`}
@@ -463,7 +474,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           </Field>
         )}
 
-        {config.topRated && fine && (
+        {config.topRated && !topRatedOff && fine && (
           <>
             <Field label="Top rated badge style" htmlFor={`${uid}-topstyle`}>
               <select

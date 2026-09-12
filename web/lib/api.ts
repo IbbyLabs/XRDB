@@ -84,6 +84,8 @@ export interface HealthResponse {
   service: string;
   status: string;
   version: string;
+  /** What the serving instance has switched on. Absent on older versions. */
+  features?: Record<string, boolean>;
 }
 
 function base(): string {

@@ -21,6 +21,7 @@ import { InstallPanel } from './install-panel';
 import { MediaSearch } from './media-search';
 import { tablistKeyNav } from './tablist';
 import { BRAND_DISCORD_URL } from '@/lib/brand';
+import { useInstanceFeatures } from '@/lib/instance-features';
 
 // A media id that already names a season and episode.
 const EPISODE_ID_RE = /:\d+:\d+$/;
@@ -69,6 +70,7 @@ export function ConfiguratorClient() {
   const uid = useId();
 
   const [mediaType, setMediaType] = useState<MediaType>('poster');
+  const features = useInstanceFeatures();
   const [mediaId, setMediaId] = useState(DEFAULT_MEDIA_ID);
   const [previewEpisode, setPreviewEpisode] = useState({ season: 1, episode: 1 });
   const [mediaTitle, setMediaTitle] = useState('The Dark Knight (2008)');
@@ -709,7 +711,7 @@ export function ConfiguratorClient() {
 
           {activeTab === 'display' && (
             <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
-              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} fine={fine} onReset={() => { lastEditRef.current = null; pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
+              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} fine={fine} features={features} onReset={() => { lastEditRef.current = null; pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
             </div>
           )}
 

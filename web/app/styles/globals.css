@@ -454,6 +454,7 @@ code, pre { font-family: var(--font-mono-stack); }
 }
 
 .hint-error { color: var(--err); }
+.hint-warn { color: var(--warn); }
 
 .input,
 .select {
@@ -519,6 +520,10 @@ textarea.input { min-height: 0; line-height: 1.5; }
   inset: -11px;
 }
 .toggle--on { background: var(--accent); }
+.toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 .toggle-thumb {
   display: block;
