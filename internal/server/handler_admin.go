@@ -203,10 +203,17 @@ func registerAdminRoutes(
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
+		// scoreMovementCounts is what FR-210's recorder wrote and dropped, so a
+		// reading of its file can say what share of the truth it holds.
+		type scoreMovementCounts struct {
+			Written int64 `json:"written"`
+			Dropped int64 `json:"dropped"`
+		}
 		type sourcesResponse struct {
 			Sources           []provider.SourceHealth `json:"sources"`
 			RememberedResults int                     `json:"rememberedResults"`
 			Degraded          int                     `json:"degraded"`
+			ScoreMovement     scoreMovementCounts     `json:"scoreMovement"`
 		}
 		var health *provider.HealthTracker
 		if pipeline != nil {
@@ -214,10 +221,12 @@ func registerAdminRoutes(
 		}
 		snapshot := health.Snapshot()
 		degraded := degradedSources(snapshot)
+		written, dropped := compose.ScoreMovementCounts()
 		writeJSON(w, http.StatusOK, sourcesResponse{
 			Sources:           snapshot,
 			RememberedResults: health.RememberedResults(),
 			Degraded:          degraded,
+			ScoreMovement:     scoreMovementCounts{Written: written, Dropped: dropped},
 		})
 	})
 
