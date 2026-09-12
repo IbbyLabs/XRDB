@@ -2018,11 +2018,11 @@ textarea.input { min-height: 0; line-height: 1.5; }
 }
 
 @media (max-width: 480px) {
-  /* the four actions wrap three-then-one and strand the last button in the
-     middle of its own row; an even two-up grid reads as a deliberate block */
-  .preview-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  /* however many actions there are, they share one row rather than stranding
+     the last one on its own */
+  .preview-actions > * {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 

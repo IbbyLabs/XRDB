@@ -11,7 +11,7 @@ import { test, expect, type Page } from '@playwright/test';
  */
 async function gotoConfigurator(page: Page) {
   await page.goto('/configurator');
-  await expect(page.locator('.urlbar')).toBeVisible();
+  await expect(page.locator('.preview-actions')).toBeVisible();
 }
 
 const genreToggle = (page: Page) => page.getByRole('switch', { name: /toggle genre badge/i });
@@ -64,7 +64,7 @@ test('the shared link rebuilds the look for someone else', async ({ page, contex
   const recipient = await browser.newContext();
   const theirPage = await recipient.newPage();
   await theirPage.goto(link);
-  await expect(theirPage.locator('.urlbar')).toBeVisible();
+  await expect(theirPage.locator('.preview-actions')).toBeVisible();
 
   await expect(genreToggle(theirPage)).toHaveAttribute('aria-checked', 'true');
   await recipient.close();

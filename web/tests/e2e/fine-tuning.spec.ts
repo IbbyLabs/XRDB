@@ -21,12 +21,13 @@ function labelOrder(page: Page) {
 /**
  * The page ships as a static export, so every control is inert until React
  * hydrates and attaches its handlers — a click that lands in that window is
- * silently dropped. The preview URL is computed after mount, so its arrival is
+ * silently dropped. The preview actions render once the preview URL is computed
+ * after mount, so their arrival is
  * a genuine signal that the page is live rather than an arbitrary sleep.
  */
 async function gotoConfigurator(page: Page) {
   await page.goto('/configurator');
-  await expect(page.locator('.urlbar')).toBeVisible();
+  await expect(page.locator('.preview-actions')).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -77,7 +78,7 @@ test('the fine tuning preference outlives a reload', async ({ page }) => {
   await expect(fine).toHaveAttribute('aria-checked', 'true');
 
   await page.reload();
-  await expect(page.locator('.urlbar')).toBeVisible();
+  await expect(page.locator('.preview-actions')).toBeVisible();
   await expect(page.getByRole('switch', { name: /toggle fine tuning/i }))
     .toHaveAttribute('aria-checked', 'true');
 });

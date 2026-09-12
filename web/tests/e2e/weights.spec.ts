@@ -8,8 +8,9 @@ import { test, expect, type Page } from '@playwright/test';
 async function openFineTuning(page: Page) {
   await page.goto('/configurator');
   // The page is a static export, so nothing is interactive until React hydrates.
-  // The preview URL is computed after mount, which makes it a real ready signal.
-  await expect(page.locator('.urlbar')).toBeVisible();
+  // The preview actions render once the preview URL is computed after mount,
+  // which makes them a real ready signal.
+  await expect(page.locator('.preview-actions')).toBeVisible();
   await page.getByRole('tab', { name: /ratings/i }).click();
   const toggle = page.getByRole('switch', { name: /toggle fine tuning/i });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click();
@@ -33,7 +34,9 @@ async function shares(group: ReturnType<Page['getByRole']>): Promise<number[]> {
       Promise.resolve([] as number[]));
 }
 
-const renderUrl = (page: Page) => page.locator('.preview-img').first();
+// The Full size link carries the render URL and stays put when the preview
+// image itself fails to load, which it does with no backend behind the tests.
+const renderUrl = (page: Page) => page.locator('.preview-actions a[href]').first();
 
 test('the weighting starts as an even split that adds up to 100', async ({ page }) => {
   await openFineTuning(page);
@@ -44,7 +47,7 @@ test('the weighting starts as an even split that adds up to 100', async ({ page 
   expect(values.reduce((a, b) => a + b, 0)).toBe(100);
   // An untouched split is the renderer's own default, so it should not need
   // spelling out in the URL.
-  await expect(renderUrl(page)).not.toHaveAttribute('src', /ratingProviderWeights/);
+  await expect(renderUrl(page)).not.toHaveAttribute('href', /ratingProviderWeights/);
   await expect(group).toContainText('100%');
 });
 
@@ -53,7 +56,7 @@ test('moving one source rebalances the rest to keep the total at 100', async ({ 
   const group = await openWeighting(page);
 
   await group.getByRole('spinbutton', { name: 'IMDb (%)' }).fill('70');
-  await expect(renderUrl(page)).toHaveAttribute('src', /ratingProviderWeights/);
+  await expect(renderUrl(page)).toHaveAttribute('href', /ratingProviderWeights/);
 
   const values = await shares(group);
   expect(values.reduce((a, b) => a + b, 0)).toBe(100);
@@ -66,7 +69,7 @@ test('a source added after weighting gets a share instead of counting for nothin
   await group.getByRole('spinbutton', { name: 'IMDb (%)' }).fill('80');
 
   const before = (await shares(group)).length;
-  await page.getByRole('button', { name: /^Trakt/ }).click();
+  await page.getByLabel('General rating sources').getByRole('button', { name: 'Trakt' }).click();
 
   const after = await shares(group);
   expect(after.length).toBe(before + 1);
@@ -80,10 +83,10 @@ test('even split clears the weighting from the URL again', async ({ page }) => {
   const group = await openWeighting(page);
 
   await group.getByRole('spinbutton', { name: 'IMDb (%)' }).fill('65');
-  await expect(renderUrl(page)).toHaveAttribute('src', /ratingProviderWeights/);
+  await expect(renderUrl(page)).toHaveAttribute('href', /ratingProviderWeights/);
 
   await group.getByRole('button', { name: 'Even split' }).click();
-  await expect(renderUrl(page)).not.toHaveAttribute('src', /ratingProviderWeights/);
+  await expect(renderUrl(page)).not.toHaveAttribute('href', /ratingProviderWeights/);
   expect((await shares(group)).reduce((a, b) => a + b, 0)).toBe(100);
 });
 
@@ -94,13 +97,13 @@ test('reordering the critics list reaches the render URL', async ({ page }) => {
 
   const critics = page.getByRole('group', { name: 'Critics' });
   // The list starts on the built-in order, which leads with RT critics.
-  await expect(critics.getByRole('listitem').first()).toContainText('RT critics');
+  await expect(critics.getByRole('listitem').first()).toContainText(/RT critics/i);
 
   await critics.getByRole('button', { name: /move metacritic up/i }).click();
   await expect(critics.getByRole('listitem').first()).toContainText('Metacritic');
-  await expect(renderUrl(page)).toHaveAttribute('src', /ringCriticsPriority/);
+  await expect(renderUrl(page)).toHaveAttribute('href', /ringCriticsPriority/);
 
   await critics.getByRole('button', { name: 'Default order' }).click();
-  await expect(critics.getByRole('listitem').first()).toContainText('RT critics');
-  await expect(renderUrl(page)).not.toHaveAttribute('src', /ringCriticsPriority/);
+  await expect(critics.getByRole('listitem').first()).toContainText(/RT critics/i);
+  await expect(renderUrl(page)).not.toHaveAttribute('href', /ringCriticsPriority/);
 });
