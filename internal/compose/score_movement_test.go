@@ -2,6 +2,7 @@ package compose
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -376,5 +377,102 @@ func TestScoreMovementFileMarksWhereRecordingRestarted(t *testing.T) {
 	}
 	if !strings.HasPrefix(strings.TrimSpace(string(body)), `{"at":`) {
 		t.Error("the file does not start with the first run's mark")
+	}
+}
+
+// A file at its bound is renamed aside and recording continues into a fresh
+// one, so a week's collection does not end the recorder for the life of the
+// process. A restart alone would not do it: the writer reopens the same file,
+// sees it at the bound, and stops again.
+func TestAFileAtItsBoundIsRotatedAndRecordingContinues(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, scoreMovementFile)
+	quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
+	restore := scoreMovementBound
+	scoreMovementBound = 400 // a run mark plus a few samples
+	t.Cleanup(func() { scoreMovementBound = restore })
+
+	ch := make(chan scoreMovementSample, 16)
+	done := make(chan struct{})
+	go func() { writeScoreMovement(path, ch, quiet); close(done) }()
+	for i := range 8 {
+		ch <- scoreMovementSample{Rating: "imdb", MediaID: fmt.Sprintf("tt%d", i), Old: 1, New: 2}
+	}
+	close(ch)
+	<-done
+
+	rotated, _ := filepath.Glob(path + ".*")
+	if len(rotated) == 0 {
+		t.Fatal("the file reached its bound and nothing was rotated aside")
+	}
+	total := 0
+	for _, p := range append(rotated, path) {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		total += len(sampleLines(t, data))
+	}
+	if total != 8 {
+		t.Errorf("%d samples survive across the live and rotated files, want 8", total)
+	}
+	live, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sampleLines(t, live)) == 0 {
+		t.Error("the live file holds no samples after rotation, so recording did not continue")
+	}
+	if int64(len(live)) >= scoreMovementBound {
+		t.Errorf("the live file is %d bytes, at or past the bound of %d", len(live), scoreMovementBound)
+	}
+}
+
+// Rotated files are bounded too, or a recorder that outlives its purpose fills
+// the disk one rename at a time, which is the thing the bound exists to stop.
+func TestOnlyTheNewestRotatedFilesAreKept(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, scoreMovementFile)
+	for i := range 6 {
+		old := fmt.Sprintf("%s.2026010%dT000000Z", path, i)
+		if err := os.WriteFile(old, []byte("{}\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
+	restore := scoreMovementBound
+	scoreMovementBound = 200
+	t.Cleanup(func() { scoreMovementBound = restore })
+
+	ch := make(chan scoreMovementSample, 8)
+	done := make(chan struct{})
+	go func() { writeScoreMovement(path, ch, quiet); close(done) }()
+	for i := range 4 {
+		ch <- scoreMovementSample{Rating: "imdb", MediaID: fmt.Sprintf("tt%d", i), Old: 1, New: 2}
+	}
+	close(ch)
+	<-done
+
+	rotated, _ := filepath.Glob(path + ".*")
+	if len(rotated) > scoreMovementKeep {
+		t.Errorf("%d rotated files remain, want at most %d: %v", len(rotated), scoreMovementKeep, rotated)
+	}
+	// One rotation removes the oldest three of six, so the two oldest must be
+	// gone whatever the exact count of rotations.
+	for _, gone := range []string{".20260100T", ".20260101T"} {
+		for _, p := range rotated {
+			if strings.Contains(p, gone) {
+				t.Errorf("the oldest rotated file survived while newer ones were pruned: %s", p)
+			}
+		}
+	}
+	newest := 0
+	for _, p := range rotated {
+		if !strings.Contains(p, ".2026010") {
+			newest++
+		}
+	}
+	if newest == 0 {
+		t.Errorf("no freshly rotated file survives the prune: %v", rotated)
 	}
 }
