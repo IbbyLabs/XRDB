@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.114.0](https://github.com/IbbyLabs/XRDB/compare/v3.113.0...v3.114.0) (2026-09-12)
+
+
+### Added
+
+* **provider:** count answers with a status nothing classifies on the admin sources surface ([8e04142](https://github.com/IbbyLabs/XRDB/commit/8e0414209e36b12d216b8e64334b88b6c2cd20ca))
+
 ## [3.113.0](https://github.com/IbbyLabs/XRDB/compare/v3.112.2...v3.113.0) (2026-09-12)
 
 
