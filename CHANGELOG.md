@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.115.1](https://github.com/IbbyLabs/XRDB/compare/v3.115.0...v3.115.1) (2026-09-12)
+
+
+### Fixed
+
+* **web:** keep the preview actions on one row on phones and repair the browser suite ([78824dd](https://github.com/IbbyLabs/XRDB/commit/78824dde9a9e879a748c79d2b2bfee1d86eabe92))
+
 ## [3.115.0](https://github.com/IbbyLabs/XRDB/compare/v3.114.0...v3.115.0) (2026-09-12)
 
 
