@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.115.0](https://github.com/IbbyLabs/XRDB/compare/v3.114.0...v3.115.0) (2026-09-12)
+
+
+### Added
+
+* **web:** grey the Top rated control when the instance reports the feature off ([dd969dd](https://github.com/IbbyLabs/XRDB/commit/dd969dd0bf1dac559a96467915c41af75a8143a8))
+
 ## [3.114.0](https://github.com/IbbyLabs/XRDB/compare/v3.113.0...v3.114.0) (2026-09-12)
 
 
