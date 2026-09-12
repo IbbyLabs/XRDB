@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -327,5 +329,28 @@ func TestNotFoundOurOwnQueuesAndCancellationAreNotUncountedAnswers(t *testing.T)
 		if s.Uncounted != 0 || s.ConsecutiveUncounted != 0 {
 			t.Errorf("something the source never answered was counted as its answer: %+v", s)
 		}
+	}
+}
+
+func TestAnAniListRefusalReachesTheSnapshotAsUncounted(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"errors":[{"message":"The AniList API has been temporarily disabled","status":403}]}`))
+	}))
+	defer srv.Close()
+	a := NewAniList()
+	a.baseURL = srv.URL
+
+	_, err := a.Fetch(context.Background(), "series", "al:16498")
+	if err == nil {
+		t.Fatal("expected the 403 to surface as an error")
+	}
+	h := NewHealthTracker(10, time.Hour)
+	h.Failure("anilist", err, CallerInteractive)
+
+	s := h.Snapshot()[0]
+	if s.Uncounted != 1 || s.ConsecutiveUncounted != 1 || !s.Healthy || s.Failures != 0 ||
+		!strings.Contains(s.LastUncountedError, "http 403") {
+		t.Errorf("got %+v", s)
 	}
 }
