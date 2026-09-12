@@ -104,7 +104,7 @@ cd web && npm ci && npm run dev   # web on :3001
 | `POST` | `/api/aiometadata/install` | One-click AIOMetadata setup |
 | `GET` | `/api/admin/metrics`, `/api/admin/cache` | Runtime metrics, cache stats; `bySurface` splits the disk tier by poster, backdrop, thumbnail and logo † |
 | `DELETE` | `/api/admin/cache[?surface=][?key=]` | Drop every render, one surface, or one by its `X-Cache-Key` † |
-| `GET` | `/api/admin/sources` | Per-source health; `staleServes` flags a broken source † |
+| `GET` | `/api/admin/sources` | Per-source health; `staleServes` flags a broken source, `uncounted` one refusing us with a status nothing classifies † |
 | `POST` | `/api/admin/warm` | Pre-render IDs into the cache † |
 | `GET/PUT/DELETE` | `/api/admin/settings` | Integration keys † |
 | `GET` | `/stremio/manifest.json`, `/stremio/meta/…` | Stremio addon, instance default look |

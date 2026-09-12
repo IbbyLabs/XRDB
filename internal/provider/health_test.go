@@ -290,3 +290,42 @@ func TestAnUnusableIDIsNotAHealthFailure(t *testing.T) {
 		})
 	}
 }
+
+func TestAnUncountedAnswerIsVisibleWithoutMarkingTheSourceUnhealthy(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.Failure("anilist", HTTPFault("anilist", 403), CallerInteractive)
+	h.Failure("anilist", HTTPFault("anilist", 403), CallerInteractive)
+
+	snap := h.Snapshot()
+	if len(snap) != 1 {
+		t.Fatalf("expected one source, got %+v", snap)
+	}
+	s := snap[0]
+	if !s.Healthy || s.Failing || s.Failures != 0 || s.ConsecutiveFail != 0 {
+		t.Errorf("a 403 counted against the source's health: %+v", s)
+	}
+	if s.Uncounted != 2 || s.ConsecutiveUncounted != 2 || s.LastUncounted == "" ||
+		!strings.Contains(s.LastUncountedError, "http 403") {
+		t.Errorf("the refusals left no trace on the snapshot: %+v", s)
+	}
+
+	h.Success("anilist", GoodKey("anilist", "movie", "tt1"), sampleMeta("anilist", 8.0))
+	s = h.Snapshot()[0]
+	if s.Uncounted != 2 || s.ConsecutiveUncounted != 0 {
+		t.Errorf("a success should end the streak and keep the total, got %+v", s)
+	}
+}
+
+func TestNotFoundOurOwnQueuesAndCancellationAreNotUncountedAnswers(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.Failure("mdblist", fmt.Errorf("mdblist: nope: %w", errNotFound), CallerInteractive)
+	h.Failure("mdblist", ErrPacerBacklog, CallerInteractive)
+	h.Failure("mdblist", ErrCoolingOff, CallerInteractive)
+	h.Failure("mdblist", context.Canceled, CallerInteractive)
+
+	for _, s := range h.Snapshot() {
+		if s.Uncounted != 0 || s.ConsecutiveUncounted != 0 {
+			t.Errorf("something the source never answered was counted as its answer: %+v", s)
+		}
+	}
+}

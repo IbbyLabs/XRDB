@@ -215,7 +215,7 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 		// 503 is how MDBList refuses a spent allowance, not how a host fails.
 		return nil, m.refusal(ctx, resp, used)
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return nil, fmt.Errorf("mdblist: unauthorized (check api key)")
+		return nil, fmt.Errorf("mdblist: unauthorized (check api key): %w", HTTPFault("mdblist", resp.StatusCode))
 	case http.StatusNotFound:
 		return nil, fmt.Errorf("mdblist: %s not found for %q: %w", mdbType, id, errNotFound)
 	}

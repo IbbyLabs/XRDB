@@ -133,7 +133,7 @@ func (m *MediUX) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 		return nil, &RateLimitError{Source: "mediux", Status: resp.StatusCode,
 			RetryAfter: retryAfter(resp.Header.Get("Retry-After"))}
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return nil, fmt.Errorf("mediux: unauthorized (check api token)")
+		return nil, fmt.Errorf("mediux: unauthorized (check api token): %w", HTTPFault("mediux", resp.StatusCode))
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, HTTPFault("mediux", resp.StatusCode)

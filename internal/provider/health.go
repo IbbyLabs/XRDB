@@ -41,7 +41,14 @@ type sourceState struct {
 	lastRatedByType map[string]time.Time
 	successes       int64
 	failures        int64
-	staleServes     int64
+	// uncounted is answers with an HTTP status nothing classifies; see
+	// UncountedStatus. consecutiveUncounted resets on any answer that proves
+	// the source is working again.
+	uncounted            int64
+	consecutiveUncounted int
+	lastUncounted        time.Time
+	lastUncountedError   string
+	staleServes          int64
 	// heldOutEmpty counts renders that lost a rating: held out with nothing
 	// remembered, so the badge is left empty. Keyed by the gate that refused,
 	// because a source refusing us and our own pacing declining to spend do the
@@ -106,6 +113,13 @@ type SourceHealth struct {
 	Failing   bool  `json:"failing"`
 	Successes int64 `json:"successes"`
 	Failures  int64 `json:"failures"`
+	// Uncounted counts answers carrying an HTTP status nothing classifies, so
+	// they moved neither Failures nor Healthy. A source refusing every call
+	// with 403 reads successes 0, failures 0 and a rising Uncounted.
+	Uncounted            int64  `json:"uncounted"`
+	ConsecutiveUncounted int    `json:"consecutiveUncounted"`
+	LastUncounted        string `json:"lastUncounted,omitempty"`
+	LastUncountedError   string `json:"lastUncountedError,omitempty"`
 	// StaleServes counts how often a render fell back to a remembered value,
 	// for any reason: the live fetch failed, or the source was held out and
 	// never called. So it rises alongside Failures when a source is broken, and
@@ -205,6 +219,7 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	st.cooldownReason = [callerClassCount]string{}
 	st.lastSuccess = time.Now()
 	st.consecutiveFail = 0
+	st.consecutiveUncounted = 0
 	st.consecutiveEmpty = 0
 	st.breakerTrips = 0
 	st.successes++
@@ -237,6 +252,7 @@ func (h *HealthTracker) Empty(source string) {
 
 	st := h.stateLocked(source)
 	st.consecutiveFail = 0
+	st.consecutiveUncounted = 0
 	st.breakerTrips = 0
 	st.consecutiveEmpty++
 	st.successes++
@@ -326,6 +342,24 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 		// trace: the source stays healthy, nothing is held out, and no counter
 		// moves. Without a line here the fix is only observable as an absence,
 		// which is indistinguishable from it not running.
+		var status *UncountedStatus
+		if errors.As(err, &status) {
+			h.mu.Lock()
+			st := h.stateLocked(source)
+			st.uncounted++
+			st.consecutiveUncounted++
+			st.lastUncounted = time.Now()
+			st.lastUncountedError = truncateError(err.Error())
+			first := st.consecutiveUncounted == 1
+			h.mu.Unlock()
+			// Once per run of them: every refused call at Warn would drown the
+			// log for a source that is dark all day.
+			if first {
+				slog.Default().Warn("A ratings source answered with a status nothing classifies, so it counts against nothing",
+					"source", source, "status", status.Status, "error", err)
+			}
+			return false
+		}
 		if err != nil {
 			slog.Default().Debug("Not counting an error against the source's health",
 				"source", source, "error", err)
@@ -587,15 +621,18 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 	out := make([]SourceHealth, 0, len(h.sources))
 	for name, st := range h.sources {
 		sh := SourceHealth{
-			Source:           name,
-			Healthy:          st.healthy,
-			LastError:        st.lastError,
-			ConsecutiveEmpty: st.consecutiveEmpty,
-			BreakerTrips:     st.breakerTrips,
-			ConsecutiveFail:  st.consecutiveFail,
-			Successes:        st.successes,
-			Failures:         st.failures,
-			StaleServes:      st.staleServes,
+			Source:               name,
+			Healthy:              st.healthy,
+			LastError:            st.lastError,
+			ConsecutiveEmpty:     st.consecutiveEmpty,
+			BreakerTrips:         st.breakerTrips,
+			ConsecutiveFail:      st.consecutiveFail,
+			Successes:            st.successes,
+			Failures:             st.failures,
+			Uncounted:            st.uncounted,
+			ConsecutiveUncounted: st.consecutiveUncounted,
+			LastUncountedError:   st.lastUncountedError,
+			StaleServes:          st.staleServes,
 			// The admin view reports the non-sweep hold: it is the one that
 			// means a person's render is losing the source.
 			CoolingOff: time.Now().Before(st.cooldownUntil[CallerInteractive]) ||
@@ -611,6 +648,9 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 		}
 		if !st.lastFailure.IsZero() {
 			sh.LastFailure = st.lastFailure.UTC().Format(time.RFC3339)
+		}
+		if !st.lastUncounted.IsZero() {
+			sh.LastUncounted = st.lastUncounted.UTC().Format(time.RFC3339)
 		}
 		out = append(out, sh)
 	}

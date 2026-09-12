@@ -37,9 +37,20 @@ func HTTPFault(source string, status int) error {
 	case status >= 500:
 		return fmt.Errorf("%s: http %d: %w", source, status, ErrSourceFault)
 	default:
-		return fmt.Errorf("%s: http %d", source, status)
+		return &UncountedStatus{Source: source, Status: status}
 	}
 }
+
+// UncountedStatus is an HTTP status the source answered with that nothing
+// classifies: not a missing title, not a rate limit, not a fault. It counts
+// against neither the source nor the title. The health tracker tallies it on
+// its own so a source refusing every call is visible without a debug window.
+type UncountedStatus struct {
+	Source string
+	Status int
+}
+
+func (e *UncountedStatus) Error() string { return fmt.Sprintf("%s: http %d", e.Source, e.Status) }
 
 // RecordsAgainstHealth reports whether an error is evidence about the source
 // rather than about one title, one request, or one of our own queues.
