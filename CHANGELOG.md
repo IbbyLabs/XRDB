@@ -2,6 +2,16 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.113.0](https://github.com/IbbyLabs/XRDB/compare/v3.112.2...v3.113.0) (2026-09-12)
+
+
+### Added
+
+* **compose:** FR-210 rotate the score movement file at its bound ([8860eb5](https://github.com/IbbyLabs/XRDB/commit/8860eb5093ed0d901fa50fc797e9647b5a7ae632))
+* **compose:** mark where score-movement recording restarted ([de5d176](https://github.com/IbbyLabs/XRDB/commit/de5d176cc25f2b4411fd4663c58c1b4c93301b07))
+* **server:** FR-210 report the recorder's written and dropped counts ([1306eb4](https://github.com/IbbyLabs/XRDB/commit/1306eb4451059fe9f62e894a3fed02ab280d3232))
+* **server:** report process memory and what is held in it every minute ([f98724d](https://github.com/IbbyLabs/XRDB/commit/f98724dd3154fa8405aae74f70d329431a9e8f81))
+
 ## [3.112.2](https://github.com/IbbyLabs/XRDB/compare/v3.112.1...v3.112.2) (2026-09-09)
 
 
