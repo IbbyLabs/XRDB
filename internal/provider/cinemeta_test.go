@@ -204,3 +204,11 @@ func TestCinemetaLeavesTheDateEmptyWhenReleasedIsAbsent(t *testing.T) {
 		t.Errorf("ReleaseDate = %q, want empty", meta.ReleaseDate)
 	}
 }
+
+// An episode id such as tt0206501:52:16 reaches Cinemeta as a 404 after two
+// redirects, or a 504 on a slow night, and five of those open its breaker.
+func TestCinemetaAsksAboutTheSeries(t *testing.T) {
+	if !AsksAboutTheSeries(&Cinemeta{}) {
+		t.Fatal("Cinemeta does not declare itself series-scoped, so episode ids reach it")
+	}
+}

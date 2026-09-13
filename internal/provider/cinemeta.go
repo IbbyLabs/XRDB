@@ -10,6 +10,7 @@ import (
 )
 
 var cinemetaBaseURL = sourceBaseURL("CINEMETA", "https://v3-cinemeta.strem.io")
+
 const metahubImageBase = "https://images.metahub.space"
 
 // Cinemeta is the Stremio Cinemeta metadata/artwork provider.
@@ -49,6 +50,10 @@ func (c *Cinemeta) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta,
 
 // AppliesTo reports whether the id is one Cinemeta can answer for.
 func (c *Cinemeta) AppliesTo(_ context.Context, _, id string) bool { return isIMDbTitleID(id) }
+
+// SeriesScoped reports that Cinemeta is asked about the series: it serves no
+// episode ids, and its rating is the series rating.
+func (c *Cinemeta) SeriesScoped() bool { return true }
 
 // FetchArtwork retrieves Cinemeta metadata, honoring the size preference for
 // metahub image URLs (small/medium/large variants).
