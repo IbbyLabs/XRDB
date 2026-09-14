@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func wikidataStub(t *testing.T, body string) *Wikidata {
@@ -120,8 +121,10 @@ func TestWikidataIdentifiesItself(t *testing.T) {
 // Every other metered source in the table carries an interval; an unpaced client
 // at render volume is the shape that gets an address blocked.
 func TestWikidataIsPaced(t *testing.T) {
-	if got := rateLimitFor("wikidata").MinInterval; got <= 0 {
-		t.Errorf("wikidata MinInterval = %v; the endpoint throttles hard", got)
+	// One second is 60 queries a minute from one address, which the Query
+	// Service answered with a two-minute refusal four times an hour.
+	if got := rateLimitFor("wikidata").MinInterval; got < 3*time.Second {
+		t.Errorf("wikidata MinInterval = %v; the Query Service throttles below 3s", got)
 	}
 	// The control: an unlisted source has no interval, so this is not something
 	// every name gets.

@@ -209,12 +209,16 @@ var rateLimits = map[string]RateLimit{
 	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	// A SPARQL query is expensive to serve and the Wikidata Query Service
-	// throttles hard. The figure is conservative rather than measured: the cost
-	// of pacing too loosely here is an address blocked by policy, which does not
-	// clear the way a slow API does. The cost of pacing too tightly is an empty
-	// badge, not a late one. A render whose source is held out completes without
-	// it and is cached.
-	"wikidata": {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
+	// throttles hard. The cost of pacing too loosely here is an address blocked
+	// by policy, which does not clear the way a slow API does. The cost of
+	// pacing too tightly is an empty badge, not a late one. A render whose
+	// source is held out completes without it and is cached.
+	//
+	// Measured 2026-09-14: a one-second floor allows 60 queries a minute from
+	// one address, and the service answered 429 with a two-minute Retry-After
+	// four times an hour, every hour. Each refusal holds the source out
+	// entirely, so the loose figure bought blackouts rather than throughput.
+	"wikidata": {MinInterval: 3 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	"allocine": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 }
 
