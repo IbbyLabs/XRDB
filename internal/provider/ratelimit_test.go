@@ -264,15 +264,15 @@ func TestPacerRefusesASweepWhereAPersonIsQueued(t *testing.T) {
 	// and at a person's. One taken slot no longer separates them, because a
 	// sweep may now wait one interval rather than a fraction of one.
 	for i := range 2 {
-		if _, err := p.reserve(0, false, p.maxWait); err != nil {
+		if _, _, _, err := p.reserve(CallerInteractive, 0, false, p.maxWait); err != nil {
 			t.Fatalf("reserve %d: %v", i, err)
 		}
 	}
 
-	if _, err := p.reserve(0, false, bulkMaxWait(CallerBulk, p.maxWait, p.interval)); !errors.Is(err, ErrPacerBacklog) {
+	if _, _, _, err := p.reserve(CallerInteractive, 0, false, bulkMaxWait(CallerBulk, p.maxWait, p.interval)); !errors.Is(err, ErrPacerBacklog) {
 		t.Fatalf("a sweep two slots back should be refused, got %v", err)
 	}
-	if _, err := p.reserve(0, false, bulkMaxWait(CallerInteractive, p.maxWait, p.interval)); err != nil {
+	if _, _, _, err := p.reserve(CallerInteractive, 0, false, bulkMaxWait(CallerInteractive, p.maxWait, p.interval)); err != nil {
 		t.Fatalf("a person behind the same queue should be served: %v", err)
 	}
 }
@@ -283,22 +283,22 @@ func TestPacerRefusesASweepWhereAPersonIsQueued(t *testing.T) {
 // that line, so the floor is the difference between a share and a ban.
 func TestASweepMayAlwaysWaitOneSlot(t *testing.T) {
 	p := &pacer{interval: 2 * time.Second, maxWait: 2 * time.Second}
-	if _, err := p.reserve(0, false, p.maxWait); err != nil {
+	if _, _, _, err := p.reserve(CallerInteractive, 0, false, p.maxWait); err != nil {
 		t.Fatalf("first reserve: %v", err)
 	}
 
-	if _, err := p.reserve(0, false, bulkMaxWait(CallerBulk, p.maxWait, p.interval)); err != nil {
+	if _, _, _, err := p.reserve(CallerInteractive, 0, false, bulkMaxWait(CallerBulk, p.maxWait, p.interval)); err != nil {
 		t.Errorf("a sweep was refused the very next slot on an idle source: %v", err)
 	}
 }
 
 func TestWaitTakesTheCeilingFromTheContextClass(t *testing.T) {
 	p := &pacer{interval: time.Second, maxWait: 2 * time.Second}
-	if _, err := p.reserve(0, false, p.maxWait); err != nil {
+	if _, _, _, err := p.reserve(CallerInteractive, 0, false, p.maxWait); err != nil {
 		t.Fatalf("first reserve: %v", err)
 	}
 
-	if _, err := p.reserve(0, false, p.maxWait); err != nil {
+	if _, _, _, err := p.reserve(CallerInteractive, 0, false, p.maxWait); err != nil {
 		t.Fatalf("second reserve: %v", err)
 	}
 	if err := p.wait(WithCallerClass(context.Background(), CallerBulk)); !errors.Is(err, ErrPacerBacklog) {
@@ -450,5 +450,84 @@ func TestCallerDeadlineIsNotRetried(t *testing.T) {
 	defer mu.Unlock()
 	if seen != 1 {
 		t.Errorf("server saw %d requests, want 1: a caller deadline must not be retried", seen)
+	}
+}
+
+// A caller someone is waiting on takes the soonest place a sweep is holding,
+// and the sweep takes the place at the back.
+func TestPacerGivesAPersonASweepsSlot(t *testing.T) {
+	p := &pacer{interval: time.Second, maxWait: 30 * time.Second}
+
+	if _, _, _, err := p.reserve(CallerBulk, 0, false, p.maxWait); err != nil {
+		t.Fatalf("first sweep reservation: %v", err)
+	}
+	second, sweepWait, _, err := p.reserve(CallerBulk, 0, false, p.maxWait)
+	if err != nil {
+		t.Fatalf("second sweep reservation: %v", err)
+	}
+	if sweepWait < 900*time.Millisecond || sweepWait > 1100*time.Millisecond {
+		t.Fatalf("second sweep wait = %v, want about 1s", sweepWait)
+	}
+
+	_, personWait, yielded, err := p.reserve(CallerInteractive, 0, false, p.maxWait)
+	if err != nil {
+		t.Fatalf("interactive reservation: %v", err)
+	}
+	if !yielded {
+		t.Error("a slot was not yielded, so the person queued behind the sweep")
+	}
+	if personWait > 1100*time.Millisecond {
+		t.Errorf("person waits %v, want the sweep's slot at about 1s", personWait)
+	}
+	if left := time.Until(second.at); left < 1900*time.Millisecond {
+		t.Errorf("displaced sweep now waits %v, want it pushed to about 2s", left)
+	}
+}
+
+// Order moves, rate does not: three reservations still span three intervals
+// whoever made them.
+func TestPacerYieldKeepsTheRate(t *testing.T) {
+	ordered := &pacer{interval: time.Second, maxWait: 30 * time.Second}
+	for _, class := range []CallerClass{CallerBulk, CallerBulk, CallerInteractive} {
+		if _, _, _, err := ordered.reserve(class, 0, false, ordered.maxWait); err != nil {
+			t.Fatalf("reserve %v: %v", class, err)
+		}
+	}
+	plain := &pacer{interval: time.Second, maxWait: 30 * time.Second}
+	for i := 0; i < 3; i++ {
+		if _, _, _, err := plain.reserve(CallerBulk, 0, false, plain.maxWait); err != nil {
+			t.Fatalf("reserve %d: %v", i, err)
+		}
+	}
+	drift := ordered.next.Sub(plain.next)
+	if drift < -50*time.Millisecond || drift > 50*time.Millisecond {
+		t.Errorf("next slot moved by %v between an ordered and an unordered queue, want no change", drift)
+	}
+}
+
+// A sweep gives way a bounded number of times, so sustained interactive load
+// delays it by a known amount rather than indefinitely.
+func TestPacerYieldIsBounded(t *testing.T) {
+	p := &pacer{interval: time.Second, maxWait: time.Hour}
+	if _, _, _, err := p.reserve(CallerBulk, 0, false, p.maxWait); err != nil {
+		t.Fatalf("holding sweep reservation: %v", err)
+	}
+	victim, _, _, err := p.reserve(CallerBulk, 0, false, p.maxWait)
+	if err != nil {
+		t.Fatalf("sweep reservation: %v", err)
+	}
+	yields := 0
+	for i := 0; i < maxSlotYields+3; i++ {
+		if _, _, yielded, err := p.reserve(CallerInteractive, 0, false, p.maxWait); err != nil {
+			t.Fatalf("interactive reservation %d: %v", i, err)
+		} else if yielded {
+			yields++
+		}
+	}
+	if yields != maxSlotYields {
+		t.Errorf("sweep yielded %d times, want %d", yields, maxSlotYields)
+	}
+	if victim.yields != maxSlotYields {
+		t.Errorf("reservation recorded %d yields, want %d", victim.yields, maxSlotYields)
 	}
 }

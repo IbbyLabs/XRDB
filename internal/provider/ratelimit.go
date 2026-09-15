@@ -311,6 +311,20 @@ func rateLimitFor(source string) RateLimit {
 	return rl
 }
 
+// reservation is one caller's place in the queue. A sweep's place can be taken
+// by a person who arrives later, so the time is read again on waking rather than
+// trusted from when it was granted.
+type reservation struct {
+	at     time.Time
+	bulk   bool
+	yields int
+}
+
+// maxSlotYields bounds how often one reservation gives way, so a sweep under
+// sustained interactive load waits a known number of intervals rather than
+// however many people happen to arrive.
+const maxSlotYields = 3
+
 // pacer enforces a minimum gap between requests to one source.
 type pacer struct {
 	mu       sync.Mutex
@@ -322,6 +336,65 @@ type pacer struct {
 	// cancelled every request in it before any of them were sent. It is the
 	// ceiling for an interactive caller; bulkMaxWait narrows it for a sweep.
 	maxWait time.Duration
+	// pending holds reservations whose slot is still ahead, so a later arrival
+	// can be placed among them rather than only behind them.
+	pending []*reservation
+	// yields counts slots handed from a sweep to a person since process start.
+	yields atomic.Int64
+	// source names the API this paces, for the yield line.
+	source string
+}
+
+// earliestYieldableLocked returns the soonest future sweep reservation that has
+// not spent its yields, or nil.
+func (p *pacer) earliestYieldableLocked(now time.Time) *reservation {
+	var best *reservation
+	for _, r := range p.pending {
+		if !r.bulk || r.yields >= maxSlotYields || !r.at.After(now) {
+			continue
+		}
+		if best == nil || r.at.Before(best.at) {
+			best = r
+		}
+	}
+	return best
+}
+
+// releaseLocked drops a reservation once its slot has been used or abandoned.
+func (p *pacer) releaseLocked(res *reservation) {
+	for i, r := range p.pending {
+		if r == res {
+			p.pending = append(p.pending[:i], p.pending[i+1:]...)
+			return
+		}
+	}
+}
+
+func (p *pacer) release(res *reservation) {
+	if p == nil || res == nil {
+		return
+	}
+	p.mu.Lock()
+	p.releaseLocked(res)
+	p.mu.Unlock()
+}
+
+// recheck reports what is left of a reservation's wait, having possibly been
+// moved since it was granted.
+func (p *pacer) recheck(res *reservation, budget time.Duration, bounded bool, maxWait time.Duration) (time.Duration, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	left := time.Until(res.at)
+	if left <= 0 {
+		return 0, nil
+	}
+	if maxWait > 0 && left > maxWait {
+		return 0, ErrPacerBacklog
+	}
+	if bounded && left > budget {
+		return 0, ErrPacerBacklog
+	}
+	return left, nil
 }
 
 // bulkQueueShare is the fraction of the queue ceiling a sweep may use. The rest
@@ -358,7 +431,11 @@ func bulkMaxWait(class CallerClass, maxWait, interval time.Duration) time.Durati
 // refuses before reserving, so a shed request does not hold a slot that its own
 // timeout would have thrown away. maxWait is the caller's own ceiling rather
 // than the pacer's, so a sweep can be refused where a person is queued.
-func (p *pacer) reserve(budget time.Duration, bounded bool, maxWait time.Duration) (time.Duration, error) {
+// reserve grants a place in the queue. A caller someone is waiting on takes the
+// soonest place a sweep is holding, and the sweep takes the place at the back
+// that the person would have had. One reservation enters either way, so the
+// interval and the rate are unchanged and only the order moves.
+func (p *pacer) reserve(class CallerClass, budget time.Duration, bounded bool, maxWait time.Duration) (*reservation, time.Duration, bool, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	now := time.Now()
@@ -366,18 +443,40 @@ func (p *pacer) reserve(budget time.Duration, bounded bool, maxWait time.Duratio
 	if slot.Before(now) {
 		slot = now
 	}
-	if maxWait > 0 && slot.Sub(now) > maxWait {
-		return 0, ErrPacerBacklog
+
+	// Chosen before anything is committed, so a refusal leaves the queue as it
+	// was rather than having moved a sweep for a caller that never ran.
+	at := slot
+	var victim *reservation
+	if class != CallerBulk {
+		if v := p.earliestYieldableLocked(now); v != nil && v.at.Before(slot) {
+			at, victim = v.at, v
+		}
+	}
+
+	wait := at.Sub(now)
+	if maxWait > 0 && wait > maxWait {
+		return nil, 0, false, ErrPacerBacklog
 	}
 	// A turn that arrives too late to use is worse than no turn: the client
 	// timeout covers this queue as well as the call, so sleeping through it
 	// cancels the request mid-flight and the cancellation is indistinguishable
 	// from the source failing to answer. Refusing instead is attributable.
-	if bounded && slot.Sub(now) > budget {
-		return 0, ErrPacerBacklog
+	if bounded && wait > budget {
+		return nil, 0, false, ErrPacerBacklog
+	}
+
+	res := &reservation{at: at, bulk: class == CallerBulk}
+	yielded := false
+	if victim != nil {
+		victim.at = slot
+		victim.yields++
+		p.yields.Add(1)
+		yielded = true
 	}
 	p.next = slot.Add(p.interval)
-	return slot.Sub(now), nil
+	p.pending = append(p.pending, res)
+	return res, wait, yielded, nil
 }
 
 // wait blocks until the next request may go out, or the request is cancelled.
@@ -397,22 +496,49 @@ func (p *pacer) wait(ctx context.Context) error {
 	if deadline, ok := ctx.Deadline(); ok {
 		budget, bounded = time.Until(deadline)-minCallBudget, true
 	}
-	delay, err := p.reserve(budget, bounded, bulkMaxWait(CallerClassFrom(ctx), p.maxWait, p.interval))
+	class := CallerClassFrom(ctx)
+	ceiling := bulkMaxWait(class, p.maxWait, p.interval)
+	res, delay, yielded, err := p.reserve(class, budget, bounded, ceiling)
 	if err != nil {
 		return err
 	}
+	if yielded {
+		p.logYield(ctx, class)
+	}
 	done := ctx.Done()
-	if delay <= 0 {
-		return nil
+	for {
+		if delay <= 0 {
+			p.release(res)
+			return nil
+		}
+		timer := time.NewTimer(delay)
+		select {
+		case <-timer.C:
+			timer.Stop()
+		case <-done:
+			timer.Stop()
+			p.release(res)
+			return context.Canceled
+		}
+		// The place granted may have been taken while this caller slept.
+		delay, err = p.recheck(res, budget, bounded, ceiling)
+		if err != nil {
+			p.release(res)
+			return err
+		}
 	}
-	timer := time.NewTimer(delay)
-	defer timer.Stop()
-	select {
-	case <-timer.C:
-		return nil
-	case <-done:
-		return context.Canceled
+}
+
+// logYield reports a slot handed from a sweep to a person. Reported once and
+// then each order of magnitude, so a hot path stays quiet while a read since
+// process start always finds whether the ordering fired at all.
+func (p *pacer) logYield(ctx context.Context, class CallerClass) {
+	n := p.yields.Load()
+	if n != 1 && !isPowerOfTen(n) {
+		return
 	}
+	slog.Default().InfoContext(ctx, "A paced slot was handed from a sweep to a waiting caller",
+		"source", p.source, "took_by", class.String(), "total", n)
 }
 
 // throttledTransport paces requests to one source and retries the responses
@@ -467,9 +593,8 @@ func (t *throttledTransport) logAbandonedWait(ctx context.Context, stage string,
 // request's context produced. Both satisfy net.Error and context.DeadlineExceeded;
 // only ours leaves the request context alive.
 //
-// The context tested is whichever one reached the transport. A background
-// refresh detaches from its caller, so this says nothing about whether a person
-// is still waiting.
+// The context tested is whichever reached the transport; a detached refresh has
+// no caller behind it.
 func (t *throttledTransport) ownHeaderTimeout(req *http.Request, err error) bool {
 	if t.policy.HeaderTimeout <= 0 || req == nil {
 		return false
@@ -813,7 +938,7 @@ func newHTTPClient(source string, timeout time.Duration) *http.Client {
 	transport := &throttledTransport{
 		source: source,
 		policy: policy,
-		pacer:  &pacer{interval: policy.MinInterval, maxWait: policy.queueWait()},
+		pacer:  &pacer{interval: policy.MinInterval, maxWait: policy.queueWait(), source: source},
 	}
 	if source == "mdblist" {
 		transport.governor = newBudgetGovernor(source)
