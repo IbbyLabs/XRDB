@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.115.3](https://github.com/IbbyLabs/XRDB/compare/v3.115.2...v3.115.3) (2026-09-15)
+
+
+### Fixed
+
+* **web:** let the preview actions size to their labels on phones ([8a6000a](https://github.com/IbbyLabs/XRDB/commit/8a6000a88f284e0eb2ade4db61e1f7bf9d36478c))
+
 ## [3.115.2](https://github.com/IbbyLabs/XRDB/compare/v3.115.1...v3.115.2) (2026-09-14)
 
 
