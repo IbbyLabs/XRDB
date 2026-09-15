@@ -2017,15 +2017,6 @@ textarea.input { min-height: 0; line-height: 1.5; }
   .provider-blurb { display: none; }
 }
 
-@media (max-width: 480px) {
-  /* however many actions there are, they share one row rather than stranding
-     the last one on its own */
-  .preview-actions > * {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-}
-
 @media (max-width: 640px) {
   /* a dev build id is too wide for a phone bar, so trade it for the short form */
   .nav-badge-full { display: none; }
