@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.115.2](https://github.com/IbbyLabs/XRDB/compare/v3.115.1...v3.115.2) (2026-09-14)
+
+
+### Fixed
+
+* **provider:** ask Cinemeta about the series for an episode id ([727f1eb](https://github.com/IbbyLabs/XRDB/commit/727f1ebbcce976bf673b080a0c966d4439be6cea))
+* **provider:** pace Wikidata at three seconds, not one ([aeac6c8](https://github.com/IbbyLabs/XRDB/commit/aeac6c83fea2fe0c367d8c614580eec2590e1935))
+
 ## [3.115.1](https://github.com/IbbyLabs/XRDB/compare/v3.115.0...v3.115.1) (2026-09-12)
 
 
