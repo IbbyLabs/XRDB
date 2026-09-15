@@ -464,8 +464,12 @@ func (t *throttledTransport) logAbandonedWait(ctx context.Context, stage string,
 }
 
 // ownHeaderTimeout reports a timeout this transport imposed rather than one the
-// caller's deadline produced. Both satisfy net.Error and context.DeadlineExceeded;
+// request's context produced. Both satisfy net.Error and context.DeadlineExceeded;
 // only ours leaves the request context alive.
+//
+// The context tested is whichever one reached the transport. A background
+// refresh detaches from its caller, so this says nothing about whether a person
+// is still waiting.
 func (t *throttledTransport) ownHeaderTimeout(req *http.Request, err error) bool {
 	if t.policy.HeaderTimeout <= 0 || req == nil {
 		return false
