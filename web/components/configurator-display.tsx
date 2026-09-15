@@ -598,23 +598,26 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           onChange={() => onUpdate('providers', !config.providers)}
         />
 
+        {(config.providers || config.releaseStatus) && (
+          <Field
+            label="Provider country"
+            htmlFor={`${uid}-provider-country`}
+            hint="ISO country code (e.g. US, GB). Picks the streaming services shown, which region's release date the badge reads, and which regional artwork is preferred. Blank uses the default."
+          >
+            <input
+              id={`${uid}-provider-country`}
+              className="input"
+              value={config.providersCountry}
+              onChange={e => onUpdate('providersCountry', e.target.value.toUpperCase().slice(0, 2))}
+              placeholder="default"
+              maxLength={2}
+              style={{ maxWidth: '6rem', textTransform: 'uppercase' }}
+            />
+          </Field>
+        )}
+
         {config.providers && (
           <>
-            <Field
-              label="Provider country"
-              htmlFor={`${uid}-provider-country`}
-              hint="ISO country code for availability (e.g. US, GB). Blank uses the default."
-            >
-              <input
-                id={`${uid}-provider-country`}
-                className="input"
-                value={config.providersCountry}
-                onChange={e => onUpdate('providersCountry', e.target.value.toUpperCase().slice(0, 2))}
-                placeholder="default"
-                maxLength={2}
-                style={{ maxWidth: '6rem', textTransform: 'uppercase' }}
-              />
-            </Field>
             <div className="field">
               <label className="label" htmlFor={`${uid}-network-tile`}>Chip tile color</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
