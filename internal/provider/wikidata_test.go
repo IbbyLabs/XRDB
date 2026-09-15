@@ -135,7 +135,10 @@ func TestWikidataIsPaced(t *testing.T) {
 
 // The default value mode draws the label, and this provider outranks the ones
 // that supply it, so a rating without one puts N/A on the poster where a score
-// belongs. Both raw forms, because the label is the display string verbatim.
+// belongs. A percent stays as a unit on the number; a fraction gives up its
+// denominator, which is the scale and is the badge's to mark. BUG-288: it was
+// verbatim, and Metacritic then drew "81/100" where every other badge drew a
+// bare number.
 func TestWikidataKeepsTheDisplayStringForTheBadge(t *testing.T) {
 	meta, err := wikidataStub(t, wikidataBothScores).Fetch(context.Background(), "movie", "tt0111161")
 	if err != nil {
@@ -146,7 +149,7 @@ func TestWikidataKeepsTheDisplayStringForTheBadge(t *testing.T) {
 	for _, r := range meta.Ratings {
 		got[r.Source] = r.Label
 	}
-	for source, want := range map[string]string{"rt": "91%", "metacritic": "81/100"} {
+	for source, want := range map[string]string{"rt": "91%", "metacritic": "81"} {
 		if got[source] != want {
 			t.Errorf("%s label = %q, want %q", source, got[source], want)
 		}
@@ -179,8 +182,10 @@ func TestWikidataTakesTheTomatometerNotTheAverage(t *testing.T) {
 	if got["rt"] != "80%" {
 		t.Errorf("rt = %q, want the tomatometer 80%% rather than the average", got["rt"])
 	}
-	if got["metacritic"] != "81/100" {
-		t.Errorf("metacritic = %q, want 81/100", got["metacritic"])
+	// The denominator is the scale and the badge marks a scale itself, so the
+	// native label is the numerator alone. See BUG-288.
+	if got["metacritic"] != "81" {
+		t.Errorf("metacritic = %q, want 81", got["metacritic"])
 	}
 }
 
