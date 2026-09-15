@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"math/rand/v2"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -166,6 +167,9 @@ type RateLimit struct {
 	// MaxQueueWait caps how long a render queues for this source before the
 	// request is refused. Zero takes XRDB_RATINGS_MAX_QUEUE_SECONDS.
 	MaxQueueWait time.Duration
+	// HeaderTimeout bounds the wait for response headers on one attempt, after
+	// the connection is up and excluding our own queue. Zero leaves it unbound.
+	HeaderTimeout time.Duration
 }
 
 // queueWait is the ceiling a render queues against for this source.
@@ -204,7 +208,7 @@ func (r RateLimit) queueWait() time.Duration {
 var rateLimits = map[string]RateLimit{
 	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
-	"mdblist": {MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+	"mdblist": {MaxRetries: 3, MaxRetryWait: renderRetryBudget, HeaderTimeout: time.Second},
 	"trakt":   {MinInterval: time.Second, MaxRetries: 3, MaxRetryWait: renderRetryBudget, MaxQueueWait: 5 * time.Second},
 	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
@@ -459,6 +463,20 @@ func (t *throttledTransport) logAbandonedWait(ctx context.Context, stage string,
 		"error", err, "total", n)
 }
 
+// ownHeaderTimeout reports a timeout this transport imposed rather than one the
+// caller's deadline produced. Both satisfy net.Error and context.DeadlineExceeded;
+// only ours leaves the request context alive.
+func (t *throttledTransport) ownHeaderTimeout(req *http.Request, err error) bool {
+	if t.policy.HeaderTimeout <= 0 || req == nil {
+		return false
+	}
+	var ne net.Error
+	if !errors.As(err, &ne) || !ne.Timeout() {
+		return false
+	}
+	return req.Context().Err() == nil
+}
+
 func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	base := t.base
 	if base == nil {
@@ -472,6 +490,7 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 	}
 
 	var lastStatus int
+	headerRetries := 0
 	for attempt := 0; ; attempt++ {
 		// Stamped before the pacer rather than after it. Both waits are ours and
 		// a caller cannot tell them apart, so a figure that starts after one of
@@ -500,6 +519,15 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		sent := time.Now()
 		resp, err := base.RoundTrip(attemptReq)
 		if err != nil {
+			// A stalled connection is retired rather than pooled, so the retry
+			// opens a new one. Once, and only for a stall this transport called.
+			if headerRetries == 0 && retries > 0 && t.ownHeaderTimeout(attemptReq, err) {
+				headerRetries++
+				t.log().WarnContext(req.Context(), "A ratings source stalled before its headers; retrying on a new connection",
+					"source", t.source, "path", req.URL.Path,
+					"waited_ms", time.Since(sent).Milliseconds(), "attempt", attempt+1)
+				continue
+			}
 			return nil, err
 		}
 		// Measured here rather than around the whole call: the pacer and the
@@ -791,6 +819,14 @@ func newHTTPClient(source string, timeout time.Duration) *http.Client {
 		// every source's, and so the connection pools stay separate.
 		base := http.DefaultTransport.(*http.Transport).Clone()
 		base.Proxy = http.ProxyURL(u)
+		transport.base = base
+	}
+	if policy.HeaderTimeout > 0 {
+		base, _ := transport.base.(*http.Transport)
+		if base == nil {
+			base = http.DefaultTransport.(*http.Transport).Clone()
+		}
+		base.ResponseHeaderTimeout = policy.HeaderTimeout
 		transport.base = base
 	}
 	return &http.Client{Timeout: timeout, Transport: transport}

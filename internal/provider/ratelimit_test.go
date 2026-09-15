@@ -5,7 +5,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -358,5 +360,95 @@ func TestASweepNeverWaitsLongerThanAPerson(t *testing.T) {
 		if bulk > person {
 			t.Errorf("interval %s: a sweep may wait %s against a person's %s", interval, bulk, person)
 		}
+	}
+}
+
+// A stall before the headers is retried once, on a connection the transport has
+// not used, and the second attempt's answer is the one the caller receives.
+func TestHeaderTimeoutRetriesOnce(t *testing.T) {
+	var mu sync.Mutex
+	var ports []string
+	n := 0
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		n++
+		me := n
+		ports = append(ports, r.RemoteAddr)
+		mu.Unlock()
+		if me == 1 {
+			time.Sleep(400 * time.Millisecond)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	policy := RateLimit{MaxRetries: 3, MaxRetryWait: renderRetryBudget, HeaderTimeout: 100 * time.Millisecond}
+	base := http.DefaultTransport.(*http.Transport).Clone()
+	base.ResponseHeaderTimeout = policy.HeaderTimeout
+	c := &http.Client{Transport: &throttledTransport{
+		base:   base,
+		source: "mdblist",
+		policy: policy,
+		pacer:  &pacer{interval: policy.MinInterval},
+	}}
+
+	resp, err := c.Get(srv.URL)
+	if err != nil {
+		t.Fatalf("a stalled first attempt was not retried: %v", err)
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(ports) != 2 {
+		t.Fatalf("server saw %d requests, want 2 (the stall and its retry)", len(ports))
+	}
+	if ports[0] == ports[1] {
+		t.Errorf("the retry reused the stalled connection (%s), want a new one", ports[0])
+	}
+}
+
+// A caller that gives up is not a stall this transport imposed, so it is not
+// retried: the deadline is the caller's answer.
+func TestCallerDeadlineIsNotRetried(t *testing.T) {
+	var mu sync.Mutex
+	seen := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		seen++
+		mu.Unlock()
+		time.Sleep(400 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	policy := RateLimit{MaxRetries: 3, MaxRetryWait: renderRetryBudget, HeaderTimeout: time.Second}
+	base := http.DefaultTransport.(*http.Transport).Clone()
+	base.ResponseHeaderTimeout = policy.HeaderTimeout
+	c := &http.Client{Transport: &throttledTransport{
+		base:   base,
+		source: "mdblist",
+		policy: policy,
+		pacer:  &pacer{interval: policy.MinInterval},
+	}}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL, nil)
+	if _, err := c.Do(req); err == nil {
+		t.Fatal("a caller deadline returned no error")
+	}
+
+	time.Sleep(600 * time.Millisecond)
+	mu.Lock()
+	defer mu.Unlock()
+	if seen != 1 {
+		t.Errorf("server saw %d requests, want 1: a caller deadline must not be retried", seen)
 	}
 }
