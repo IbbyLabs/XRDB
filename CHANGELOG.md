@@ -2,6 +2,26 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.116.0](https://github.com/IbbyLabs/XRDB/compare/v3.115.3...v3.116.0) (2026-09-15)
+
+
+### Added
+
+* open the configurator preview on an upcoming title ([5c53cb5](https://github.com/IbbyLabs/XRDB/commit/5c53cb5e46942fc03ed3065b0755af576c785c44))
+* **provider:** let a waiting caller take a sweep's paced slot ([0e24c61](https://github.com/IbbyLabs/XRDB/commit/0e24c61ccab21fbe183c280b23e65b6e74b7cd8a))
+
+
+### Fixed
+
+* **provider:** bound MDBList's wait for headers and retry a stall once ([4d47c82](https://github.com/IbbyLabs/XRDB/commit/4d47c82c1a9a5f5a2bf236ae072f4b23b3ee9a6e))
+* **provider:** drop the Wikidata label's denominator (BUG-288) ([4482a2d](https://github.com/IbbyLabs/XRDB/commit/4482a2dd395fdac5c06bc00587879f5e9efa0af3))
+
+
+### Documentation
+
+* **provider:** say what the header-timeout check does not tell you ([6ee41bc](https://github.com/IbbyLabs/XRDB/commit/6ee41bc6d914576ac2e3a9c28e2b807d6b55e366))
+* record the Provider country fix under 3.115.2 ([e8e6add](https://github.com/IbbyLabs/XRDB/commit/e8e6add62e10a65e88825f920713be30b82cd262))
+
 ## [3.115.3](https://github.com/IbbyLabs/XRDB/compare/v3.115.2...v3.115.3) (2026-09-15)
 
 
