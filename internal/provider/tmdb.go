@@ -1204,6 +1204,27 @@ func (t *TMDB) TrendingTitles(ctx context.Context) ([]TitleResult, error) {
 	return toTitleResults(result.Results, 20), nil
 }
 
+// UpcomingTitles lists films with a release still ahead in the given region.
+// Region is an ISO country code; empty takes TMDB's own default.
+func (t *TMDB) UpcomingTitles(ctx context.Context, region string) ([]TitleResult, error) {
+	var result struct {
+		Results []tmdbListItem `json:"results"`
+	}
+	path := t.base() + "/movie/upcoming"
+	if r := strings.ToUpper(strings.TrimSpace(region)); r != "" {
+		path += "?region=" + url.QueryEscape(r)
+	}
+	if err := t.get(ctx, path, &result); err != nil {
+		return nil, err
+	}
+	// This endpoint answers with films and says so only by being that endpoint;
+	// the items carry no media_type, which toTitleResults requires.
+	for i := range result.Results {
+		result.Results[i].MediaType = "movie"
+	}
+	return toTitleResults(result.Results, 20), nil
+}
+
 // LookupIMDbID resolves a TMDB ID to its IMDb tt-ID (may be empty).
 func (t *TMDB) LookupIMDbID(ctx context.Context, mediaType string, tmdbID int) (string, error) {
 	var result struct {

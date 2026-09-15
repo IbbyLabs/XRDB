@@ -4,7 +4,7 @@ import {
   useState, useCallback, useRef, useId, useEffect, useMemo,
 } from 'react';
 import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2, Check, X, Save } from 'lucide-react';
-import { renderUrl, type MediaType, type Template, type ProfilePreview } from '@/lib/api';
+import { renderUrl, upcomingTitles, renderIDFor, type MediaType, type Template, type ProfilePreview } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
 import { copyText } from '@/lib/clipboard';
 import { syncShares } from '@/lib/shares';
@@ -72,6 +72,9 @@ export function ConfiguratorClient() {
   const [mediaType, setMediaType] = useState<MediaType>('poster');
   const features = useInstanceFeatures();
   const [mediaId, setMediaId] = useState(DEFAULT_MEDIA_ID);
+  // Whether the title on screen is one the user asked for. The preview may
+  // replace its own default; it must never replace a choice.
+  const [mediaPicked, setMediaPicked] = useState(false);
   const [previewEpisode, setPreviewEpisode] = useState({ season: 1, episode: 1 });
   const [mediaTitle, setMediaTitle] = useState('The Dark Knight (2008)');
   const [configs, setConfigs] = useState<SurfaceConfigs>(DEFAULT_SURFACE_CONFIGS);
@@ -106,6 +109,7 @@ export function ConfiguratorClient() {
     if (shared) {
       setMediaType(shared.t);
       setMediaId(shared.id);
+      setMediaPicked(true);
       setMediaTitle(shared.title);
       setConfigs(shared.cfgs);
       history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -115,6 +119,7 @@ export function ConfiguratorClient() {
       const storedType = readSession<string>('xrdb-media-type', 'poster');
       setMediaType(MEDIA_TYPES.some(t => t.id === storedType) ? (storedType as MediaType) : 'poster');
       setMediaId(readSession<string>('xrdb-media-id', DEFAULT_MEDIA_ID));
+      setMediaPicked(readSession<boolean>('xrdb-media-picked', false));
       setMediaTitle(readSession<string>('xrdb-media-title', 'The Dark Knight (2008)'));
       // Prefer the per-surface store; fall back to (and migrate) the older
       // single-config session so a mid-session upgrade keeps the user's look.
@@ -173,6 +178,7 @@ export function ConfiguratorClient() {
     try {
       sessionStorage.setItem('xrdb-media-type', JSON.stringify(mediaType));
       sessionStorage.setItem('xrdb-media-id',   JSON.stringify(mediaId));
+      sessionStorage.setItem('xrdb-media-picked', JSON.stringify(mediaPicked));
       sessionStorage.setItem('xrdb-media-title', JSON.stringify(mediaTitle));
       sessionStorage.setItem('xrdb-configs',     JSON.stringify(configs));
       // The password is deliberately not stored: it is held for the lifetime of
@@ -183,7 +189,7 @@ export function ConfiguratorClient() {
         sessionStorage.removeItem('xrdb-loaded-profile');
       }
     } catch { /* unavailable */ }
-  }, [hydrated, mediaType, mediaId, mediaTitle, configs, loadedProfile]);
+  }, [hydrated, mediaType, mediaId, mediaTitle, mediaPicked, configs, loadedProfile]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -403,7 +409,7 @@ export function ConfiguratorClient() {
 
     }
 
-    if (preview.id) setMediaId(preview.id);
+    if (preview.id) { setMediaId(preview.id); setMediaPicked(true); }
 
     if (preview.title) setMediaTitle(preview.title);
 
@@ -444,9 +450,33 @@ export function ConfiguratorClient() {
     return () => window.removeEventListener('keydown', onKey);
   }, [undo, redo]);
 
+  // The release badge only draws a date for a title that has one ahead of it, so
+  // the preview opens on an upcoming film while it is still showing its own
+  // default. A title the user picked is never replaced. Failure is silent here
+  // and logged by the endpoint.
+  useEffect(() => {
+    if (!hydrated || mediaPicked || !config?.releaseStatus) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const titles = await upcomingTitles(config.providersCountry ?? '');
+        if (cancelled || titles.length === 0) return;
+        const pick = titles[0];
+        const id = await renderIDFor(pick);
+        if (cancelled || !id) return;
+        setMediaId(id);
+        setMediaTitle(pick.year ? `${pick.title} (${pick.year})` : pick.title);
+      } catch {
+        /* the fixed default stands */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hydrated, mediaPicked, config?.releaseStatus, config?.providersCountry]);
+
   const handleMediaSelect = (id: string, title: string) => {
     setMediaId(id);
     setMediaTitle(title);
+    setMediaPicked(true);
   };
 
   const shareLook = async () => {

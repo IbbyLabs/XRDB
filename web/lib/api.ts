@@ -486,6 +486,14 @@ export async function trendingTitles(): Promise<TitleResult[]> {
   return res.json() as Promise<TitleResult[]>;
 }
 
+/** Films with a release still ahead, in the region whose dates the badge reads. */
+export async function upcomingTitles(region: string): Promise<TitleResult[]> {
+  const q = region ? `?region=${encodeURIComponent(region)}` : '';
+  const res = await fetch(`${base()}/api/upcoming${q}`);
+  if (!res.ok) throw new ApiError(`upcoming failed: ${res.status}`, res.status);
+  return res.json() as Promise<TitleResult[]>;
+}
+
 export async function lookupIMDbID(mediaType: 'movie' | 'tv', tmdbId: number): Promise<string> {
   const res = await fetch(`${base()}/api/lookup?type=${mediaType}&id=${tmdbId}`);
   if (!res.ok) throw new Error(`lookup failed: ${res.status}`);
