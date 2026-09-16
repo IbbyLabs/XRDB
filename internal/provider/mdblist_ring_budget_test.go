@@ -1,7 +1,10 @@
 package provider
 
 import (
+	"bytes"
+	"log/slog"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -120,5 +123,46 @@ func TestEachSourcesCredentialParameterIsRead(t *testing.T) {
 	}
 	if got := credentialFromRequest("mdblist", nil); got != "" {
 		t.Errorf("a nil URL returned %q", got)
+	}
+}
+
+// A credential that has never answered is counted at the smallest allowance
+// seen. The ring reaches it only once an earlier key is refused for quota, and
+// the reserve holds sweeps back before that happens, so the assumption can
+// stand for the life of a process without anything saying so.
+func TestAnUnansweredCredentialIsReported(t *testing.T) {
+	var buf bytes.Buffer
+	b := newDailyBudget("mdblist", 10_000, 4_000)
+	b.logger = slog.New(slog.NewTextHandler(&buf, nil))
+	b.setRingSize(2)
+	b.setLimit("key-a", 10_000)
+
+	if !strings.Contains(buf.String(), "has not reported its allowance") {
+		t.Fatalf("a ring of two with one credential answered said nothing:\n%s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "ring_size=2") {
+		t.Errorf("the line does not carry the ring size:\n%s", buf.String())
+	}
+
+	// Said once. A second answer from the same key must not repeat it.
+	buf.Reset()
+	b.setLimit("key-a", 10_000)
+	if strings.Contains(buf.String(), "has not reported its allowance") {
+		t.Errorf("the line repeated:\n%s", buf.String())
+	}
+}
+
+// The control, and the half that stops the condition widening later: a ring of
+// one has nothing unanswered, so it must stay silent. Without this the test
+// above passes for a line that fires on every configuration.
+func TestOneKeyReportsNothingUnanswered(t *testing.T) {
+	var buf bytes.Buffer
+	b := newDailyBudget("mdblist", 10_000, 4_000)
+	b.logger = slog.New(slog.NewTextHandler(&buf, nil))
+	b.setRingSize(1)
+	b.setLimit("key-a", 10_000)
+
+	if strings.Contains(buf.String(), "has not reported its allowance") {
+		t.Errorf("a ring of one reported an unanswered credential:\n%s", buf.String())
 	}
 }

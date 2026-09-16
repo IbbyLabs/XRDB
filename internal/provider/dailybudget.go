@@ -70,6 +70,8 @@ type dailyBudget struct {
 	reservePct float64
 	// inReserve holds the gear the last log line described.
 	inReserve bool
+	// saidProjected keeps the unanswered-credential line to one per process.
+	saidProjected bool
 	// cutOffHour and limitHour are the UTC hours the day crossed the bulk
 	// cut-off and reached the limit. A day that crossed at midnight and a day
 	// that never crossed must not read the same, so nil is "never" and 0 is a
@@ -137,6 +139,18 @@ func (b *dailyBudget) ringLimitLocked(latest int) int {
 	}
 	if unseen := b.ringSize - len(b.observedLimits); unseen > 0 {
 		total += unseen * smallest
+		// unseen > 0 already means the ring is larger than one. The ring reaches
+		// a later credential only once an earlier one is refused for quota, and
+		// the reserve holds sweeps back before that happens, so a credential can
+		// go a whole process without answering. Said once, to the operator it is
+		// being assumed about.
+		if !b.saidProjected {
+			b.saidProjected = true
+			b.log().Info("A credential has not reported its allowance, so the ring total counts it at the smallest allowance seen",
+				"source", b.source, "ring_size", b.ringSize,
+				"credentials_answered", len(b.observedLimits),
+				"smallest_answered", smallest, "ring_total", total)
+		}
 	}
 	return total
 }
