@@ -116,6 +116,8 @@ type Pipeline struct {
 	// willing to wait for a slot. Zero leaves the artwork stage bounded by the
 	// fetch budget alone.
 	queueWait time.Duration
+	// queueWaitBulk is the same for a sweep, which waits rather than sheds.
+	queueWaitBulk time.Duration
 	// quality reports which release qualities a title has, so a quality badge
 	// can stand for something. Optional: nil draws the picked badges as-is.
 	quality qualityDetector
@@ -705,6 +707,12 @@ func (p *Pipeline) answerKeptItsSources(source, key string, meta *provider.Media
 //
 // A timeout with a live context is the source failing and does count.
 func recordsAgainstTheSource(ctx context.Context, err error) bool {
+	// Our own stage bound is not the source's doing, and it cancels every
+	// source still in flight rather than only the slow one.
+	if errors.Is(err, errRatingsStageDeadline) {
+		return false
+	}
+	ctx = renderContext(ctx)
 	return ctx.Err() == nil && !errors.Is(err, context.Canceled)
 }
 
@@ -784,7 +792,10 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	meta, err := p.ratings.do(ctx, cacheKey, age, func(fctx context.Context) (*provider.MediaMeta, bool, error) {
 		fetched = true
 		m, ferr := p.fetchRatings(fctx, prov, req, artwork)
-		return m, p.answerKeptItsSources(prov.Name(), cacheKey, m), ferr
+		// Marked here so every render waiting on this flight sees the same
+		// verdict. Derived after do returns, a follower with its own live
+		// budget would read the leader's cut as the source timing out.
+		return m, p.answerKeptItsSources(prov.Name(), cacheKey, m), markStageCut(fctx, ferr)
 	})
 	if !fetched {
 		p.log().DebugContext(ctx, "A ratings source's answer was waited on rather than fetched",
@@ -2402,6 +2413,11 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	if artwork == nil {
 		artwork = &provider.MediaMeta{}
 	}
+	// Each source bounds its own HTTP call and the stage waits for all of them,
+	// so the slowest source decides how long a render holds its slot. The stage
+	// gets its own bound, inside the window the caller is queuing in (BUG-243).
+	ctx, cancelStage := withRatingsStage(ctx, p.ratingsStageTimeout(ctx))
+	defer cancelStage()
 	all := make([]provider.Rating, len(artwork.Ratings))
 	copy(all, artwork.Ratings)
 	seen := make(map[string]bool, len(all))

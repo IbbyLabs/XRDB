@@ -208,6 +208,7 @@ func main() {
 		// The artwork stage has to finish inside the window the queue is willing
 		// to wait, or a slot is still held when everyone behind it is refused.
 		pipeline.SetRenderQueueWait(cfg.RenderQueueWait)
+		pipeline.SetRenderQueueWaitBulk(cfg.RenderQueueWaitBulk)
 		pipeline.SetMediuxKey(cfg.MediuxAPIKey)
 		pipeline.SetRatingsCacheTTL(cfg.RatingsCacheTTL)
 		// Ratings are metered by the request upstream, and one source meters by the
