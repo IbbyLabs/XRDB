@@ -62,6 +62,9 @@ func SourceApplies(ctx context.Context, prov Provider, mediaType, id string) boo
 // answer for nothing else.
 func isIMDbTitleID(id string) bool { return strings.HasPrefix(id, "tt") }
 
+// isIMDbTitleOnly is isIMDbTitleID without the tt…:season:episode form.
+func isIMDbTitleOnly(id string) bool { return isIMDbTitleID(id) && !strings.Contains(id, ":") }
+
 // ErrUpstreamUnavailable reports that a source answered and its own upstream did
 // not. Jikan returns it per title: a broken anime id 504s in about 130ms with
 // "MyAnimeList may be down/unavailable or refuses to connect" while other ids

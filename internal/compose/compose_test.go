@@ -1188,6 +1188,62 @@ func TestSeriesLevelSourcesAreAskedAboutTheSeries(t *testing.T) {
 	}
 }
 
+// fetchRecorder keeps a real provider's AppliesTo and records what reaches Fetch.
+type fetchRecorder struct {
+	provider.Provider
+	applies func(context.Context, string, string) bool
+	mu      sync.Mutex
+	saw     []string
+}
+
+func (r *fetchRecorder) AppliesTo(ctx context.Context, mediaType, id string) bool {
+	return r.applies(ctx, mediaType, id)
+}
+
+func (r *fetchRecorder) Fetch(_ context.Context, _, id string) (*provider.MediaMeta, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.saw = append(r.saw, id)
+	return &provider.MediaMeta{}, nil
+}
+
+func TestIMDbKeyedSourcesAreNotAskedAboutAnEpisodeID(t *testing.T) {
+	mdb := provider.NewMDBList("key")
+	omdb := provider.NewOMDB("key")
+	sources := []*fetchRecorder{
+		{Provider: mdb, applies: mdb.AppliesTo},
+		{Provider: omdb, applies: omdb.AppliesTo},
+	}
+	reg := provider.NewRegistry()
+	for _, s := range sources {
+		reg.Register(s)
+	}
+	p := &Pipeline{providers: reg, fetcher: &stubImageFetcher{}}
+
+	episode := Request{
+		MediaType:   "thumbnail",
+		ContentType: "series",
+		MediaID:     "tt1675276:3:8",
+		seriesID:    "tt1675276",
+		Config:      imageconfig.Default(),
+	}
+	p.collectRatingsWithProviders(context.Background(), episode, nil)
+	for _, s := range sources {
+		if len(s.saw) != 0 {
+			t.Errorf("%s asked about %v for an episode, want no call", s.Name(), s.saw)
+		}
+	}
+
+	title := episode
+	title.MediaID, title.seriesID = "tt1675276", ""
+	p.collectRatingsWithProviders(context.Background(), title, nil)
+	for _, s := range sources {
+		if len(s.saw) != 1 || s.saw[0] != "tt1675276" {
+			t.Errorf("%s asked about %v for a title, want [tt1675276]", s.Name(), s.saw)
+		}
+	}
+}
+
 func TestAskAboutLeavesANonEpisodeRequestAlone(t *testing.T) {
 	anime := &idRecordingProvider{name: "mal", seriesLevel: true}
 	req := Request{MediaID: "tt0903747", seriesID: "tt0903747"}

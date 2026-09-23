@@ -62,14 +62,14 @@ func (o *OMDB) RatingSources() []string { return []string{"imdb", "rt", "metacri
 
 // Fetch retrieves OMDB ratings for a media item.
 // AppliesTo reports whether the id is one OMDb can answer for.
-func (o *OMDB) AppliesTo(_ context.Context, _, id string) bool { return isIMDbTitleID(id) }
+func (o *OMDB) AppliesTo(_ context.Context, _, id string) bool { return isIMDbTitleOnly(id) }
 
 // Only IMDb tt-IDs are supported; numeric IDs are not resolved.
 func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
 	if o.cred(ctx) == "" {
 		return nil, fmt.Errorf("omdb: no api key configured")
 	}
-	if !isIMDbTitleID(id) {
+	if !isIMDbTitleOnly(id) {
 		return nil, fmt.Errorf("omdb: only IMDb tt-IDs are supported, got %q: %w", id, ErrNotApplicable)
 	}
 
