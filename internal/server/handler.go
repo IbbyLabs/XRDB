@@ -591,9 +591,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// Name the wanted rating sources this render skipped because they were
 		status := http.StatusOK
 		if !placeholder {
-			// The cache key is a digest of everything that determines these
-			// bytes, so it doubles as a strong validator.
-			etag := `"` + cacheKey + `"`
+			// A digest of the bytes served: a re-render under the same cache key
+			// with new ratings is different bytes and must not revalidate.
+			etag := `"` + bytesETag(pngBytes) + `"`
 			w.Header().Set("ETag", etag)
 			if degraded && !degradedByUs {
 				// Tell every layer at once — our cache, a CDN, the browser, the
@@ -956,6 +956,12 @@ func mime(name string) string {
 	default:
 		return "application/octet-stream"
 	}
+}
+
+// bytesETag is the strong validator for a response body.
+func bytesETag(b []byte) string {
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:16])
 }
 
 // etagMatches reports whether an If-None-Match header selects the given ETag.

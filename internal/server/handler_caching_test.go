@@ -44,6 +44,12 @@ func testSourcePNG(t *testing.T, w, h int) []byte {
 // backed by a real on-disk cache.
 func renderingHandler(t *testing.T) http.Handler {
 	t.Helper()
+	h, _ := renderingHandlerWithCache(t)
+	return h
+}
+
+func renderingHandlerWithCache(t *testing.T) (http.Handler, *cache.Cache) {
+	t.Helper()
 	reg := provider.NewRegistry()
 	reg.Register(&provider.StubProvider{
 		ProviderName: "tmdb",
@@ -61,7 +67,7 @@ func renderingHandler(t *testing.T) http.Handler {
 		t.Fatalf("cache.New: %v", err)
 	}
 	t.Cleanup(c.Close)
-	return NewHandler("test", nil, nil, pipeline, c, config.Config{})
+	return NewHandler("test", nil, nil, pipeline, c, config.Config{}), c
 }
 
 func TestRenderSetsCachingHeaders(t *testing.T) {
@@ -76,8 +82,8 @@ func TestRenderSetsCachingHeaders(t *testing.T) {
 	if etag == "" {
 		t.Error("no ETag on a successful render — downstream caches cannot revalidate")
 	}
-	if key := rr.Header().Get("X-Cache-Key"); etag != `"`+key+`"` {
-		t.Errorf("ETag %q does not match X-Cache-Key %q", etag, key)
+	if want := `"` + bytesETag(rr.Body.Bytes()) + `"`; etag != want {
+		t.Errorf("ETag %q is not the digest of the body served, want %q", etag, want)
 	}
 	cc := rr.Header().Get("Cache-Control")
 	if cc == "" {
@@ -241,5 +247,38 @@ func TestEtagMatches(t *testing.T) {
 		if got := etagMatches(tc.header, etag); got != tc.want {
 			t.Errorf("etagMatches(%q) = %v, want %v", tc.header, got, tc.want)
 		}
+	}
+}
+
+// FR-219: a re-render under an unchanged cache key (new ratings, same config)
+// is different bytes, so a client holding the old ETag must get them, not a 304.
+func TestReRenderUnderTheSameKeyDoesNotRevalidate(t *testing.T) {
+	h, c := renderingHandlerWithCache(t)
+	first := httptest.NewRecorder()
+	h.ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/poster/tt0816692", nil))
+	oldETag := first.Header().Get("ETag")
+	key := first.Header().Get("X-Cache-Key")
+
+	rerendered := testSourcePNG(t, 40, 60)
+	if err := c.Set(key, rerendered); err != nil {
+		t.Fatalf("cache.Set: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/poster/tt0816692", nil)
+	req.Header.Set("If-None-Match", oldETag)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("old ETag against new bytes: got %d, want 200", rr.Code)
+	}
+	if !bytes.Equal(rr.Body.Bytes(), rerendered) {
+		t.Error("expected the re-rendered bytes")
+	}
+	if got := rr.Header().Get("X-Cache-Key"); got != key {
+		t.Fatalf("cache key moved from %q to %q; the test needs it unchanged", key, got)
+	}
+	if rr.Header().Get("ETag") == oldETag {
+		t.Error("ETag unchanged across different bytes")
 	}
 }
