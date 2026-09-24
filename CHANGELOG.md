@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.116.2](https://github.com/IbbyLabs/XRDB/compare/v3.116.1...v3.116.2) (2026-09-24)
+
+
+### Fixed
+
+* **server:** derive the ETag from the served bytes (FR-219) ([fb923a3](https://github.com/IbbyLabs/XRDB/commit/fb923a38381d83a828591f755f8184cdf0fe2cff))
+
 ## [3.116.1](https://github.com/IbbyLabs/XRDB/compare/v3.116.0...v3.116.1) (2026-09-23)
 
 
