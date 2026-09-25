@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.117.0](https://github.com/IbbyLabs/XRDB/compare/v3.116.2...v3.117.0) (2026-09-25)
+
+
+### Added
+
+* **provider:** keep MDBList's per-second band for interactive callers ([ae2b345](https://github.com/IbbyLabs/XRDB/commit/ae2b34530b8368a57ed7c57abeeac91ed6c357d9))
+
+
+### Fixed
+
+* **provider:** bound only named sweeps in MDBList's per-second band ([c69fee5](https://github.com/IbbyLabs/XRDB/commit/c69fee509c95408dbc7b8423826772cffbac0976))
+
 ## [3.116.2](https://github.com/IbbyLabs/XRDB/compare/v3.116.1...v3.116.2) (2026-09-24)
 
 
