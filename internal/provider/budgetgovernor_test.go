@@ -371,8 +371,8 @@ func TestTheCeilingBurstIsSeparateFromTheBudgetBurst(t *testing.T) {
 	}
 }
 
-// A bulk or anonymous caller may queue only bulkCeilWait deep in the ceiling
-// band, so a flood of them leaves the rest of the queue to interactive callers.
+// A named sweep may queue only bulkCeilWait deep in the ceiling band, so a
+// flood of it leaves the rest of the queue to people.
 func TestCeilingBandKeepsItsTailForInteractiveCallers(t *testing.T) {
 	clock := &fakeClock{t: time.Date(2026, 9, 25, 8, 6, 0, 0, time.UTC)}
 	g := &budgetGovernor{
@@ -402,8 +402,8 @@ func TestCeilingBandKeepsItsTailForInteractiveCallers(t *testing.T) {
 	if err := g.wait(bulk); HoldOutReason(err) != string(pacedByCeiling) {
 		t.Fatalf("bulk call 1.2s deep: got %v, want a ceiling refusal", err)
 	}
-	if err := g.wait(withBudget(context.Background())); HoldOutReason(err) != string(pacedByCeiling) {
-		t.Fatalf("anonymous call 1.2s deep: got %v, want the same refusal as bulk", err)
+	if err := g.wait(withBudget(WithCallerClass(context.Background(), CallerUnknown))); err != nil {
+		t.Fatalf("a caller with no user agent 1.2s deep was refused; it keeps a person's place: %v", err)
 	}
 	if err := g.wait(withBudget(WithCallerClass(context.Background(), CallerInteractive))); err != nil {
 		t.Fatalf("interactive call 1.2s deep with 2.4s to spare was refused: %v", err)

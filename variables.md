@@ -130,7 +130,7 @@ than stopping.
 | `XRDB_MDBLIST_RESERVE_PCT` | `25` | Percentage of the daily allowance held back as headroom, governing the **rate** every caller is paced at: as the remainder approaches this share, requests slow toward a floor so the allowance lasts the day. On a 100,000/day plan that keeps 25,000 spare. **Not the same as `XRDB_MDBLIST_SWEEP_RESERVE_PCT`**, which holds catalogue sweeps off a share of the allowance and leaves interactive renders at full speed. Set that one if a pre-warm is spending what your renders need. |
 | `XRDB_MDBLIST_MAX_RPS` | `5` | Ceiling on the paced rate. Self-imposed rather than published: MDBList documents a daily allowance and no per-second rate, but its edge protection answers a fast burst with a 429. |
 | `XRDB_MDBLIST_BURST` | `30` | How many requests may go out at once before pacing applies, so a catalogue page of a few dozen titles is not spread over minutes. |
-| `XRDB_MDBLIST_BULK_CEILING_WAIT_MS` | `1000` | How long a bulk or anonymous caller may wait for MDBList's per-second band before its badge is left empty, so a crawl cannot take the queue from people. `0` turns it off. |
+| `XRDB_MDBLIST_BULK_CEILING_WAIT_MS` | `1000` | How long a caller naming itself a catalogue sweep may wait for MDBList's per-second band before its badge is left empty, so a sweep cannot take the queue from people. `0` turns it off. |
 
 ## SIMKL daily allowance
 

@@ -36,7 +36,7 @@ const (
 	// edge protection.
 	mdblistDefaultMaxRPS float64 = 5
 	mdblistDefaultBurst  float64 = 30
-	// mdblistDefaultBulkCeilingWaitMS bounds a bulk or anonymous caller's queue
+	// mdblistDefaultBulkCeilingWaitMS bounds a named sweep's queue
 	// in the ceiling band.
 	mdblistDefaultBulkCeilingWaitMS float64 = 1000
 	// mdblistFloorRPS is the rate a spent reserve drops to. A degraded source
@@ -61,7 +61,7 @@ type budgetGovernor struct {
 	// leave at once before maxRPS paces them. The budget arm has its own,
 	// because the two bound different things and one knob cannot serve both.
 	ceilBurst float64
-	// bulkCeilWait is the deepest a bulk or anonymous caller may queue in the
+	// bulkCeilWait is the deepest a named sweep may queue in the
 	// ceiling band; the rest of the queue is left for interactive callers. Zero
 	// leaves them unbounded there.
 	bulkCeilWait time.Duration
@@ -197,10 +197,11 @@ func (g *budgetGovernor) wait(ctx context.Context) error {
 	// The ceiling is this box's own rate band and applies to every call. The
 	// daily budget models the quota on our key, which an owner-keyed call does
 	// not spend, so it is not held against one.
-	// A sweep or an anonymous caller may queue only a short way into the band,
-	// so a burst of them cannot fill the queue a person arrives into.
+	// A named sweep may queue only a short way into the band, so a burst of it
+	// cannot fill the queue a person arrives into. A caller with no user agent
+	// keeps a person's place: it may be a proxy for many people.
 	ceilBudget, ceilBounded := budget, bounded
-	if g.bulkCeilWait > 0 && TreatedAsBulk(CallerClassFrom(ctx)) && (!ceilBounded || ceilBudget > g.bulkCeilWait) {
+	if g.bulkCeilWait > 0 && CallerClassFrom(ctx) == CallerBulk && (!ceilBounded || ceilBudget > g.bulkCeilWait) {
 		ceilBudget, ceilBounded = g.bulkCeilWait, true
 	}
 	delay, ok := g.takeCeiling(ceilBudget, ceilBounded)
