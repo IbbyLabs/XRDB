@@ -134,7 +134,8 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 // that does not exist give the same answer on both hosts, and asking twice
 // spends an allowance to learn nothing.
 func (m *MDBList) orAlternate(ctx context.Context, id string, meta *MediaMeta, err error) (*MediaMeta, error) {
-	if !errors.Is(err, errHostUnreachable) {
+	// Our own pacing refused the call; the second host shares the governor.
+	if !errors.Is(err, errHostUnreachable) || errors.Is(err, ErrGovernorBacklog) {
 		return meta, err
 	}
 	alt, altErr := m.fetchAlternate(ctx, id)

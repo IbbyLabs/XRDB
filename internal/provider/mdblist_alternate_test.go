@@ -1,11 +1,14 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 )
@@ -182,5 +185,31 @@ func TestTheAlternateHostsAudienceSpellingIsKept(t *testing.T) {
 	}
 	if got := normalizeMDBSource("popcorn"); got != "rtaudience" {
 		t.Errorf("normalizeMDBSource(\"popcorn\") = %q, want rtaudience", got)
+	}
+}
+
+type refusingTransport struct{}
+
+func (refusingTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, &backlogReason{err: ErrGovernorBacklog, paced: pacedByCeiling}
+}
+
+// Our own pacing refusing a call is not the first host failing, so it is not
+// reported as both hosts failing.
+func TestAGovernorRefusalIsNotLoggedAsAnOutage(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	m, _ := altHosts(t, func(http.ResponseWriter, *http.Request) {})
+	m.httpClient = &http.Client{Transport: refusingTransport{}}
+
+	_, err := m.Fetch(context.Background(), "movie", "tt0816692")
+	if !errors.Is(err, ErrGovernorBacklog) {
+		t.Fatalf("err = %v, want the governor refusal", err)
+	}
+	if strings.Contains(buf.String(), "Both MDBList hosts failed") {
+		t.Fatalf("a governor refusal was logged as both hosts failing:\n%s", buf.String())
 	}
 }

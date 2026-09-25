@@ -370,3 +370,42 @@ func TestTheCeilingBurstIsSeparateFromTheBudgetBurst(t *testing.T) {
 		}
 	}
 }
+
+// A bulk or anonymous caller may queue only bulkCeilWait deep in the ceiling
+// band, so a flood of them leaves the rest of the queue to interactive callers.
+func TestCeilingBandKeepsItsTailForInteractiveCallers(t *testing.T) {
+	clock := &fakeClock{t: time.Date(2026, 9, 25, 8, 6, 0, 0, time.UTC)}
+	g := &budgetGovernor{
+		source:       "mdblist",
+		reserveFrac:  mdblistDefaultReservePct / 100.0,
+		maxRPS:       5,
+		burst:        mdblistDefaultBurst,
+		ceilBurst:    1,
+		bulkCeilWait: time.Second,
+		reportEvery:  time.Hour,
+		now:          clock.now,
+		sleep:        func(time.Duration, <-chan struct{}) error { return nil },
+	}
+	g.rate, _, _ = g.rateFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
+
+	withBudget := func(ctx context.Context) context.Context {
+		ctx, cancel := context.WithDeadline(ctx, clock.now().Add(minCallBudget+2400*time.Millisecond))
+		t.Cleanup(cancel)
+		return ctx
+	}
+	bulk := withBudget(WithCallerClass(context.Background(), CallerBulk))
+	for i := 0; i < 6; i++ {
+		if err := g.wait(bulk); err != nil {
+			t.Fatalf("bulk call %d refused inside the first second of queue: %v", i+1, err)
+		}
+	}
+	if err := g.wait(bulk); HoldOutReason(err) != string(pacedByCeiling) {
+		t.Fatalf("bulk call 1.2s deep: got %v, want a ceiling refusal", err)
+	}
+	if err := g.wait(withBudget(context.Background())); HoldOutReason(err) != string(pacedByCeiling) {
+		t.Fatalf("anonymous call 1.2s deep: got %v, want the same refusal as bulk", err)
+	}
+	if err := g.wait(withBudget(WithCallerClass(context.Background(), CallerInteractive))); err != nil {
+		t.Fatalf("interactive call 1.2s deep with 2.4s to spare was refused: %v", err)
+	}
+}

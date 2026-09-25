@@ -36,6 +36,9 @@ const (
 	// edge protection.
 	mdblistDefaultMaxRPS float64 = 5
 	mdblistDefaultBurst  float64 = 30
+	// mdblistDefaultBulkCeilingWaitMS bounds a bulk or anonymous caller's queue
+	// in the ceiling band.
+	mdblistDefaultBulkCeilingWaitMS float64 = 1000
 	// mdblistFloorRPS is the rate a spent reserve drops to. A degraded source
 	// still answers; the health tracker handles one that does not.
 	mdblistFloorRPS float64 = 0.2
@@ -58,6 +61,10 @@ type budgetGovernor struct {
 	// leave at once before maxRPS paces them. The budget arm has its own,
 	// because the two bound different things and one knob cannot serve both.
 	ceilBurst float64
+	// bulkCeilWait is the deepest a bulk or anonymous caller may queue in the
+	// ceiling band; the rest of the queue is left for interactive callers. Zero
+	// leaves them unbounded there.
+	bulkCeilWait time.Duration
 
 	// now and sleep are swapped in tests so no test waits on a real clock.
 	now   func() time.Time
@@ -142,17 +149,19 @@ func newBudgetGovernor(source string) *budgetGovernor {
 	reservePct := envFloat("XRDB_MDBLIST_RESERVE_PCT", mdblistDefaultReservePct, 0, 90)
 	maxRPS := envFloat("XRDB_MDBLIST_MAX_RPS", mdblistDefaultMaxRPS, mdblistFloorRPS, 10)
 	ceilBurst := envFloat("XRDB_MDBLIST_BURST", mdblistDefaultBurst, 1, 1000)
+	bulkCeilWaitMS := envFloat("XRDB_MDBLIST_BULK_CEILING_WAIT_MS", mdblistDefaultBulkCeilingWaitMS, 0, 60000)
 
 	reportEvery := envFloat("XRDB_MDBLIST_REPORT_SECONDS", mdblistDefaultReportSeconds, 10, 3600)
 
 	g := &budgetGovernor{
-		source:      source,
-		reserveFrac: reservePct / 100,
-		maxRPS:      maxRPS,
-		ceilBurst:   ceilBurst,
-		reportEvery: time.Duration(reportEvery * float64(time.Second)),
-		now:         time.Now,
-		sleep:       sleepUntil,
+		source:       source,
+		reserveFrac:  reservePct / 100,
+		maxRPS:       maxRPS,
+		ceilBurst:    ceilBurst,
+		bulkCeilWait: time.Duration(bulkCeilWaitMS * float64(time.Millisecond)),
+		reportEvery:  time.Duration(reportEvery * float64(time.Second)),
+		now:          time.Now,
+		sleep:        sleepUntil,
 	}
 	g.rate, _, g.paced = g.rateFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
 	g.burst = g.burstFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
@@ -188,7 +197,13 @@ func (g *budgetGovernor) wait(ctx context.Context) error {
 	// The ceiling is this box's own rate band and applies to every call. The
 	// daily budget models the quota on our key, which an owner-keyed call does
 	// not spend, so it is not held against one.
-	delay, ok := g.takeCeiling(budget, bounded)
+	// A sweep or an anonymous caller may queue only a short way into the band,
+	// so a burst of them cannot fill the queue a person arrives into.
+	ceilBudget, ceilBounded := budget, bounded
+	if g.bulkCeilWait > 0 && TreatedAsBulk(CallerClassFrom(ctx)) && (!ceilBounded || ceilBudget > g.bulkCeilWait) {
+		ceilBudget, ceilBounded = g.bulkCeilWait, true
+	}
+	delay, ok := g.takeCeiling(ceilBudget, ceilBounded)
 	if !ok {
 		return &backlogReason{err: ErrGovernorBacklog, paced: pacedByCeiling,
 			wait: delay, budget: budget}
