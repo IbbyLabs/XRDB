@@ -206,3 +206,16 @@ func TestSpreadReachesMDBListRequests(t *testing.T) {
 		}
 	}
 }
+
+func TestAShrunkRingDoesNotIndexPastItsEnd(t *testing.T) {
+	withMode(t, rotateTurns, 10)
+	r := newKeyRing("a,b,c")
+	r.markSpent("a")
+	r.markSpent("b")
+	r.pick() // cursor on c
+	r.set("a")
+	r.markSpent("a")
+	if got := r.pick(); got != "a" {
+		t.Errorf("pick = %q, want a", got)
+	}
+}

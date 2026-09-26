@@ -125,6 +125,7 @@ func (r *keyRing) pick() string {
 	if n == 0 {
 		return ""
 	}
+	r.cursor %= n
 	if r.served >= keyBatch {
 		r.cursor, r.served = nextIndex(r.cursor, n), 0
 	}
@@ -182,6 +183,7 @@ func (r *keyRing) set(raw string) {
 		}
 	}
 	r.keys, r.spent = next.keys, kept
+	r.cursor, r.served = 0, 0
 }
 
 // size reports how many credentials the ring holds, for the admin surface.
