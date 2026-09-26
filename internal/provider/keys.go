@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -147,6 +148,57 @@ func keyFrom(ctx context.Context, name string) string {
 		return strings.TrimSpace(raw)
 	}
 	return ownerCurrentKey(raw)
+}
+
+// keyForRequest returns the owner credential to send on an outgoing request, or
+// "" when the render should use the server's. keyFrom answers whether a key
+// exists and never rotates; this is the one call that may.
+func keyForRequest(ctx context.Context, name string) string {
+	if keyMode == rotateFill || ctx == nil {
+		return keyFrom(ctx, name)
+	}
+	keys, _ := ctx.Value(keysCtxKey{}).(map[string]string)
+	raw := keys[name]
+	if !strings.Contains(raw, ",") || !rotatesForOwner(name) {
+		return keyFrom(ctx, name)
+	}
+	return ownerSpreadKey(raw)
+}
+
+// ownerSpreadTurn counts owner-list requests. It is shared by every list, so a
+// list's batches are approximate, and nothing grows with the number of lists.
+var ownerSpreadTurn atomic.Uint64
+
+// ownerSpreadKey returns the next credential in the list not marked spent,
+// falling back to the fill choice when every one is.
+func ownerSpreadKey(raw string) string {
+	list := splitKeyList(raw)
+	n := uint64(len(list))
+	turn := (ownerSpreadTurn.Add(1) - 1) / uint64(keyBatch)
+	start := turn
+	if keyMode == rotateRandom {
+		start = mix64(turn)
+	}
+	now := time.Now()
+	ownerSpent.mu.Lock()
+	for i := uint64(0); i < n; i++ {
+		key := list[(start+i)%n]
+		at, marked := ownerSpent.at[key]
+		if !marked || now.Sub(at) >= keySpentFor {
+			ownerSpent.mu.Unlock()
+			return key
+		}
+	}
+	ownerSpent.mu.Unlock()
+	return ownerCurrentKey(raw)
+}
+
+// mix64 scrambles a batch number into a stable pseudo-random start (splitmix64).
+func mix64(x uint64) uint64 {
+	x += 0x9e3779b97f4a7c15
+	x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9
+	x = (x ^ (x >> 27)) * 0x94d049bb133111eb
+	return x ^ (x >> 31)
 }
 
 // rotatesForOwner names the sources where several owner credentials are worth

@@ -82,6 +82,16 @@ func (m *MDBList) key(ctx context.Context) string {
 	return m.keys.current()
 }
 
+// pick is key for an outgoing request, which may move a spread key list on.
+func (m *MDBList) pick(ctx context.Context) string {
+	if k := keyForRequest(ctx, KeyMDBList); k != "" {
+		return k
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.keys.pick()
+}
+
 // Fetch retrieves multi-provider ratings from MDBList for the given IMDB tt-ID.
 // AppliesTo reports whether the id is one MDBList can answer for.
 func (m *MDBList) AppliesTo(_ context.Context, _, id string) bool { return isIMDbTitleOnly(id) }
@@ -160,7 +170,7 @@ func (m *MDBList) fetchAlternate(ctx context.Context, id string) (*MediaMeta, er
 	if m.altBaseURL != "" {
 		base = m.altBaseURL
 	}
-	params := url.Values{"apikey": {m.key(ctx)}, "i": {id}}
+	params := url.Values{"apikey": {m.pick(ctx)}, "i": {id}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/?"+params.Encode(), nil)
 	if err != nil {
 		return nil, err
@@ -197,7 +207,7 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 	if m.baseURL != "" {
 		base = m.baseURL
 	}
-	used := m.key(ctx)
+	used := m.pick(ctx)
 	params := url.Values{"apikey": {used}}
 	endpoint := fmt.Sprintf("%s/imdb/%s/%s?%s", base, mdbType, id, params.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)

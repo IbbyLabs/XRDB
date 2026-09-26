@@ -385,7 +385,8 @@ func logProviderReadiness(reg *provider.Registry, jikanURL string) {
 		"waiting_for_a_key", strings.Join(waiting, ","),
 		// Host only: an override may carry a credential in its path or query,
 		// and the host is what a check of which instance is in use needs.
-		"jikan_host", provider.JikanHost(jikanURL))
+		"jikan_host", provider.JikanHost(jikanURL),
+		"key_rotation", provider.KeyRotation())
 	// The host above is visible either way, but nothing marks it as a default the
 	// operator inherited rather than a choice they made. It is somebody else's
 	// donated instance, so an operator with real traffic should know they are

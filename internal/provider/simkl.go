@@ -108,6 +108,16 @@ func (s *SIMKL) cred(ctx context.Context) string {
 	return s.keys.current()
 }
 
+// pick is cred for an outgoing request, which may move a spread key list on.
+func (s *SIMKL) pick(ctx context.Context) string {
+	if k := keyForRequest(ctx, KeySIMKL); k != "" {
+		return k
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.keys.pick()
+}
+
 // NewSIMKL creates a SIMKL provider with the given Client-ID.
 func NewSIMKL(clientID string) *SIMKL {
 	s := &SIMKL{
@@ -199,7 +209,7 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 	if s.baseURL != "" {
 		base = s.baseURL
 	}
-	used := s.cred(ctx)
+	used := s.pick(ctx)
 	// extended=full is not sent: SIMKL's CDN copy already carries every field
 	// parsed here, and the parameter only creates a second cache key for it.
 	u := fmt.Sprintf("%s/%s/%s?client_id=%s%s",
@@ -349,7 +359,7 @@ func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error
 	if s.baseURL != "" {
 		base = s.baseURL
 	}
-	used := s.cred(ctx)
+	used := s.pick(ctx)
 	u := fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s%s",
 		base, url.QueryEscape(used), imdbID, simklAppParams())
 	req, err := simklRequest(ctx, u)

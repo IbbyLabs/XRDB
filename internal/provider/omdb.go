@@ -46,6 +46,16 @@ func (o *OMDB) cred(ctx context.Context) string {
 	return o.keys.current()
 }
 
+// pick is cred for an outgoing request, which may move a spread key list on.
+func (o *OMDB) pick(ctx context.Context) string {
+	if k := keyForRequest(ctx, KeyOMDB); k != "" {
+		return k
+	}
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+	return o.keys.pick()
+}
+
 // NewOMDB creates an OMDB provider.
 func NewOMDB(apiKey string) *OMDB {
 	return &OMDB{
@@ -77,7 +87,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 	if o.baseURL != "" {
 		base = o.baseURL
 	}
-	used := o.cred(ctx)
+	used := o.pick(ctx)
 	params := url.Values{"i": {id}, "tomatoes": {"true"}, "apikey": {used}}
 	reqURL := base + "?" + params.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
