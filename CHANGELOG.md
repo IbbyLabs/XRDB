@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.118.0](https://github.com/IbbyLabs/XRDB/compare/v3.117.0...v3.118.0) (2026-09-26)
+
+
+### Added
+
+* **provider:** configurable rotation across a key list ([c24c019](https://github.com/IbbyLabs/XRDB/commit/c24c01963926af11365825db81e0ec588bc30ca7))
+
+
+### Fixed
+
+* **provider:** keep the key ring cursor in range after a key list shrinks ([1f7573f](https://github.com/IbbyLabs/XRDB/commit/1f7573f2051ca59f196d6776f288dff564278267))
+
 ## [3.117.0](https://github.com/IbbyLabs/XRDB/compare/v3.116.2...v3.117.0) (2026-09-25)
 
 
