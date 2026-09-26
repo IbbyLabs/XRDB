@@ -58,6 +58,17 @@ protect editing that profile (rendering with a profile stays public).
 | `XRDB_SIMKL_CLIENT_ID` | SIMKL community ratings. Several ids may be given, separated by commas: when SIMKL reports one allowance spent, the next is used. |
 | `XRDB_IMDB_DATASET_DIR` | Directory for the local IMDb ratings dataset; unset disables it. |
 
+### Key lists
+
+How a comma-separated list of MDBList, OMDb or SIMKL keys is used, for the
+server's keys and for every profile's. A key the service reports as spent is
+passed over in every mode.
+
+| Variable | Default | Description |
+|---|---|---|
+| `XRDB_KEY_ROTATION` | `fill` | `fill` uses each key until its daily allowance is spent, then the next. `turns` moves to the next key in order after a batch of requests. `random` moves to a different key, chosen at random, after each batch. Works best with keys on the same plan: MDBList's pacing follows whichever key answered last. |
+| `XRDB_KEY_BATCH_SIZE` | `1` | Requests one key serves before moving on, for `turns` and `random`. Batches across a profile's own list are approximate, since the count is shared by every profile on the instance. |
+
 No key is required for: Cinemeta artwork (Stremio/metahub), MyAnimeList,
 AniList, and Kitsu ratings — those work out of the box.
 
