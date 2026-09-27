@@ -482,7 +482,7 @@ export interface ConfigState {
   posterEdgeOffset: number; // 0..80 extra inset from the edge
   bottomRatingsRow: boolean; // keep every badge on one row instead of wrapping
   ratingsUniformWidth: boolean; // pad every badge to the widest so they share one edge
-  ratingUnavailableMark: boolean; // draw an X where a rating hidden for thin votes would go
+  ratingUnavailableMark: boolean; // draw a dash where a rating hidden for thin votes would go
   badgeShadow: boolean; // draw the drop shadow under every badge
   ratingsAnchored: boolean; // flush the row to the poster edge with squared corners
   ratingPresentation: string; // standard|editorial|none
@@ -699,7 +699,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   posterEdgeOffset: 0,
   bottomRatingsRow: false,
   ratingsUniformWidth: false,
-  ratingUnavailableMark: true,
+  ratingUnavailableMark: false,
   badgeShadow: true,
   ratingsAnchored: false,
   ratingPresentation: 'standard',

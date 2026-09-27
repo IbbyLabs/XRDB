@@ -677,7 +677,7 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
           <ToggleField id={`${uid}-unavailable-mark`} label="Mark a rating hidden for too few votes"
             checked={config.ratingUnavailableMark}
             onChange={v => onUpdate('ratingUnavailableMark', v)}
-            hint="Draw an X where a rating would go when the minimum vote count hid it, so the source keeps its place in the row. Needs the minimum turned on. A source we could not reach is never marked." />
+            hint="Draw a dash where a rating would go when the minimum vote count hid it, so the source keeps its place in the row. Needs the minimum turned on. A source we could not reach is never marked." />
           <ToggleField id={`${uid}-uniform-width`} label="Match badge widths"
             checked={config.ratingsUniformWidth}
             onChange={v => onUpdate('ratingsUniformWidth', v)}
