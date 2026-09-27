@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.119.0](https://github.com/IbbyLabs/XRDB/compare/v3.118.1...v3.119.0) (2026-09-27)
+
+
+### Added
+
+* **provider:** add PMDB community ratings ([ae62e32](https://github.com/IbbyLabs/XRDB/commit/ae62e325324552e8c5e553210ff46cc86b84a2b3))
+
+
+### Fixed
+
+* **ratings:** leave the thin-vote mark off by default and describe it as a dash ([2e072b9](https://github.com/IbbyLabs/XRDB/commit/2e072b906c50b58abe231019ca359719fdeb76cf))
+
 ## [3.118.1](https://github.com/IbbyLabs/XRDB/compare/v3.118.0...v3.118.1) (2026-09-27)
 
 
