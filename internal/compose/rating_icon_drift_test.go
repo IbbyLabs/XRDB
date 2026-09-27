@@ -70,7 +70,7 @@ func TestRatingIconsStayInStepWithTheBrandedSet(t *testing.T) {
 	// tinting: the Rotten Tomatoes splat is a flat single green drawn as-is, so it
 	// sits at one bucket with nothing to collapse from.
 	monochromeMarks := map[string]bool{
-		"allocine": true, "kitsu": true, "simkl": true, "trakt": true, "rt": true,
+		"allocine": true, "kitsu": true, "simkl": true, "trakt": true, "rt": true, "pmdb": true,
 		"critics-rotten": true,
 	}
 	ensureIcons()
