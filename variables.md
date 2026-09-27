@@ -57,7 +57,6 @@ protect editing that profile (rendering with a profile stays public).
 | `XRDB_TRAKT_CLIENT_ID` | Trakt community ratings. |
 | `XRDB_SIMKL_CLIENT_ID` | SIMKL community ratings. |
 | `XRDB_PMDB_API_KEY` | PMDB (PublicMetaDB) community ratings. Create a key in your PMDB account settings. |
-| `XRDB_PMDB_LABELS` | Which PMDB rating labels fill which badges, as `LABEL=source` pairs added to the built-in map. An empty source drops a label. Example: `RT=rt,PC=rtaudience`. |
 | `XRDB_IMDB_DATASET_DIR` | Directory for the local IMDb ratings dataset; unset disables it. |
 
 No key is required for: Cinemeta artwork (Stremio/metahub), MyAnimeList,
