@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.118.1](https://github.com/IbbyLabs/XRDB/compare/v3.118.0...v3.118.1) (2026-09-27)
+
+
+### Fixed
+
+* **simkl:** simplify client id handling ([f664ca9](https://github.com/IbbyLabs/XRDB/commit/f664ca9f7a102e8efa1fea12e5d3f009dafaa69b))
+
 ## [3.118.0](https://github.com/IbbyLabs/XRDB/compare/v3.117.0...v3.118.0) (2026-09-26)
 
 
