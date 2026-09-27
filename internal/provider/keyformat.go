@@ -57,7 +57,7 @@ func ValidateKeys(keys map[string]string) error {
 	for _, name := range SortedNames(keys) {
 		list := splitKeyList(keys[name])
 		if len(list) > 1 && !rotatesForOwner(name) {
-			return fmt.Errorf("%s takes one key: it is limited by rate rather than by a daily allowance, so a second key buys nothing", providerLabel(name))
+			return fmt.Errorf("%s takes one key", providerLabel(name))
 		}
 		for _, one := range list {
 			if err := ValidateKey(name, one); err != nil {

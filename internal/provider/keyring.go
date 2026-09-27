@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -40,13 +39,16 @@ const (
 
 var (
 	keyMode  = readKeyMode()
-	keyBatch = envInt("XRDB_KEY_BATCH_SIZE", 1, 1, maxKeyBatch)
+	keyBatch = envInt(keyEnv+"BATCH_SIZE", 1, 1, maxKeyBatch)
 )
 
-const maxKeyBatch = 1_000_000
+const (
+	keyEnv      = "XRDB_KEY_"
+	maxKeyBatch = 1_000_000
+)
 
 func readKeyMode() string {
-	raw := strings.ToLower(strings.TrimSpace(os.Getenv("XRDB_KEY_ROTATION")))
+	raw := strings.ToLower(strings.TrimSpace(os.Getenv(keyEnv + "ROTATION")))
 	switch raw {
 	case "":
 		return rotateFill
@@ -54,16 +56,8 @@ func readKeyMode() string {
 		return raw
 	}
 	slog.Default().Warn("Ignoring an unreadable setting and keeping the default",
-		"variable", "XRDB_KEY_ROTATION", "value", raw, "default", rotateFill)
+		"variable", keyEnv+"ROTATION", "value", raw, "default", rotateFill)
 	return rotateFill
-}
-
-// KeyRotation describes the key list mode in effect, for the startup log.
-func KeyRotation() string {
-	if keyMode == rotateFill {
-		return rotateFill
-	}
-	return keyMode + ", " + strconv.Itoa(keyBatch) + " per key"
 }
 
 // nextIndex is the key to move to after from, in a ring of n.

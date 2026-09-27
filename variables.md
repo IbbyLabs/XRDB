@@ -51,23 +51,12 @@ protect editing that profile (rendering with a profile stays public).
 |---|---|
 | `XRDB_TMDB_READ_TOKEN` | TMDB v4 read token (preferred). Artwork, metadata, genres, age ratings, watch providers, title search. |
 | `XRDB_TMDB_API_KEY` | TMDB v3 key (legacy alternative to the read token). |
-| `XRDB_MDBLIST_API_KEY` | MDBList — IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt scores in one call. Several keys may be given, separated by commas: when MDBList reports one allowance spent, the next is used. |
-| `XRDB_OMDB_API_KEY` | OMDB supplemental ratings. Several keys may be given, separated by commas: when OMDb reports one allowance spent, the next is used. |
+| `XRDB_MDBLIST_API_KEY` | MDBList — IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt scores in one call. |
+| `XRDB_OMDB_API_KEY` | OMDB supplemental ratings. |
 | `XRDB_FANART_API_KEY` | Fanart.tv HD artwork and logos. |
 | `XRDB_TRAKT_CLIENT_ID` | Trakt community ratings. |
-| `XRDB_SIMKL_CLIENT_ID` | SIMKL community ratings. Several ids may be given, separated by commas: when SIMKL reports one allowance spent, the next is used. |
+| `XRDB_SIMKL_CLIENT_ID` | SIMKL community ratings. |
 | `XRDB_IMDB_DATASET_DIR` | Directory for the local IMDb ratings dataset; unset disables it. |
-
-### Key lists
-
-How a comma-separated list of MDBList, OMDb or SIMKL keys is used, for the
-server's keys and for every profile's. A key the service reports as spent is
-passed over in every mode.
-
-| Variable | Default | Description |
-|---|---|---|
-| `XRDB_KEY_ROTATION` | `fill` | `fill` uses each key until its daily allowance is spent, then the next. `turns` moves to the next key in order after a batch of requests. `random` moves to a different key, chosen at random, after each batch. Works best with keys on the same plan: MDBList's pacing follows whichever key answered last. |
-| `XRDB_KEY_BATCH_SIZE` | `1` | Requests one key serves before moving on, for `turns` and `random`. Batches across a profile's own list are approximate, since the count is shared by every profile on the instance. |
 
 No key is required for: Cinemeta artwork (Stremio/metahub), MyAnimeList,
 AniList, and Kitsu ratings — those work out of the box.

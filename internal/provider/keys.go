@@ -147,6 +147,9 @@ func keyFrom(ctx context.Context, name string) string {
 	if !strings.Contains(raw, ",") {
 		return strings.TrimSpace(raw)
 	}
+	if !rotatesForOwner(name) {
+		return splitKeyList(raw)[0]
+	}
 	return ownerCurrentKey(raw)
 }
 
@@ -206,7 +209,7 @@ func mix64(x uint64) uint64 {
 // rate, so a list anywhere else would be accepted and silently truncated.
 func rotatesForOwner(name string) bool {
 	switch name {
-	case KeyMDBList, KeyOMDB, KeySIMKL:
+	case KeyMDBList, KeyOMDB:
 		return true
 	}
 	return false

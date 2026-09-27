@@ -169,10 +169,10 @@ func TestRandomChangesKeyEveryBatchAndReachesThemAll(t *testing.T) {
 
 func TestRandomReachesEveryKeyInAnOwnersList(t *testing.T) {
 	withMode(t, rotateRandom, 1)
-	ctx := WithKeys(context.Background(), map[string]string{KeySIMKL: "o1,o2,o3"})
+	ctx := WithKeys(context.Background(), map[string]string{KeyOMDB: "o1,o2,o3"})
 	seen := map[string]int{}
 	for i := 0; i < 300; i++ {
-		seen[keyForRequest(ctx, KeySIMKL)]++
+		seen[keyForRequest(ctx, KeyOMDB)]++
 	}
 	for _, k := range []string{"o1", "o2", "o3"} {
 		if seen[k] < 50 {

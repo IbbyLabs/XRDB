@@ -26,7 +26,7 @@ var simklIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
 // (via SIMKL's ID lookup). When given an IMDb ID, an extra lookup call is made.
 type SIMKL struct {
 	mu         sync.RWMutex
-	keys       *keyRing
+	clientID   string
 	baseURL    string // overrides simklBaseURL; set in tests
 	httpClient *http.Client
 	// idCache maps an IMDb id to its SIMKL id. The mapping is fixed, so it is
@@ -68,29 +68,12 @@ func simklRequest(ctx context.Context, u string) (*http.Request, error) {
 	return req, nil
 }
 
-// UpdateCredentials swaps the live credentials so a value saved in the UI takes
-// effect without a restart. Several may be given, separated by commas.
+// UpdateCredentials swaps the live credential so a value saved in the UI takes
+// effect without a restart.
 func (s *SIMKL) UpdateCredentials(clientID string) {
 	s.mu.Lock()
-	s.keys.set(clientID)
+	s.clientID = clientID
 	s.mu.Unlock()
-	noteKeyRingSize("simkl", s.keys.size())
-}
-
-// noteQuota moves to the next credential when SIMKL says the allowance is gone.
-// The refusal is classified by the transport, so it arrives as an error rather
-// than a response. An owner-supplied credential has its own allowance and must
-// not move the server's ring.
-func (s *SIMKL) noteQuota(ctx context.Context, used string, err error) {
-	var rl *RateLimitError
-	if !errors.As(err, &rl) || !rl.QuotaExhausted {
-		return
-	}
-	if HasOwnerKey(ctx, KeySIMKL) {
-		noteOwnerKeySpent(ctx, KeySIMKL, used)
-		return
-	}
-	s.keys.markSpent(used)
 }
 
 // HasCredentials reports whether the provider can make authenticated requests.
@@ -105,30 +88,17 @@ func (s *SIMKL) cred(ctx context.Context) string {
 	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.keys.current()
-}
-
-// pick is cred for an outgoing request, which may move a spread key list on.
-func (s *SIMKL) pick(ctx context.Context) string {
-	if k := keyForRequest(ctx, KeySIMKL); k != "" {
-		return k
-	}
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.keys.pick()
+	return s.clientID
 }
 
 // NewSIMKL creates a SIMKL provider with the given Client-ID.
 func NewSIMKL(clientID string) *SIMKL {
 	s := &SIMKL{
-		keys:       newKeyRing(clientID),
+		clientID:   clientID,
 		httpClient: newHTTPClient("simkl", 10*time.Second),
 		// Replaced by the on-disk store once a cache directory is set.
 		store: openMemorySIMKLIDStore(),
 	}
-	// The budget counts every key's calls together, so it needs the ring size to
-	// hold its reserve against the ring rather than one credential.
-	noteKeyRingSize("simkl", s.keys.size())
 	return s
 }
 
@@ -209,7 +179,7 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 	if s.baseURL != "" {
 		base = s.baseURL
 	}
-	used := s.pick(ctx)
+	used := s.cred(ctx)
 	// extended=full is not sent: SIMKL's CDN copy already carries every field
 	// parsed here, and the parameter only creates a second cache key for it.
 	u := fmt.Sprintf("%s/%s/%s?client_id=%s%s",
@@ -221,7 +191,6 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		s.noteQuota(ctx, used, err)
 		return nil, fmt.Errorf("simkl: http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
@@ -359,7 +328,7 @@ func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error
 	if s.baseURL != "" {
 		base = s.baseURL
 	}
-	used := s.pick(ctx)
+	used := s.cred(ctx)
 	u := fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s%s",
 		base, url.QueryEscape(used), imdbID, simklAppParams())
 	req, err := simklRequest(ctx, u)
@@ -369,7 +338,6 @@ func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		s.noteQuota(ctx, used, err)
 		return "", fmt.Errorf("simkl lookup: http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()

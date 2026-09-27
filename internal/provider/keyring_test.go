@@ -189,7 +189,7 @@ func TestAListIsRefusedWhereItCannotRotate(t *testing.T) {
 	}
 	// The control: the same list is fine on a source that does rotate, so the
 	// refusal is about the provider rather than about lists.
-	if err := ValidateKeys(map[string]string{KeySIMKL: long + "," + long}); err != nil {
+	if err := ValidateKeys(map[string]string{KeyOMDB: long + "," + long}); err != nil {
 		t.Errorf("a list was refused on a rotating source: %v", err)
 	}
 	// And one key is still accepted everywhere.
@@ -205,9 +205,9 @@ func TestTheSpentMapHoldsOnlyRefusedKeys(t *testing.T) {
 	ownerSpent.at = map[string]time.Time{}
 	ownerSpent.mu.Unlock()
 
-	ctx := WithKeys(context.Background(), map[string]string{KeySIMKL: "s1,s2"})
+	ctx := WithKeys(context.Background(), map[string]string{KeyOMDB: "s1,s2"})
 	for range 50 {
-		_ = keyFrom(ctx, KeySIMKL)
+		_ = keyFrom(ctx, KeyOMDB)
 	}
 
 	ownerSpent.mu.Lock()
@@ -217,7 +217,7 @@ func TestTheSpentMapHoldsOnlyRefusedKeys(t *testing.T) {
 		t.Errorf("reading a list %d times left %d entries behind", 50, size)
 	}
 
-	noteOwnerKeySpent(ctx, KeySIMKL, "s1")
+	noteOwnerKeySpent(ctx, KeyOMDB, "s1")
 	ownerSpent.mu.Lock()
 	size = len(ownerSpent.at)
 	ownerSpent.mu.Unlock()
