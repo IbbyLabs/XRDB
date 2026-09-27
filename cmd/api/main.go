@@ -47,6 +47,7 @@ func applySettingsOverrides(cfg *config.Config, s *settings.Store) {
 		{"fanart_api_key", &cfg.FanartAPIKey},
 		{"trakt_client_id", &cfg.TraktClientID},
 		{"simkl_client_id", &cfg.SIMKLClientID},
+		{"pmdb_api_key", &cfg.PMDBAPIKey},
 	}
 	for _, m := range mappings {
 		if v, err := s.Get(m.key); err == nil && v != "" {
@@ -153,7 +154,8 @@ func main() {
 	// Each stays dormant until it has a credential (the render path skips a
 	// provider whose HasCredentials is false), so a key added through the admin
 	// UI activates its provider live without a restart or re-registration.
-	reg.Register(provider.NewTMDB(cfg.TMDBAPIKey, cfg.TMDBReadToken))
+	tmdbClient := provider.NewTMDB(cfg.TMDBAPIKey, cfg.TMDBReadToken)
+	reg.Register(tmdbClient)
 	reg.Register(provider.NewMDBList(cfg.MDBListAPIKey))
 	reg.Register(provider.NewOMDB(cfg.OMDBAPIKey))
 	reg.Register(provider.NewFanart(cfg.FanartAPIKey))
@@ -163,6 +165,7 @@ func main() {
 	provider.SetAppVersion(cfg.Version)
 	reg.Register(provider.NewSIMKL(cfg.SIMKLClientID))
 	reg.Register(provider.NewMediUX(cfg.MediuxAPIKey))
+	reg.Register(provider.NewPMDB(cfg.PMDBAPIKey, tmdbClient))
 	// IMDb local dataset — enabled when XRDB_IMDB_DATASET_DIR is set.
 	var imdbRefresher *provider.IMDbDataset
 	if cfg.IMDbDatasetDir != "" {

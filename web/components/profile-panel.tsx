@@ -83,6 +83,7 @@ const PROVIDER_KEY_FIELDS = [
   { id: 'fanart',  label: 'Fanart.tv' },
   { id: 'trakt',   label: 'Trakt client ID' },
   { id: 'simkl',   label: 'SIMKL client ID' },
+  { id: 'pmdb',    label: 'PMDB' },
 ] as const;
 
 export function ProfilePanel({

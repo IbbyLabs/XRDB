@@ -33,10 +33,11 @@ const (
 	KeyFanart  = "fanart"
 	KeyTrakt   = "trakt"
 	KeySIMKL   = "simkl"
+	KeyPMDB    = "pmdb"
 )
 
 // SupportedKeys are the providers that read an owner-supplied credential.
-var SupportedKeys = []string{KeyTMDB, KeyMDBList, KeyMediux, KeyOMDB, KeyFanart, KeyTrakt, KeySIMKL}
+var SupportedKeys = []string{KeyTMDB, KeyMDBList, KeyMediux, KeyOMDB, KeyFanart, KeyTrakt, KeySIMKL, KeyPMDB}
 
 // SupportsKey reports whether name is a provider a key can be supplied for.
 func SupportsKey(name string) bool {

@@ -11,9 +11,9 @@ Stremio (via AIOMetadata), and anything else that takes one.
 - **Fast.** Pure-Go render pipeline with a two-tier (memory + disk) cache.
 - **Small.** A default poster is around 38 KB, inside Stremio's 100 KB limit
   and under its 50 KB recommendation. Larger tiers are a setting away.
-- **12 rating sources** with official provider logos: IMDb, TMDB, Rotten
+- **13 rating sources** with official provider logos: IMDb, TMDB, Rotten
   Tomatoes (critics + audience), Metacritic, Letterboxd, MDBList, Trakt,
-  SIMKL, MyAnimeList, AniList, Kitsu.
+  SIMKL, PMDB, MyAnimeList, AniList, Kitsu.
 - **Configurable overlays:** rating badges (pill/square/glass, dark/light),
   quality badges (4K/HDR/DV/…), age rating, genres, streaming providers,
   aggregate score bar, trending tag — across normal/large/4K output sizes.

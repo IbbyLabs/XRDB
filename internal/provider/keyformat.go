@@ -40,7 +40,7 @@ func ValidateKey(name, key string) error {
 			return nil
 		}
 		return fmt.Errorf("that does not look like a TMDB credential: expected a 32-character API key, or a read access token starting with eyJ")
-	case KeyMDBList, KeyOMDB, KeyFanart, KeyTrakt, KeySIMKL:
+	case KeyMDBList, KeyOMDB, KeyFanart, KeyTrakt, KeySIMKL, KeyPMDB:
 		if opaqueRe.MatchString(key) {
 			return nil
 		}
@@ -96,6 +96,8 @@ func providerLabel(name string) string {
 		return "Trakt"
 	case KeySIMKL:
 		return "SIMKL"
+	case KeyPMDB:
+		return "PMDB"
 	case KeyTMDB:
 		return "TMDB"
 	}

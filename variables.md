@@ -56,6 +56,8 @@ protect editing that profile (rendering with a profile stays public).
 | `XRDB_FANART_API_KEY` | Fanart.tv HD artwork and logos. |
 | `XRDB_TRAKT_CLIENT_ID` | Trakt community ratings. |
 | `XRDB_SIMKL_CLIENT_ID` | SIMKL community ratings. |
+| `XRDB_PMDB_API_KEY` | PMDB (PublicMetaDB) community ratings. Create a key in your PMDB account settings. |
+| `XRDB_PMDB_LABELS` | Which PMDB rating labels fill which badges, as `LABEL=source` pairs added to the built-in map. An empty source drops a label. Example: `RT=rt,PC=rtaudience`. |
 | `XRDB_IMDB_DATASET_DIR` | Directory for the local IMDb ratings dataset; unset disables it. |
 
 No key is required for: Cinemeta artwork (Stremio/metahub), MyAnimeList,
@@ -150,7 +152,7 @@ missing badge is not.
 
 | Variable | Default | Description |
 |---|---|---|
-| `XRDB_TTL_<PROVIDER>` | global TTL | Per-provider cache TTL in hours. A render is cached for the *minimum* TTL among the providers that contributed to it. Providers: `TMDB`, `MDBLIST`, `OMDB`, `FANART`, `TRAKT`, `SIMKL`, `MAL`, `ANILIST`, `KITSU`, `IMDBLOCAL`. Example: `XRDB_TTL_MDBLIST=4`. |
+| `XRDB_TTL_<PROVIDER>` | global TTL | Per-provider cache TTL in hours. A render is cached for the *minimum* TTL among the providers that contributed to it. Providers: `TMDB`, `MDBLIST`, `OMDB`, `FANART`, `TRAKT`, `SIMKL`, `MAL`, `ANILIST`, `KITSU`, `IMDBLOCAL`, `ALLOCINE`, `FILMWEB`, `PMDB`. Example: `XRDB_TTL_MDBLIST=4`. |
 | `XRDB_TTL_SURFACE_<SURFACE>` | unset | Cache TTL in hours for one artwork surface: `POSTER`, `BACKDROP`, `THUMBNAIL` or `LOGO`. Set, it replaces the per-provider minimum for that surface rather than capping it, so a surface can be kept longer than its rating sources would allow as well as shorter. Unset, the surface keeps the minimum. A render that lost a badge is still capped by the degraded TTLs whatever surface it is. |
 
 ## Web (build/dev only)

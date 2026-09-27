@@ -469,6 +469,7 @@ var providerAccent = map[string]color.NRGBA{
 	"letterboxd":     {R: 0, G: 169, B: 157, A: 255},
 	"trakt":          {R: 237, G: 28, B: 36, A: 255},
 	"simkl":          {R: 28, G: 176, B: 246, A: 255},
+	"pmdb":           {R: 235, G: 235, B: 235, A: 255},
 	"anilist":        {R: 2, G: 169, B: 255, A: 255},
 	"mal":            {R: 44, G: 111, B: 187, A: 255},
 	"kitsu":          {R: 247, G: 110, B: 24, A: 255},

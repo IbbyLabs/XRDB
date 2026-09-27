@@ -109,6 +109,21 @@ export const INTEGRATIONS: Integration[] = [
       },
     ],
   },
+  {
+    id: 'pmdb',
+    name: 'PMDB',
+    description: 'PublicMetaDB community ratings.',
+    docsUrl: 'https://publicmetadb.com',
+    accent: '#ebebeb',
+    keys: [
+      {
+        key: 'pmdb_api_key',
+        label: 'API Key',
+        placeholder: 'pm-…',
+        hint: 'From your PMDB account settings',
+      },
+    ],
+  },
 ];
 
 const TMDB_ONBOARDING_KEY = 'xrdb-integrations-tmdb-onboarding-v1';

@@ -11,7 +11,7 @@ import (
 // keeps an unwanted source off the render path.
 func TestEveryRatingProviderDeclaresItsSources(t *testing.T) {
 	providers := []Provider{
-		NewSIMKL(""), NewTrakt(""), NewMDBList(""), NewOMDB(""),
+		NewSIMKL(""), NewTrakt(""), NewMDBList(""), NewOMDB(""), NewPMDB("", nil),
 		NewKitsu(), NewMAL(), NewAniList(), NewCinemeta(),
 		NewTMDB("", ""), NewFanart(""), NewIMDbDataset(""),
 	}

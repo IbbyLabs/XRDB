@@ -212,6 +212,8 @@ var rateLimits = map[string]RateLimit{
 	"trakt":   {MinInterval: time.Second, MaxRetries: 3, MaxRetryWait: renderRetryBudget, MaxQueueWait: 5 * time.Second},
 	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+	// PMDB allows 300 requests per 10 seconds per address.
+	"pmdb": {MinInterval: 100 * time.Millisecond, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	// A SPARQL query is expensive to serve and the Wikidata Query Service
 	// throttles hard. The cost of pacing too loosely here is an address blocked
 	// by policy, which does not clear the way a slow API does. The cost of

@@ -198,6 +198,7 @@ type Config struct {
 	FanartAPIKey      string
 	TraktClientID     string
 	SIMKLClientID     string
+	PMDBAPIKey        string
 	IMDbDatasetDir    string // directory for cached IMDb dataset file; empty = disabled
 	// IMDbTopRated enables the locally computed top-rated film ranking. It is
 	// separate from IMDbDatasetDir because building it streams a second, much
@@ -292,7 +293,7 @@ type Config struct {
 var TTLProviders = []string{
 	"tmdb", "mdblist", "omdb", "fanart",
 	"trakt", "simkl", "mal", "anilist", "kitsu", "imdb_local",
-	"allocine", "filmweb",
+	"allocine", "filmweb", "pmdb",
 }
 
 // ProviderTTLEnvVar returns the environment variable that overrides a provider's
@@ -686,6 +687,7 @@ func Load() Config {
 		FanartAPIKey:          credential("XRDB_FANART_API_KEY", "FANART_API_KEY"),
 		TraktClientID:         credential("XRDB_TRAKT_CLIENT_ID", "TRAKT_CLIENT_ID"),
 		SIMKLClientID:         credential("XRDB_SIMKL_CLIENT_ID", "SIMKL_CLIENT_ID"),
+		PMDBAPIKey:            credential("XRDB_PMDB_API_KEY"),
 		IMDbDatasetDir:        os.Getenv("XRDB_IMDB_DATASET_DIR"),
 		IMDbTopRated:          boolEnv("XRDB_IMDB_TOP_RATED"),
 		TrendingWindow:        os.Getenv("XRDB_TRENDING_WINDOW"),

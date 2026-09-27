@@ -44,6 +44,7 @@ var providerCredentials = []struct{ Provider, SettingsKey, EnvVar string }{
 	{"fanart", "fanart_api_key", "XRDB_FANART_API_KEY"},
 	{"trakt", "trakt_client_id", "XRDB_TRAKT_CLIENT_ID"},
 	{"simkl", "simkl_client_id", "XRDB_SIMKL_CLIENT_ID"},
+	{"pmdb", "pmdb_api_key", "XRDB_PMDB_API_KEY"},
 }
 
 func credentialEnvVar(settingsKey string) string {

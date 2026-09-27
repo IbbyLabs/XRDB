@@ -49,6 +49,7 @@ var ratingLabels = []struct{ ID, Label string }{
 	{"mdblist", "MDBList"},
 	{"trakt", "Trakt"},
 	{"simkl", "SIMKL"},
+	{"pmdb", "PMDB"},
 	{"rogerebert", "Roger Ebert"},
 	{"allocine", "AlloCiné"},
 	{"allocinepress", "AlloCiné Press"},

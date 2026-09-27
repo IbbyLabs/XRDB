@@ -17,8 +17,11 @@ import "sort"
 // explicitSupplierOrder pins the order where dedication cannot decide it,
 // because two suppliers declare the same number of sources.
 var explicitSupplierOrder = map[string][]string{
-	"imdb": {"imdb_local", "omdb", "cinemeta", "mdblist"},
+	"imdb": {"imdb_local", "omdb", "cinemeta", "mdblist", "pmdb"},
 }
+
+// lastResortSuppliers rank below every other supplier of a shared source.
+var lastResortSuppliers = map[string]bool{"pmdb": true}
 
 // FreeToAsk is implemented by a provider that answers without a network call,
 // from memory or from a local dataset. Asking one costs nothing, so a render
@@ -60,6 +63,9 @@ func supplierRank(source string, s Supplier) (int, bool) {
 func RankSuppliers(source string, suppliers []Supplier) []Supplier {
 	out := append([]Supplier(nil), suppliers...)
 	sort.SliceStable(out, func(i, j int) bool {
+		if li, lj := lastResortSuppliers[out[i].Name], lastResortSuppliers[out[j].Name]; li != lj {
+			return lj
+		}
 		ri, expliciti := supplierRank(source, out[i])
 		rj, explicitj := supplierRank(source, out[j])
 		if expliciti != explicitj {
