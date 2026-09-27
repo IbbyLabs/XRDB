@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.119.1](https://github.com/IbbyLabs/XRDB/compare/v3.119.0...v3.119.1) (2026-09-27)
+
+
+### Fixed
+
+* **ratings:** draw the PMDB badge mark as its wordmark ([9822339](https://github.com/IbbyLabs/XRDB/commit/9822339707e435a6bc2bc392661a2fc6ea77688c))
+
 ## [3.119.0](https://github.com/IbbyLabs/XRDB/compare/v3.118.1...v3.119.0) (2026-09-27)
 
 
