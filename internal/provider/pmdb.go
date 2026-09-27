@@ -18,6 +18,8 @@ import (
 
 var pmdbBase = sourceBaseURL("PMDB", "https://publicmetadb.com")
 
+const pmdbEnv = "XRDB_PMDB_"
+
 // pmdbCommunityLabels are the labels PMDB members use for their own score.
 var pmdbCommunityLabels = []string{"Overall", "overall"}
 
@@ -54,7 +56,7 @@ func NewPMDB(apiKey string, ids tmdbIdentifier) *PMDB {
 		apiKey:     apiKey,
 		httpClient: newHTTPClient("pmdb", 10*time.Second),
 		ids:        ids,
-		labels:     parsePMDBLabels(os.Getenv("XRDB_PMDB_LABELS")),
+		labels:     parsePMDBLabels(os.Getenv(pmdbEnv + "LABELS")),
 	}
 }
 
