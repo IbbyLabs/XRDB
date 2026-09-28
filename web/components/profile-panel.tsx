@@ -4,7 +4,7 @@ import { useState, useEffect, useId, useRef } from 'react';
 import { Save, Download, Upload, FolderOpen, Trash2, LogOut, RefreshCw, History, Wand2, Lock } from 'lucide-react';
 import {
   createProfile, getProfile, updateProfile, deleteProfile, exportProfile, importProfiles,
-  renderOrigin, type MediaType, type ProfilePreview,
+  renderOrigin, type ApiError, type MediaType, type ProfilePreview,
 } from '@/lib/api';
 import { toStoredConfig, fromStoredConfig, type SurfaceConfigs } from './configurator-types';
 import { migrateLegacyConfig, type MigrateResult } from '@/lib/api';
@@ -94,6 +94,7 @@ export function ProfilePanel({
   const [password, setPassword] = useState('');
   // Typed-in keys only; a saved value is never sent back to the browser.
   const [providerKeys, setProviderKeys] = useState<Record<string, string>>({});
+  const [refused, setRefused] = useState<{ attempt: string; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const [legacyInput, setLegacyInput] = useState('');
@@ -122,6 +123,8 @@ export function ProfilePanel({
   // a restored profile starts in. Nothing is written while it is unknown.
   const reattaching = loaded !== null && savedSnapshot === '';
   const isDirty = loaded !== null && savedSnapshot !== '' && JSON.stringify(configs) !== savedSnapshot;
+  // A refused save holds autosave until the next edit.
+  const saveError = refused && refused.attempt === JSON.stringify([configs, providerKeys]) ? refused.message : '';
   // Autosave means there is no unsaved state to warn about, so the useful offer
   // is a way back to the checkpoint rather than a prompt to save.
   const canRevert = loaded !== null && checkpoint !== '' && JSON.stringify(configs) !== checkpoint;
@@ -257,30 +260,43 @@ export function ProfilePanel({
   const handleUpdate = async (silent = false) => {
     if (!loaded) return;
     setBusy(true);
+    const attempt = JSON.stringify([configs, providerKeys]);
+    const save = (withKeys: boolean) => updateProfile(
+      loaded.id,
+      {
+        name: loaded.name,
+        type: mediaType,
+        config: toStoredConfig(configs),
+        preview: { mediaType, id: mediaId, title: mediaTitle },
+        // Only send keys the user actually typed, so an untouched field
+        // leaves whatever is stored alone.
+        ...(withKeys && Object.keys(providerKeys).length > 0 ? { providerKeys } : {}),
+      },
+      loaded.password || undefined,
+    );
     try {
-      const updated = await updateProfile(
-        loaded.id,
-        {
-          name: loaded.name,
-          type: mediaType,
-          config: toStoredConfig(configs),
-          preview: { mediaType, id: mediaId, title: mediaTitle },
-          // Only send keys the user actually typed, so an untouched field
-          // leaves whatever is stored alone.
-          ...(Object.keys(providerKeys).length > 0 ? { providerKeys } : {}),
-        },
-        loaded.password || undefined,
-      );
+      let updated;
+      let keysDropped = false;
+      try {
+        updated = await save(true);
+      } catch (e) {
+        if ((e as ApiError).code !== 'secrets_unavailable' || Object.keys(providerKeys).length === 0) throw e;
+        updated = await save(false);
+        keysDropped = true;
+      }
       // Adopt the new token so the install URLs shown from here on point at the
       // edited profile rather than the revision the client already handed out.
       setLoaded({ ...loaded, versionToken: updated.versionToken ?? '', keysSet: updated.keysSet ?? loaded.keysSet });
       setProviderKeys({});
+      setRefused(null);
       setSavedSnapshot(JSON.stringify(configs));
       // Only a deliberate save moves the checkpoint; the autosave must not, or
       // there would be nothing left to revert to.
       if (!silent) setCheckpoint(JSON.stringify(configs));
-      if (!silent) flash('success', 'Profile updated');
+      if (keysDropped) flash('info', 'Your changes are saved, but this server cannot store API keys, so the key you entered was not kept.');
+      else if (!silent) flash('success', 'Profile updated');
     } catch (e) {
+      setRefused({ attempt, message: (e as Error).message });
       flash('error', (e as Error).message);
     } finally {
       setBusy(false);
@@ -318,10 +334,10 @@ export function ProfilePanel({
   const autoSave = useRef(handleUpdate);
   useEffect(() => { autoSave.current = handleUpdate; });
   useEffect(() => {
-    if (!isDirty || busy || locked) return;
+    if (!isDirty || busy || locked || saveError) return;
     const timer = setTimeout(() => { void autoSave.current(true); }, 1500);
     return () => clearTimeout(timer);
-  }, [isDirty, busy, locked, configs]);
+  }, [isDirty, busy, locked, saveError, configs]);
 
   const handleDelete = async () => {
     if (!loaded) return;
@@ -388,7 +404,7 @@ export function ProfilePanel({
           <div className="profile-banner">
             <span className="profile-banner-name">
               {loaded.name || loaded.alias || loaded.id}
-              {isDirty && <span className="profile-dirty"> · Saving…</span>}
+              {isDirty && <span className="profile-dirty">{saveError ? ' · Not saved' : ' · Saving…'}</span>}
               {locked && <span className="profile-locked"> · Locked</span>}
             </span>
             <span className="hint" style={{ marginTop: 0 }} role="status">
@@ -396,6 +412,8 @@ export function ProfilePanel({
                 ? 'Nothing is being saved. Your password is not kept after a page reload.'
                 : reattaching
                   ? 'Reconnecting to this profile…'
+                  : isDirty && saveError
+                    ? `Not saved: ${saveError.replace(/\.?$/, '.')} Edit anything to try again.`
                   : isDirty
                     ? 'Storing your changes to this profile.'
                     : 'Editing this profile — changes are saved as you make them.'}
@@ -499,7 +517,7 @@ export function ProfilePanel({
                       onChange={e => setProviderKeys({ ...providerKeys, [f.id]: e.target.value })}
                       placeholder={loaded.keysSet?.includes(f.id) ? 'Saved — type to replace' : 'Using the server key'}
                       spellCheck={false}
-                      autoComplete="off"
+                      autoComplete="new-password"
                     />
                   </div>
                 ))}

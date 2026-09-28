@@ -194,8 +194,8 @@ export async function updateProfile(
     // The server answers a refused save with a sentence written for the person
     // reading it; show that rather than the JSON around it.
     try {
-      const body = JSON.parse(text) as { error?: string };
-      if (body.error) throw new Error(body.error);
+      const body = JSON.parse(text) as { error?: string; code?: string };
+      if (body.error) throw new ApiError(body.error, res.status, body.code);
     } catch (e) {
       if (e instanceof Error && e.message && !e.message.startsWith('Unexpected')) throw e;
     }
@@ -466,11 +466,13 @@ export interface TitleResult {
  */
 export class ApiError extends Error {
   readonly status: number;
+  readonly code?: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
