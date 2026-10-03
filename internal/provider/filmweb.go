@@ -3,7 +3,9 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -16,8 +18,8 @@ const filmwebBaseURL = "https://www.filmweb.pl"
 // Filmweb reads the community score from Filmweb, the Polish film database. It
 // is a 0–10 score like IMDb's, from a largely separate audience.
 //
-// Filmweb has a live search endpoint but no public ratings API, so a title is
-// matched through search and the score is read off the resulting page.
+// A title is matched through Filmweb's live search and its score read from the
+// rating endpoint the site itself uses, with the title page as a fallback.
 type Filmweb struct {
 	baseURL    string // overrides filmwebBaseURL; set in tests
 	httpClient *http.Client
@@ -79,6 +81,16 @@ func (f *Filmweb) FetchByTitle(ctx context.Context, mediaType, title, originalTi
 		return nil, fmt.Errorf("filmweb: no match for %q: %w", variants[0], errNotFound)
 	}
 
+	value, votes, err := f.fetchRating(ctx, candidate.id)
+	switch {
+	case err == nil:
+		return filmwebMeta(value, votes), nil
+	case errors.Is(err, errNotFound):
+		return nil, fmt.Errorf("filmweb: no score for %q: %w", candidate.title, err)
+	}
+	slog.Default().WarnContext(ctx, "The Filmweb rating endpoint failed; reading the score from the title page instead",
+		"filmweb_id", candidate.id, "error", err)
+
 	// Filmweb's own URLs are "/film/<title>-<year>-<id>"; the title part is
 	// cosmetic but the year and id have to be right.
 	page, err := fetchText(ctx, f.httpClient, fmt.Sprintf("%s/%s/%s-%d-%s",
@@ -86,16 +98,47 @@ func (f *Filmweb) FetchByTitle(ctx context.Context, mediaType, title, originalTi
 	if err != nil {
 		return nil, fmt.Errorf("filmweb: page: %w", err)
 	}
-	value, ok := parseFilmwebRating(page)
+	value, ok = parseFilmwebRating(page)
 	if !ok {
 		return nil, fmt.Errorf("filmweb: no score for %q: %w", candidate.title, errNotFound)
 	}
+	return filmwebMeta(value, parseFilmwebVotes(page)), nil
+}
+
+func filmwebMeta(value float64, votes int) *MediaMeta {
 	return &MediaMeta{Ratings: []Rating{{
 		Source: "filmweb",
 		Value:  value,
-		Votes:  parseFilmwebVotes(page),
+		Votes:  votes,
 		Label:  fmt.Sprintf("%.1f", value),
-	}}}, nil
+	}}}
+}
+
+// fetchRating reads the score and vote count from Filmweb's rating endpoint,
+// which serves films and series under the same path. A title nobody has rated
+// is errNotFound; any other error means the endpoint itself could not be read.
+func (f *Filmweb) fetchRating(ctx context.Context, id string) (float64, int, error) {
+	body, err := fetchText(ctx, f.httpClient, fmt.Sprintf("%s/api/v1/film/%s/rating", f.base(), id), filmwebHeaders)
+	if err != nil {
+		return 0, 0, err
+	}
+	var payload struct {
+		Rate  *float64 `json:"rate"`
+		Count int      `json:"count"`
+	}
+	if err := json.Unmarshal([]byte(body), &payload); err != nil {
+		return 0, 0, fmt.Errorf("decode rating: %w", err)
+	}
+	if payload.Rate == nil {
+		return 0, 0, errors.New("rating response has no rate")
+	}
+	if payload.Count <= 0 || *payload.Rate <= 0 {
+		return 0, 0, errNotFound
+	}
+	if *payload.Rate > 10 {
+		return 0, 0, fmt.Errorf("rating %.2f is out of range", *payload.Rate)
+	}
+	return *payload.Rate, payload.Count, nil
 }
 
 func (f *Filmweb) search(ctx context.Context, kind string, variants []string) (filmwebCandidate, bool) {

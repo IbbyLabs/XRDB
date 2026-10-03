@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -73,17 +74,27 @@ func TestBestFilmwebCandidateSkipsWrongType(t *testing.T) {
 	}
 }
 
-func TestFilmwebFetchByTitle(t *testing.T) {
-	var pagePath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/v1/live/search" {
+func filmwebTestServer(t *testing.T, rating func(w http.ResponseWriter), pagePath *string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/live/search":
 			_, _ = w.Write([]byte(`{"searchHits":[{"id":193378,"type":"film",` +
 				`"matchedTitle":"Mroczny Rycerz","matchedLang":"pl"}]}`))
-			return
+		case "/api/v1/film/193378/rating":
+			rating(w)
+		default:
+			*pagePath = r.URL.Path
+			_, _ = w.Write([]byte(`window.IRI.setSource('filmDataRating', { rate: 8.1, count: 900 });`))
 		}
-		pagePath = r.URL.Path
-		_, _ = w.Write([]byte(`window.IRI.setSource('filmDataRating', { rate: 8.1 });`))
 	}))
+}
+
+func TestFilmwebFetchByTitleReadsTheRatingEndpoint(t *testing.T) {
+	var pagePath string
+	srv := filmwebTestServer(t, func(w http.ResponseWriter) {
+		_, _ = w.Write([]byte(`{"count":872493,"rate":7.60215,"countWantToSee":43189}`))
+	}, &pagePath)
 	defer srv.Close()
 
 	f := NewFilmweb()
@@ -92,13 +103,52 @@ func TestFilmwebFetchByTitle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FetchByTitle: %v", err)
 	}
-	if len(meta.Ratings) != 1 || meta.Ratings[0].Source != "filmweb" || meta.Ratings[0].Value != 8.1 {
-		t.Fatalf("ratings = %+v, want one filmweb 8.1", meta.Ratings)
+	r := meta.Ratings[0]
+	if len(meta.Ratings) != 1 || r.Source != "filmweb" || r.Value != 7.60215 || r.Votes != 872493 || r.Label != "7.6" {
+		t.Fatalf("ratings = %+v, want one filmweb 7.6 from 872493 votes", meta.Ratings)
+	}
+	if pagePath != "" {
+		t.Errorf("fetched the page %q when the rating endpoint answered", pagePath)
+	}
+}
+
+func TestFilmwebFallsBackToThePageWhenTheEndpointFails(t *testing.T) {
+	var pagePath string
+	srv := filmwebTestServer(t, func(w http.ResponseWriter) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}, &pagePath)
+	defer srv.Close()
+
+	f := NewFilmweb()
+	f.baseURL = srv.URL
+	meta, err := f.FetchByTitle(context.Background(), "movie", "The Dark Knight", "Mroczny Rycerz", 2008)
+	if err != nil {
+		t.Fatalf("FetchByTitle: %v", err)
+	}
+	if meta.Ratings[0].Value != 8.1 || meta.Ratings[0].Votes != 900 {
+		t.Fatalf("ratings = %+v, want the page's 8.1 from 900 votes", meta.Ratings)
 	}
 	// The page address is built from the id and the release year; getting
 	// either wrong lands on a different title or a 404.
 	if !strings.Contains(pagePath, "2008") || !strings.Contains(pagePath, "193378") {
 		t.Errorf("page path = %q, want the year and id in it", pagePath)
+	}
+}
+
+func TestFilmwebUnratedTitleHasNoScoreAndSkipsThePage(t *testing.T) {
+	var pagePath string
+	srv := filmwebTestServer(t, func(w http.ResponseWriter) {
+		_, _ = w.Write([]byte(`{"count":0,"rate":0}`))
+	}, &pagePath)
+	defer srv.Close()
+
+	f := NewFilmweb()
+	f.baseURL = srv.URL
+	if _, err := f.FetchByTitle(context.Background(), "movie", "The Dark Knight", "Mroczny Rycerz", 2008); !errors.Is(err, errNotFound) {
+		t.Fatalf("err = %v, want errNotFound", err)
+	}
+	if pagePath != "" {
+		t.Errorf("fetched the page %q for a title with no votes", pagePath)
 	}
 }
 
