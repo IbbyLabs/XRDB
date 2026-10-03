@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.119.2](https://github.com/IbbyLabs/XRDB/compare/v3.119.1...v3.119.2) (2026-10-03)
+
+
+### Fixed
+
+* **configurator:** stop autosave retrying a refused profile save ([7f0dcec](https://github.com/IbbyLabs/XRDB/commit/7f0dcec826b88ca030fc950a11e8843995a02900))
+
+
+### Performance
+
+* **ratings:** read Filmweb scores from its rating endpoint ([5f4fcf3](https://github.com/IbbyLabs/XRDB/commit/5f4fcf3bda22817ac44ee86031d524f8fda17994))
+
 ## [3.119.1](https://github.com/IbbyLabs/XRDB/compare/v3.119.0...v3.119.1) (2026-09-27)
 
 
