@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.119.7](https://github.com/IbbyLabs/XRDB/compare/v3.119.6...v3.119.7) (2026-10-04)
+
+
+### Fixed
+
+* **ratelimit:** give a sweep a true quarter of the queue on slow sources ([66b97cd](https://github.com/IbbyLabs/XRDB/commit/66b97cd3608321e000dfe1b75412470b0590d0a4))
+
 ## [3.119.6](https://github.com/IbbyLabs/XRDB/compare/v3.119.5...v3.119.6) (2026-10-04)
 
 
