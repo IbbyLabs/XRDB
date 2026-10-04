@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.119.4](https://github.com/IbbyLabs/XRDB/compare/v3.119.3...v3.119.4) (2026-10-04)
+
+
+### Fixed
+
+* **provider:** give wikidata, anilist and mal a 4s queue ceiling ([5d53b72](https://github.com/IbbyLabs/XRDB/commit/5d53b72608bfe3aecb4dac0b8a3898d8dc78cbe5))
+
 ## [3.119.3](https://github.com/IbbyLabs/XRDB/compare/v3.119.2...v3.119.3) (2026-10-04)
 
 
