@@ -180,6 +180,10 @@ func (r RateLimit) queueWait() time.Duration {
 	return pacerMaxWait()
 }
 
+// slowSourceQueueWait is the queue ceiling for sources paced at a second or
+// slower, held under an interactive render's budget.
+const slowSourceQueueWait = 4 * time.Second
+
 // rateLimits holds the per-source policy. Anything not listed gets
 // defaultRateLimit, which is loose enough not to slow ordinary use.
 //
@@ -206,8 +210,8 @@ func (r RateLimit) queueWait() time.Duration {
 // MDBList carries no interval because it meters by the day: budgetGovernor
 // paces it from the allowance its responses report.
 var rateLimits = map[string]RateLimit{
-	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
-	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
+	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget, MaxQueueWait: slowSourceQueueWait},
+	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget, MaxQueueWait: slowSourceQueueWait},
 	"mdblist": {MaxRetries: 3, MaxRetryWait: renderRetryBudget, HeaderTimeout: time.Second},
 	"trakt":   {MinInterval: time.Second, MaxRetries: 3, MaxRetryWait: renderRetryBudget, MaxQueueWait: 5 * time.Second},
 	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
@@ -224,7 +228,7 @@ var rateLimits = map[string]RateLimit{
 	// one address, and the service answered 429 with a two-minute Retry-After
 	// four times an hour, every hour. Each refusal holds the source out
 	// entirely, so the loose figure bought blackouts rather than throughput.
-	"wikidata": {MinInterval: 3 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
+	"wikidata": {MinInterval: 3 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget, MaxQueueWait: slowSourceQueueWait},
 	"allocine": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 }
 

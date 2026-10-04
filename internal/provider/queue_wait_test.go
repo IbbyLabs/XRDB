@@ -13,8 +13,13 @@ func TestQueueWaitIsPerSourceWithAnEnvFallback(t *testing.T) {
 	if got := rateLimitFor("trakt").queueWait(); got != 5*time.Second {
 		t.Errorf("trakt queue wait = %v, want 5s", got)
 	}
-	if got := rateLimitFor("wikidata").queueWait(); got != 3*time.Second {
-		t.Errorf("wikidata queue wait = %v, want the 3s from the environment", got)
+	for _, source := range []string{"wikidata", "anilist", "mal"} {
+		if got := rateLimitFor(source).queueWait(); got != 4*time.Second {
+			t.Errorf("%s queue wait = %v, want 4s", source, got)
+		}
+	}
+	if got := rateLimitFor("simkl").queueWait(); got != 3*time.Second {
+		t.Errorf("simkl queue wait = %v, want the 3s from the environment", got)
 	}
 	if got := rateLimitFor("nowhere").queueWait(); got != 3*time.Second {
 		t.Errorf("unlisted source queue wait = %v, want the 3s from the environment", got)
@@ -26,7 +31,7 @@ func TestQueueWaitIsPerSourceWithAnEnvFallback(t *testing.T) {
 func TestClientPacerCarriesTheSourceQueueWait(t *testing.T) {
 	t.Setenv("XRDB_RATINGS_MAX_QUEUE_SECONDS", "2")
 
-	for source, want := range map[string]time.Duration{"trakt": 5 * time.Second, "wikidata": 2 * time.Second} {
+	for source, want := range map[string]time.Duration{"trakt": 5 * time.Second, "wikidata": 4 * time.Second, "simkl": 2 * time.Second} {
 		tr, ok := newHTTPClient(source, 10*time.Second).Transport.(*throttledTransport)
 		if !ok {
 			t.Fatalf("%s: transport is not a throttledTransport", source)
