@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.119.6](https://github.com/IbbyLabs/XRDB/compare/v3.119.5...v3.119.6) (2026-10-04)
+
+
+### Fixed
+
+* **ratings:** remember empties on renders with no content type ([59c85dd](https://github.com/IbbyLabs/XRDB/commit/59c85dd2d921e564378495e7aefdda10f73b4881))
+
 ## [3.119.5](https://github.com/IbbyLabs/XRDB/compare/v3.119.4...v3.119.5) (2026-10-04)
 
 
