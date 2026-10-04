@@ -135,3 +135,17 @@ func TestAnAnswerWithNoContentTypeStillRecordsThatTheSourceAnswers(t *testing.T)
 		t.Error("an empty content type answered for a resolved one")
 	}
 }
+
+// A render with no content type is judged against the source as a whole, so a
+// recent rating under a resolved kind still lets its absences be remembered.
+func TestABlankContentTypeCountsARatingOfAnyKind(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.Success("wikidata", GoodKey("wikidata", "movie", "tt1"), sampleMeta("wikidata", 8.2))
+
+	if !h.AnsweringFor("wikidata", "", time.Minute) {
+		t.Error("a recent movie rating did not count for a request with no content type")
+	}
+	if h.AnsweringFor("wikidata", "", 0) {
+		t.Error("a zero window answered")
+	}
+}

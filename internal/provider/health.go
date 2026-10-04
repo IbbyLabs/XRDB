@@ -277,6 +277,16 @@ func (h *HealthTracker) AnsweringFor(source, contentType string, within time.Dur
 	if !ok {
 		return false
 	}
+	// A request that carries no content type is judged against the source as a
+	// whole: a recent rating of any kind still says the source is working.
+	if contentType == "" {
+		for _, last := range st.lastRatedByType {
+			if time.Since(last) < within {
+				return true
+			}
+		}
+		return false
+	}
 	last, ok := st.lastRatedByType[contentType]
 	return ok && time.Since(last) < within
 }
