@@ -381,6 +381,18 @@ func (p *pacer) release(res *reservation) {
 	p.mu.Unlock()
 }
 
+// pacerRefusal refuses a wait past the queue ceiling or past the caller's own
+// budget, naming which.
+func pacerRefusal(wait, budget time.Duration, bounded bool, maxWait time.Duration) error {
+	if maxWait > 0 && wait > maxWait {
+		return &backlogReason{err: ErrPacerBacklog, paced: pacedByQueueCeiling, wait: wait, budget: maxWait}
+	}
+	if bounded && wait > budget {
+		return &backlogReason{err: ErrPacerBacklog, paced: pacedByCallerDeadline, wait: wait, budget: budget}
+	}
+	return nil
+}
+
 // recheck reports what is left of a reservation's wait, having possibly been
 // moved since it was granted.
 func (p *pacer) recheck(res *reservation, budget time.Duration, bounded bool, maxWait time.Duration) (time.Duration, error) {
@@ -390,11 +402,8 @@ func (p *pacer) recheck(res *reservation, budget time.Duration, bounded bool, ma
 	if left <= 0 {
 		return 0, nil
 	}
-	if maxWait > 0 && left > maxWait {
-		return 0, ErrPacerBacklog
-	}
-	if bounded && left > budget {
-		return 0, ErrPacerBacklog
+	if err := pacerRefusal(left, budget, bounded, maxWait); err != nil {
+		return 0, err
 	}
 	return left, nil
 }
@@ -457,15 +466,12 @@ func (p *pacer) reserve(class CallerClass, budget time.Duration, bounded bool, m
 	}
 
 	wait := at.Sub(now)
-	if maxWait > 0 && wait > maxWait {
-		return nil, 0, false, ErrPacerBacklog
-	}
 	// A turn that arrives too late to use is worse than no turn: the client
 	// timeout covers this queue as well as the call, so sleeping through it
 	// cancels the request mid-flight and the cancellation is indistinguishable
 	// from the source failing to answer. Refusing instead is attributable.
-	if bounded && wait > budget {
-		return nil, 0, false, ErrPacerBacklog
+	if err := pacerRefusal(wait, budget, bounded, maxWait); err != nil {
+		return nil, 0, false, err
 	}
 
 	res := &reservation{at: at, bulk: class == CallerBulk}

@@ -111,7 +111,7 @@ func (b *backlogReason) Unwrap() error { return b.err }
 // the budget it had to spend, for a hold-out the governor refused.
 func HoldOutWait(err error) (wait, budget time.Duration, ok bool) {
 	var b *backlogReason
-	if errors.As(err, &b) && b.wait > 0 {
+	if errors.As(err, &b) && (b.wait > 0 || b.budget < 0) {
 		return b.wait, b.budget, true
 	}
 	return 0, 0, false
@@ -141,6 +141,10 @@ const (
 	// leaves them re-deriving which branch fired.
 	pacedByBudgetCeiling pacedBy = "budget_ceiling"
 	pacedByReserve       pacedBy = "reserve"
+	// A pacer refusal: the queue was longer than the ceiling, or the caller's
+	// own deadline left less than the wait.
+	pacedByQueueCeiling   pacedBy = "queue_ceiling"
+	pacedByCallerDeadline pacedBy = "caller_deadline"
 )
 
 // newBudgetGovernor builds the governor for a source, reading its knobs from the

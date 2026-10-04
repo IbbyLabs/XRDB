@@ -105,3 +105,31 @@ func TestTheGovernorRefusesAnAlreadySpentBudget(t *testing.T) {
 		t.Error("a negative budget was treated as unbounded")
 	}
 }
+
+// A pacer refusal names its branch and carries the wait and budget it was
+// refused on, so the hold-out line can tell a full queue from a spent deadline.
+func TestAPacerRefusalNamesItsBranch(t *testing.T) {
+	p := &pacer{interval: time.Second, maxWait: 2 * time.Second}
+	for i := 0; i < 3; i++ {
+		_, _, _, _ = p.reserve(CallerInteractive, 0, false, p.maxWait)
+	}
+	_, _, _, err := p.reserve(CallerInteractive, 0, false, p.maxWait)
+	if got := HoldOutReason(err); got != string(pacedByQueueCeiling) {
+		t.Errorf("full queue: paced_by = %q, want %q", got, pacedByQueueCeiling)
+	}
+	if wait, budget, ok := HoldOutWait(err); !ok || budget != 2*time.Second || wait <= budget {
+		t.Errorf("full queue: wait=%v budget=%v ok=%v", wait, budget, ok)
+	}
+
+	idle := &pacer{interval: time.Second, maxWait: 2 * time.Second}
+	_, _, _, err = idle.reserve(CallerInteractive, -500*time.Millisecond, true, idle.maxWait)
+	if got := HoldOutReason(err); got != string(pacedByCallerDeadline) {
+		t.Errorf("spent deadline: paced_by = %q, want %q", got, pacedByCallerDeadline)
+	}
+	if _, budget, ok := HoldOutWait(err); !ok || budget != -500*time.Millisecond {
+		t.Errorf("spent deadline: budget=%v ok=%v", budget, ok)
+	}
+	if HoldOutGate(err) != GatePacerBacklog {
+		t.Errorf("gate = %q, want %q", HoldOutGate(err), GatePacerBacklog)
+	}
+}

@@ -2480,7 +2480,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		// where it answered cannot be told from one where it was never asked.
 		switch {
 		case err != nil:
-			p.log().DebugContext(ctx, "A ratings source did not answer",
+			p.log().Log(ctx, didNotAnswerLevel(err), "A ratings source did not answer",
 				"id", logging.RequestID(ctx), "source", prov.Name(),
 				"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
 				"error", err)
@@ -2539,7 +2539,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			// the count means what its name says.
 			switch {
 			case err != nil:
-				p.log().DebugContext(ctx, "A ratings source did not answer",
+				p.log().Log(ctx, didNotAnswerLevel(err), "A ratings source did not answer",
 					"id", logging.RequestID(ctx), "source", prov.Name(),
 					"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
 					"error", err)
