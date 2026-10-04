@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.119.3](https://github.com/IbbyLabs/XRDB/compare/v3.119.2...v3.119.3) (2026-10-04)
+
+
+### Fixed
+
+* **logging:** name the pacer branch and warn on source errors ([4ee9299](https://github.com/IbbyLabs/XRDB/commit/4ee929925ff302d61b863a9abfed8bc64a6f39fb))
+
 ## [3.119.2](https://github.com/IbbyLabs/XRDB/compare/v3.119.1...v3.119.2) (2026-10-03)
 
 
