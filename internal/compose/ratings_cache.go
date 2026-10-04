@@ -204,6 +204,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, age titleAge, fetch r
 	}
 	if call, ok := c.inflight[key]; ok {
 		c.mu.Unlock()
+		c.log().DebugContext(ctx, "Joined a ratings fetch already in flight", "key", key)
 		select {
 		case <-call.done:
 			return call.meta, call.err
@@ -221,6 +222,12 @@ func (c *ratingsCache) do(ctx context.Context, key string, age titleAge, fetch r
 	delete(c.inflight, key)
 	if call.err == nil && c.storable(key, call.meta) {
 		c.storeLocked(key, call.meta, call.complete, age)
+		if call.meta != nil && len(call.meta.Ratings) == 0 {
+			c.log().DebugContext(ctx, "Remembered an empty ratings answer", "key", key)
+		}
+	} else if call.err == nil && call.meta != nil && len(call.meta.Ratings) == 0 {
+		c.log().DebugContext(ctx, "Did not remember an empty ratings answer: the source has not answered with ratings for this content type recently",
+			"key", key, "freshness", ratingsAnswerFreshness)
 	}
 	c.mu.Unlock()
 
@@ -279,6 +286,12 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, age titleAge,
 	delete(c.inflight, key)
 	if call.err == nil && c.storable(key, call.meta) {
 		c.storeLocked(key, call.meta, call.complete, age)
+		if call.meta != nil && len(call.meta.Ratings) == 0 {
+			c.log().DebugContext(ctx, "Remembered an empty ratings answer", "key", key)
+		}
+	} else if call.err == nil && call.meta != nil && len(call.meta.Ratings) == 0 {
+		c.log().DebugContext(ctx, "Did not remember an empty ratings answer: the source has not answered with ratings for this content type recently",
+			"key", key, "freshness", ratingsAnswerFreshness)
 	}
 	c.mu.Unlock()
 }
