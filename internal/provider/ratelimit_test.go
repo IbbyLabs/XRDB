@@ -261,8 +261,7 @@ func TestNewHTTPClientAppliesThePolicy(t *testing.T) {
 func TestPacerRefusesASweepWhereAPersonIsQueued(t *testing.T) {
 	p := &pacer{interval: time.Second, maxWait: 2 * time.Second}
 	// Two slots taken, so the next is two intervals out: past a sweep's ceiling
-	// and at a person's. One taken slot no longer separates them, because a
-	// sweep may now wait one interval rather than a fraction of one.
+	// and at a person's.
 	for i := range 2 {
 		if _, _, _, err := p.reserve(CallerInteractive, 0, false, p.maxWait); err != nil {
 			t.Fatalf("reserve %d: %v", i, err)
@@ -277,18 +276,23 @@ func TestPacerRefusesASweepWhereAPersonIsQueued(t *testing.T) {
 	}
 }
 
-// A share of the ceiling smaller than one slot is a queue nobody can join: the
-// wait allowed is less than the wait a slot requires, so a sweep is refused on
-// arrival however idle the source is. Five of the seven paced sources sit above
-// that line, so the floor is the difference between a share and a ban.
-func TestASweepMayAlwaysWaitOneSlot(t *testing.T) {
-	p := &pacer{interval: 2 * time.Second, maxWait: 2 * time.Second}
-	if _, _, _, err := p.reserve(CallerInteractive, 0, false, p.maxWait); err != nil {
-		t.Fatalf("first reserve: %v", err)
+// On a slowly paced source a sweep takes an idle slot but never queues for one.
+// Wikidata at 1 per 3s against a 4s ceiling let a library pre-fetch hold three
+// quarters of the queue when the share was floored at one interval.
+func TestASweepTakesAnIdleSlotButDoesNotQueueOnASlowSource(t *testing.T) {
+	p := &pacer{interval: 3 * time.Second, maxWait: 4 * time.Second}
+	share := bulkMaxWait(CallerBulk, p.maxWait, p.interval)
+	if share != time.Second {
+		t.Fatalf("share = %v, want a quarter of the 4s ceiling", share)
 	}
-
-	if _, _, _, err := p.reserve(CallerInteractive, 0, false, bulkMaxWait(CallerBulk, p.maxWait, p.interval)); err != nil {
-		t.Errorf("a sweep was refused the very next slot on an idle source: %v", err)
+	if _, _, _, err := p.reserve(CallerInteractive, 0, false, share); err != nil {
+		t.Fatalf("a sweep was refused an idle source: %v", err)
+	}
+	if _, _, _, err := p.reserve(CallerInteractive, 0, false, share); !errors.Is(err, ErrPacerBacklog) {
+		t.Fatalf("a sweep queued a slot away on a slowly paced source, got %v", err)
+	}
+	if _, _, _, err := p.reserve(CallerInteractive, 0, false, p.maxWait); err != nil {
+		t.Fatalf("a person behind the sweep should be served: %v", err)
 	}
 }
 
@@ -326,7 +330,7 @@ func TestOnlyANamedSweepYieldsTheQueue(t *testing.T) {
 }
 
 // The floor applies only where the share falls short, and only to a sweep.
-func TestTheFloorIsOneSlotAndOnlyForASweep(t *testing.T) {
+func TestOnlyASweepTakesAQuarterShare(t *testing.T) {
 	const ceiling = 2 * time.Second
 	for _, tc := range []struct {
 		name     string
@@ -334,9 +338,9 @@ func TestTheFloorIsOneSlotAndOnlyForASweep(t *testing.T) {
 		interval time.Duration
 		want     time.Duration
 	}{
-		{"a slot wider than the share", CallerBulk, time.Second, time.Second},
+		{"a slot wider than the share", CallerBulk, time.Second, 500 * time.Millisecond},
 		{"a slot narrower than the share", CallerBulk, 100 * time.Millisecond, 500 * time.Millisecond},
-		{"a person is not floored, they have the ceiling", CallerInteractive, 8 * time.Second, ceiling},
+		{"a person has the ceiling", CallerInteractive, 8 * time.Second, ceiling},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := bulkMaxWait(tc.class, ceiling, tc.interval); got != tc.want {
@@ -346,10 +350,8 @@ func TestTheFloorIsOneSlotAndOnlyForASweep(t *testing.T) {
 	}
 }
 
-// A sweep must never outlast a person in the queue. The floor lifts bulk to one
-// slot, and a source paced slower than the ceiling would otherwise lift it past
-// interactive — an inversion of the whole share, reachable from one env var
-// since XRDB_<SOURCE>_MIN_INTERVAL_SECONDS accepts up to ten seconds.
+// A sweep must never outlast a person in the queue, at any pacing
+// XRDB_<SOURCE>_MIN_INTERVAL_SECONDS accepts.
 func TestASweepNeverWaitsLongerThanAPerson(t *testing.T) {
 	const ceiling = 2 * time.Second
 	for _, interval := range []time.Duration{

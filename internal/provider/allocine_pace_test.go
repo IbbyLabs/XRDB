@@ -32,9 +32,8 @@ func TestAnOverrideStillWinsForAlloCine(t *testing.T) {
 	}
 }
 
-// A sweep's share is a quarter of the ceiling, so any source paced above that
-// takes the floor. AlloCiné at 2s is the widest interval in the table and the
-// case the cap was added for.
+// A sweep's share is a quarter of the ceiling at any pacing. AlloCiné at 2s is
+// the widest interval in the table.
 func TestASweepStillNeverWaitsLongerThanAPersonOnAlloCine(t *testing.T) {
 	for _, maxWait := range []time.Duration{time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second} {
 		bulk := bulkMaxWait(CallerBulk, maxWait, 2*time.Second)

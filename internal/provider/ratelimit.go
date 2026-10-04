@@ -420,26 +420,14 @@ const bulkQueueShare = 4
 // as a sweep yields; an unidentified one keeps the full ceiling, because it is
 // indistinguishable from a person with an unusual user agent.
 //
-// The share is floored at one interval. A fraction of the ceiling is smaller
-// than a slot on every source paced above 500ms, and a caller allowed to wait
-// less than the wait a slot requires is refused on arrival however idle the
-// source is — a queue nobody can join rather than a share of one.
+// The share is not floored at one interval. On a source paced slower than a
+// quarter of its ceiling a sweep then only takes a slot that is free now or
+// nearly so, and never queues behind the people the rest of the ceiling is for.
 func bulkMaxWait(class CallerClass, maxWait, interval time.Duration) time.Duration {
 	if class != CallerBulk || maxWait <= 0 {
 		return maxWait
 	}
-	share := maxWait / bulkQueueShare
-	if share < interval {
-		// Never past the ceiling everything else answers to. A source paced
-		// slower than that ceiling is one a sweep genuinely cannot queue for,
-		// and saying so is better than promoting bulk above the callers the
-		// share exists to protect.
-		if interval > maxWait {
-			return maxWait
-		}
-		return interval
-	}
-	return share
+	return maxWait / bulkQueueShare
 }
 
 // reserve takes the next slot and reports how long to hold before using it. It
