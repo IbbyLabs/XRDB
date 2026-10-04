@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.119.5](https://github.com/IbbyLabs/XRDB/compare/v3.119.4...v3.119.5) (2026-10-04)
+
+
+### Fixed
+
+* **ratings:** log whether an empty answer was remembered ([6948a60](https://github.com/IbbyLabs/XRDB/commit/6948a608d10bedc82d34b5a11f19510fe030976c))
+
 ## [3.119.4](https://github.com/IbbyLabs/XRDB/compare/v3.119.3...v3.119.4) (2026-10-04)
 
 
