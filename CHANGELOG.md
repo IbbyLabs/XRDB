@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.120.1](https://github.com/IbbyLabs/XRDB/compare/v3.120.0...v3.120.1) (2026-10-05)
+
+
+### Fixed
+
+* **wikidata:** end a batch query once no caller is waiting on it ([87aace6](https://github.com/IbbyLabs/XRDB/commit/87aace66f9cc4761b0b37c8b163146d691236815))
+
 ## [3.120.0](https://github.com/IbbyLabs/XRDB/compare/v3.119.7...v3.120.0) (2026-10-05)
 
 
