@@ -199,3 +199,39 @@ func TestAFailureCountsOnceEvenWhenTheOpenerHasLeft(t *testing.T) {
 		t.Fatalf("err = %v, want the remaining caller to carry the failure", err)
 	}
 }
+
+// A batch ends when the last caller waiting on it leaves. A stall past every
+// caller's own deadline is then cut off rather than run to the client limit,
+// where a timeout would be counted against the source.
+func TestABatchIsCancelledWhenEveryoneHasLeft(t *testing.T) {
+	cancelled := make(chan struct{}, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-r.Context().Done():
+			cancelled <- struct{}{}
+		case <-time.After(3 * time.Second):
+		}
+	}))
+	t.Cleanup(srv.Close)
+	transport := &throttledTransport{source: "wikidata", pacer: &pacer{interval: 10 * time.Millisecond, maxWait: time.Second, source: "wikidata"}}
+	w := &Wikidata{httpClient: &http.Client{Timeout: 5 * time.Second, Transport: transport}, endpoint: srv.URL}
+	w.batch = newWikidataBatcher(w, 20)
+	var wg sync.WaitGroup
+	for _, id := range []string{"tt0000001", "tt0000002"} {
+		wg.Add(1)
+		go func(id string) {
+			defer wg.Done()
+			ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+			defer cancel()
+			if _, err := w.Fetch(ctx, "movie", id); !errors.Is(err, context.DeadlineExceeded) {
+				t.Errorf("%s err = %v, want the caller's own deadline", id, err)
+			}
+		}(id)
+	}
+	wg.Wait()
+	select {
+	case <-cancelled:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the request ran on after every caller had left")
+	}
+}

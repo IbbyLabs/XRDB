@@ -61,6 +61,10 @@ type wikidataBatch struct {
 	// counted is set by the first caller still waiting when the batch fails: it
 	// carries the failure for health, and everyone after it is a rider.
 	counted bool
+	// waiting counts callers still waiting. The request is cancelled when it
+	// reaches zero, so the batch never outlives the callers it is for.
+	waiting int
+	cancel  context.CancelFunc
 }
 
 func (b *wikidataBatch) bestClass() CallerClass {
@@ -119,7 +123,9 @@ func (bt *wikidataBatcher) fetch(ctx context.Context, imdbID string) (*MediaMeta
 		b.ids = append(b.ids, imdbID)
 	}
 	b.classes[imdbID] = append(b.classes[imdbID], class)
+	b.waiting++
 	bt.mu.Unlock()
+	defer bt.leave(b)
 	if opened {
 		go bt.run(ctx, b)
 	}
@@ -153,6 +159,16 @@ func (bt *wikidataBatcher) fetch(ctx context.Context, imdbID string) (*MediaMeta
 	return wikidataMeta(b.rows[imdbID]), nil
 }
 
+// leave counts a caller out, and cancels the request once nobody is waiting on it.
+func (bt *wikidataBatcher) leave(b *wikidataBatch) {
+	bt.mu.Lock()
+	defer bt.mu.Unlock()
+	b.waiting--
+	if b.waiting <= 0 && b.cancel != nil {
+		b.cancel()
+	}
+}
+
 // run sends the batch once its slot comes up. The request carries the best class
 // among the titles waiting, so a person who joins a sweep's batch is not refused
 // for the sweep's shorter queue. A refusal by our own pacer is tried once more
@@ -163,9 +179,16 @@ func (bt *wikidataBatcher) run(callerCtx context.Context, b *wikidataBatch) {
 		bt.mu.Lock()
 		class := b.bestClass()
 		bt.mu.Unlock()
-		ctx := WithCallerClass(context.WithoutCancel(callerCtx), class)
+		ctx, cancel := context.WithCancel(WithCallerClass(context.WithoutCancel(callerCtx), class))
 		ctx = context.WithValue(ctx, wikidataBatchKey{}, b)
+		bt.mu.Lock()
+		b.cancel = cancel
+		if b.waiting <= 0 {
+			cancel()
+		}
+		bt.mu.Unlock()
 		err := bt.send(ctx, b)
+		cancel()
 		if err == nil {
 			return
 		}
