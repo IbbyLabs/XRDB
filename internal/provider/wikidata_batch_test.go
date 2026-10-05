@@ -166,10 +166,36 @@ func TestARidersFailureIsNotCountedAgainstHealth(t *testing.T) {
 	if errs[0] == nil || errs[1] == nil {
 		t.Fatalf("errs = %v, want both to fail", errs)
 	}
-	if errors.Is(errs[0], errWikidataBatchShared) {
-		t.Error("the caller that opened the batch was marked as a rider")
+	counted := 0
+	for _, err := range errs {
+		if !errors.Is(err, errWikidataBatchShared) {
+			counted++
+		}
 	}
-	if !errors.Is(errs[1], errWikidataBatchShared) || RecordsAgainstHealth(errs[1]) {
-		t.Errorf("rider err = %v, want it marked shared and not counted", errs[1])
+	if counted != 1 {
+		t.Errorf("callers carrying the failure = %d, want exactly 1 (errs %v)", counted, errs)
+	}
+}
+
+// The caller that opened a batch may have left before it fails. Someone still
+// waiting carries the failure, or an outage seen only by riders never counts.
+func TestAFailureCountsOnceEvenWhenTheOpenerHasLeft(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	t.Cleanup(srv.Close)
+	transport := &throttledTransport{source: "wikidata", pacer: &pacer{interval: 300 * time.Millisecond, maxWait: 2 * time.Second, source: "wikidata"}}
+	w := &Wikidata{httpClient: &http.Client{Timeout: 2 * time.Second, Transport: transport}, endpoint: srv.URL}
+	w.batch = newWikidataBatcher(w, 20)
+	if _, _, _, err := w.batch.pacer().reserve(CallerInteractive, 0, false, time.Second); err != nil {
+		t.Fatal(err)
+	}
+	opener, cancel := context.WithCancel(context.Background())
+	go func() { _, _ = w.Fetch(opener, "movie", "tt0000001") }()
+	time.Sleep(10 * time.Millisecond)
+	cancel()
+	_, err := w.Fetch(context.Background(), "movie", "tt0000002")
+	if err == nil || errors.Is(err, errWikidataBatchShared) {
+		t.Fatalf("err = %v, want the remaining caller to carry the failure", err)
 	}
 }

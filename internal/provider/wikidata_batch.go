@@ -38,7 +38,7 @@ func wikidataBatchQuery(imdbIDs []string) string {
 }
 
 // errWikidataBatchShared marks a failure a caller received because the batch it
-// rode in failed. The batch's own caller carries the failure for health; the
+// rode in failed. One caller still waiting carries the failure for health; the
 // riders do not count it again.
 var errWikidataBatchShared = errors.New("wikidata: the shared query failed")
 
@@ -58,6 +58,9 @@ type wikidataBatch struct {
 	done    chan struct{}
 	rows    map[string][]wikidataBinding
 	err     error
+	// counted is set by the first caller still waiting when the batch fails: it
+	// carries the failure for health, and everyone after it is a rider.
+	counted bool
 }
 
 func (b *wikidataBatch) bestClass() CallerClass {
@@ -138,7 +141,11 @@ func (bt *wikidataBatcher) fetch(ctx context.Context, imdbID string) (*MediaMeta
 		return nil, &backlogReason{err: ErrPacerBacklog, paced: pacedByQueueCeiling, wait: time.Since(started), budget: ceiling}
 	}
 	if b.err != nil {
-		if opened {
+		bt.mu.Lock()
+		first := !b.counted
+		b.counted = true
+		bt.mu.Unlock()
+		if first {
 			return nil, b.err
 		}
 		return nil, &wikidataRiderError{err: b.err}
