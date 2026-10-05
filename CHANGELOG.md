@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.120.0](https://github.com/IbbyLabs/XRDB/compare/v3.119.7...v3.120.0) (2026-10-05)
+
+
+### Added
+
+* **wikidata:** ask about every waiting title in one query ([621f2da](https://github.com/IbbyLabs/XRDB/commit/621f2da8f81abe55771825997fc66c6748ad0799))
+
+
+### Fixed
+
+* **ratings:** say on the answered line whether the source was called ([fec4513](https://github.com/IbbyLabs/XRDB/commit/fec451302806aaa3cbd6dcc108f562c0273782d7))
+* **wikidata:** the first caller still waiting carries a batch failure ([3c54a81](https://github.com/IbbyLabs/XRDB/commit/3c54a819d469fee09b6ad4fdbf050c38e4e6ca3f))
+
 ## [3.119.7](https://github.com/IbbyLabs/XRDB/compare/v3.119.6...v3.119.7) (2026-10-04)
 
 
