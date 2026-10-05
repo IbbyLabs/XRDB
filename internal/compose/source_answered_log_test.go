@@ -94,3 +94,35 @@ func TestASourceThatFailedIsNotRecordedAsAnswering(t *testing.T) {
 		t.Error("a refused source left no warning")
 	}
 }
+
+// The answered line says whether the source was called. A second render of the
+// title is served by the ratings cache and must not read as another call.
+func TestTheAnsweredLineSaysWhetherTheSourceWasCalled(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{ProviderName: "tmdb", Meta: &provider.MediaMeta{Title: "T", PosterURL: "http://tmdb/poster.jpg"}})
+	reg.Register(&answering{name: "imdb"})
+	p := &Pipeline{providers: reg, logger: logger,
+		fetcher: &stubImageFetcher{data: makeTestPNG(600, 900, color.NRGBA{20, 20, 20, 255})}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+	p.ratings = newRatingsCache(time.Hour, logger)
+	cfg := imageconfig.Default()
+	cfg.ArtworkSource = imageconfig.ArtworkTMDB
+	cfg.Ratings = []string{"imdb"}
+	for i := 0; i < 2; i++ {
+		if _, err := p.Render(context.Background(), Request{MediaType: "poster", ContentType: "movie", MediaID: "tt1", Config: cfg}); err != nil {
+			t.Fatalf("Render %d: %v", i, err)
+		}
+	}
+	var got []any
+	for _, raw := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+		var line map[string]any
+		if json.Unmarshal([]byte(raw), &line) == nil && line["msg"] == "A ratings source answered" {
+			got = append(got, line["fetched"])
+		}
+	}
+	if len(got) != 2 || got[0] != true || got[1] != false {
+		t.Fatalf("fetched on the two answered lines = %v, want [true false]", got)
+	}
+}

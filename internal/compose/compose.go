@@ -716,6 +716,14 @@ func recordsAgainstTheSource(ctx context.Context, err error) bool {
 	return ctx.Err() == nil && !errors.Is(err, context.Canceled)
 }
 
+// fetchProbeKey carries a flag the cached fetch sets when this call reached the
+// source, as opposed to waiting on another call or reading the ratings cache.
+type fetchProbeKey struct{}
+
+func withFetchProbe(ctx context.Context, fetched *bool) context.Context {
+	return context.WithValue(ctx, fetchProbeKey{}, fetched)
+}
+
 func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, bool, error) {
 	// A render carrying the owner's own credential for this source has its own
 	// upstream allowance, so the shared key's cooldown does not apply to it. This
@@ -797,6 +805,9 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		// budget would read the leader's cut as the source timing out.
 		return m, p.answerKeptItsSources(prov.Name(), cacheKey, m), markStageCut(fctx, ferr)
 	})
+	if probe, ok := ctx.Value(fetchProbeKey{}).(*bool); ok {
+		*probe = fetched
+	}
 	if !fetched {
 		p.log().DebugContext(ctx, "A ratings source's answer was waited on rather than fetched",
 			"id", logging.RequestID(ctx), "source", prov.Name(),
@@ -2474,7 +2485,8 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			continue
 		}
 		started := time.Now()
-		meta, fromMemory, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
+		fetched := false
+		meta, fromMemory, err := p.fetchRatingsResilient(withFetchProbe(ctx, &fetched), prov, req, artwork)
 		// Logged exactly as a source in the fan-out is. A supplier consulted on
 		// a different path and left out of the record is invisible, and a render
 		// where it answered cannot be told from one where it was never asked.
@@ -2489,7 +2501,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			p.log().InfoContext(ctx, "A ratings source answered",
 				"id", logging.RequestID(ctx), "source", prov.Name(),
 				"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
-				"ratings", len(ratingsOf(meta)))
+				"ratings", len(ratingsOf(meta)), "fetched", fetched)
 		}
 		if err != nil || meta == nil {
 			continue
@@ -2531,7 +2543,8 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 				return
 			}
 			started := time.Now()
-			meta, fromMemory, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
+			fetched := false
+			meta, fromMemory, err := p.fetchRatingsResilient(withFetchProbe(ctx, &fetched), prov, req, artwork)
 			// Info, because a held-out source is only meaningful against the
 			// number of renders that reached the source at all. Without it a
 			// window with no warning is indistinguishable from a window that
@@ -2550,7 +2563,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 				p.log().InfoContext(ctx, "A ratings source answered",
 					"id", logging.RequestID(ctx), "source", prov.Name(),
 					"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
-					"ratings", len(ratingsOf(meta)))
+					"ratings", len(ratingsOf(meta)), "fetched", fetched)
 			}
 			if err != nil {
 				// Only a throttled source counts. A scraped source reports "no
