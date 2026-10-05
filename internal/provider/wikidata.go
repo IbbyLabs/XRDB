@@ -62,13 +62,20 @@ var wikidataRejectedMethod = map[string]bool{
 type Wikidata struct {
 	httpClient *http.Client
 	endpoint   string
+	// batch, when set, asks for every title waiting on the same paced slot in
+	// one query. Nil asks for one title per query.
+	batch *wikidataBatcher
 }
 
 func NewWikidata() *Wikidata {
-	return &Wikidata{
+	w := &Wikidata{
 		httpClient: newHTTPClient("wikidata", 12*time.Second),
 		endpoint:   wikidataEndpoint,
 	}
+	if size := wikidataBatchSize(); size > 1 {
+		w.batch = newWikidataBatcher(w, size)
+	}
+	return w
 }
 
 func (w *Wikidata) Name() string { return "wikidata" }
@@ -91,19 +98,24 @@ func wikidataQuery(imdbID string) string {
 }`
 }
 
+type wikidataBinding struct {
+	IMDb struct {
+		Value string `json:"value"`
+	} `json:"imdb"`
+	Reviewer struct {
+		Value string `json:"value"`
+	} `json:"reviewer"`
+	Score struct {
+		Value string `json:"value"`
+	} `json:"score"`
+	Method struct {
+		Value string `json:"value"`
+	} `json:"method"`
+}
+
 type wikidataResults struct {
 	Results struct {
-		Bindings []struct {
-			Reviewer struct {
-				Value string `json:"value"`
-			} `json:"reviewer"`
-			Score struct {
-				Value string `json:"value"`
-			} `json:"score"`
-			Method struct {
-				Value string `json:"value"`
-			} `json:"method"`
-		} `json:"bindings"`
+		Bindings []wikidataBinding `json:"bindings"`
 	} `json:"results"`
 }
 
@@ -118,6 +130,9 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 	// anything outside this shape is not an IMDb id in the first place.
 	if !isIMDbID(imdbID) {
 		return nil, fmt.Errorf("wikidata: %q is not an IMDb id: %w", id, ErrNotApplicable)
+	}
+	if w.batch != nil {
+		return w.batch.fetch(ctx, imdbID)
 	}
 
 	endpoint := w.endpoint + "?format=json&query=" + url.QueryEscape(wikidataQuery(imdbID))
@@ -145,13 +160,18 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 		return nil, fmt.Errorf("wikidata: %w", err)
 	}
 
+	return wikidataMeta(out.Results.Bindings), nil
+}
+
+// wikidataMeta picks one title's badges out of its rows.
+func wikidataMeta(rows []wikidataBinding) *MediaMeta {
 	meta := &MediaMeta{}
 	// A reviewer can carry several scores for one title, so the rows are picked
 	// over rather than appended as they arrive: the first row for a source is
 	// not the figure its badge means.
 	best := map[string]Rating{}
 	exact := map[string]bool{}
-	for _, b := range out.Results.Bindings {
+	for _, b := range rows {
 		source := ""
 		switch {
 		case strings.HasSuffix(b.Reviewer.Value, "/"+wikidataRottenTomatoes):
@@ -196,7 +216,7 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 			meta.Ratings = append(meta.Ratings, r)
 		}
 	}
-	return meta, nil
+	return meta
 }
 
 // wikidataUserAgent identifies XRDB and its operator, per Wikimedia's policy.

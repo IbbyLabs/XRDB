@@ -62,6 +62,10 @@ func RecordsAgainstHealth(err error) bool {
 	if err == nil {
 		return false
 	}
+	// A rider in a shared Wikidata query: the batch's own caller counts it.
+	if errors.Is(err, errWikidataBatchShared) {
+		return false
+	}
 	if errors.Is(err, ErrSourceFault) {
 		return true
 	}
