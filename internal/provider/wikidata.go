@@ -67,9 +67,17 @@ type Wikidata struct {
 	batch *wikidataBatcher
 }
 
+// wikidataHeaderTimeout bounds one request from the moment the pacer grants its
+// slot. The client has no overall timeout: one would include time in our own queue.
+const wikidataHeaderTimeout = 10 * time.Second
+
+// wikidataAttemptBound is the longest a granted request can take: a stalled
+// attempt, its one retry on a new connection, and a short Retry-After.
+const wikidataAttemptBound = 2*wikidataHeaderTimeout + renderRetryBudget
+
 func NewWikidata() *Wikidata {
 	w := &Wikidata{
-		httpClient: newHTTPClient("wikidata", 12*time.Second),
+		httpClient: newHTTPClient("wikidata", 0),
 		endpoint:   wikidataEndpoint,
 	}
 	if size := wikidataBatchSize(); size > 1 {

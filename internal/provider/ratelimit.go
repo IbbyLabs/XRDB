@@ -228,7 +228,8 @@ var rateLimits = map[string]RateLimit{
 	// one address, and the service answered 429 with a two-minute Retry-After
 	// four times an hour, every hour. Each refusal holds the source out
 	// entirely, so the loose figure bought blackouts rather than throughput.
-	"wikidata": {MinInterval: 3 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget, MaxQueueWait: slowSourceQueueWait},
+	"wikidata": {MinInterval: 3 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget, MaxQueueWait: slowSourceQueueWait,
+		HeaderTimeout: wikidataHeaderTimeout},
 	"allocine": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 }
 

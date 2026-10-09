@@ -235,3 +235,48 @@ func TestABatchIsCancelledWhenEveryoneHasLeft(t *testing.T) {
 		t.Fatal("the request ran on after every caller had left")
 	}
 }
+
+// Time a request spends in our own queue is not charged to Wikidata: the bound
+// starts when the pacer grants the slot.
+func TestQueueTimeIsNotChargedToWikidata(t *testing.T) {
+	w := NewWikidata()
+	if w.httpClient.Timeout != 0 {
+		t.Fatalf("client timeout = %v, want none: it would include our own queue", w.httpClient.Timeout)
+	}
+	base, _ := w.httpClient.Transport.(*throttledTransport).base.(*wikidataBatchTransport).next.(*http.Transport)
+	if base == nil || base.ResponseHeaderTimeout != wikidataHeaderTimeout {
+		t.Fatalf("header timeout not set on the transport under the pacer")
+	}
+
+	delay := 0 * time.Millisecond
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(delay)
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(srv.Close)
+	inner := http.DefaultTransport.(*http.Transport).Clone()
+	inner.ResponseHeaderTimeout = 300 * time.Millisecond
+	transport := &throttledTransport{source: "wikidata", base: inner,
+		policy: RateLimit{HeaderTimeout: 300 * time.Millisecond},
+		pacer:  &pacer{interval: 400 * time.Millisecond, maxWait: 5 * time.Second, source: "wikidata"}}
+	client := &http.Client{Transport: transport}
+	for i := 0; i < 3; i++ {
+		if _, _, _, err := transport.pacer.reserve(CallerInteractive, 0, false, 5*time.Second); err != nil {
+			t.Fatal(err)
+		}
+	}
+	started := time.Now()
+	resp, err := client.Get(srv.URL)
+	if err != nil {
+		t.Fatalf("a fast answer after %v in our queue failed: %v", time.Since(started), err)
+	}
+	resp.Body.Close()
+	if waited := time.Since(started); waited < time.Second {
+		t.Fatalf("waited %v, the test needs the queue to outlast the header timeout", waited)
+	}
+
+	delay = 600 * time.Millisecond
+	if _, err := client.Get(srv.URL); err == nil {
+		t.Fatal("a slow answer was not bounded by the header timeout")
+	}
+}

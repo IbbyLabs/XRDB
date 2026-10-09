@@ -134,7 +134,7 @@ func (bt *wikidataBatcher) fetch(ctx context.Context, imdbID string) (*MediaMeta
 	var ceiling time.Duration
 	if p := bt.pacer(); p != nil && p.maxWait > 0 {
 		ceiling = bulkMaxWait(class, p.maxWait, p.interval)
-		timer := time.NewTimer(ceiling + bt.w.httpClient.Timeout)
+		timer := time.NewTimer(ceiling + wikidataAttemptBound)
 		defer timer.Stop()
 		limit = timer.C
 	}
