@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.120.2](https://github.com/IbbyLabs/XRDB/compare/v3.120.1...v3.120.2) (2026-10-09)
+
+
+### Fixed
+
+* **wikidata:** bound the body read once headers arrive ([9c4bd46](https://github.com/IbbyLabs/XRDB/commit/9c4bd46c0a90e180d1b2a401cd3de55da273543b))
+* **wikidata:** time a request from its paced slot, not from the queue ([84bcaf9](https://github.com/IbbyLabs/XRDB/commit/84bcaf9baa7edf25d0b7ab163de394edc5d21128))
+
 ## [3.120.1](https://github.com/IbbyLabs/XRDB/compare/v3.120.0...v3.120.1) (2026-10-05)
 
 
