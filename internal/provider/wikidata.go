@@ -67,8 +67,8 @@ type Wikidata struct {
 	batch *wikidataBatcher
 }
 
-// wikidataHeaderTimeout bounds one request from the moment the pacer grants its
-// slot. The client has no overall timeout: one would include time in our own queue.
+// wikidataHeaderTimeout bounds the wait for headers once the pacer grants the slot,
+// and then the body read. The client has no overall timeout: one would include our queue.
 const wikidataHeaderTimeout = 10 * time.Second
 
 // wikidataAttemptBound is the longest a granted request can take: a stalled
@@ -144,6 +144,8 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 	}
 
 	endpoint := w.endpoint + "?format=json&query=" + url.QueryEscape(wikidataQuery(imdbID))
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("wikidata: %w", err)
@@ -159,6 +161,7 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 		return nil, fmt.Errorf("wikidata: %w", err)
 	}
 	defer res.Body.Close()
+	defer time.AfterFunc(wikidataHeaderTimeout, cancel).Stop()
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("wikidata: %s", res.Status)
 	}

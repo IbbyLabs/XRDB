@@ -208,6 +208,8 @@ func (bt *wikidataBatcher) run(callerCtx context.Context, b *wikidataBatch) {
 }
 
 func (bt *wikidataBatcher) send(ctx context.Context, b *wikidataBatch) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, bt.w.endpoint, nil)
 	if err != nil {
 		return fmt.Errorf("wikidata: %w", err)
@@ -220,6 +222,7 @@ func (bt *wikidataBatcher) send(ctx context.Context, b *wikidataBatch) error {
 		return fmt.Errorf("wikidata: %w", err)
 	}
 	defer res.Body.Close()
+	defer time.AfterFunc(wikidataHeaderTimeout, cancel).Stop()
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("wikidata: %s", res.Status)
 	}

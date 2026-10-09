@@ -280,3 +280,37 @@ func TestQueueTimeIsNotChargedToWikidata(t *testing.T) {
 		t.Fatal("a slow answer was not bounded by the header timeout")
 	}
 }
+
+// A response whose headers arrive and whose body then stalls is still bounded,
+// in a batch run detached from every caller's own cancellation.
+func TestAStalledBodyEndsTheBatch(t *testing.T) {
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/sparql-results+json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"results":{"bindings":[`))
+		w.(http.Flusher).Flush()
+		select {
+		case <-r.Context().Done():
+		case <-release:
+		}
+	}))
+	t.Cleanup(func() { close(release); srv.Close() })
+	w := &Wikidata{endpoint: srv.URL}
+	w.httpClient = &http.Client{Transport: &throttledTransport{source: "wikidata",
+		pacer: &pacer{interval: 10 * time.Millisecond, maxWait: time.Second, source: "wikidata"}}}
+	w.batch = newWikidataBatcher(w, 20)
+	b := &wikidataBatch{ids: []string{"tt0000001"}, classes: map[string][]CallerClass{"tt0000001": {CallerBulk}}, done: make(chan struct{})}
+	ctx := context.WithValue(context.WithoutCancel(context.Background()), wikidataBatchKey{}, b)
+
+	errc := make(chan error, 1)
+	go func() { errc <- w.batch.send(ctx, b) }()
+	select {
+	case err := <-errc:
+		if err == nil {
+			t.Fatal("a stalled body was read as a complete answer")
+		}
+	case <-time.After(wikidataHeaderTimeout + 5*time.Second):
+		t.Fatal("a stalled body was never cut off")
+	}
+}
