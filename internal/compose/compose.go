@@ -2234,18 +2234,20 @@ func mergeArtworkURLs(dst, src *provider.MediaMeta) {
 }
 
 // enrichMetaForOverlays fills overlay metadata (content rating, genres, watch
-// providers, stinger, release status) from TMDB when the artwork source doesn't supply it.
+// providers, stinger, release status, info line) from TMDB when the artwork source doesn't supply it.
 // Without this, switching artwork to fanart/cinemeta would silently drop the
 // age/genre/provider/stinger badges even though the data exists.
 func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta *provider.MediaMeta) {
-	needsRating := req.Config.AgeRating && meta.ContentRating == ""
-	needsGenres := req.Config.Genre && len(meta.Genres) == 0
+	metaLine := req.Config.MetaLine
+	needsRating := (req.Config.AgeRating || metaLine && req.Config.MetaLineAgeRating) && meta.ContentRating == ""
+	needsGenres := (req.Config.Genre || metaLine) && len(meta.Genres) == 0
+	needsYear := metaLine && meta.Year == 0
 	needsProviders := req.Config.Providers && len(meta.WatchProviders) == 0
 	// Stinger is read from TMDB's keywords, so any other artwork source leaves it
 	// empty and the badge never draws.
 	needsStinger := req.Config.Stinger && !meta.Stinger.Has()
 	needsRelease := req.Config.ReleaseStatus && meta.ReleaseStatus == "" && meta.UpcomingRelease.Kind == ""
-	if !needsRating && !needsGenres && !needsProviders && !needsStinger && !needsRelease {
+	if !needsRating && !needsGenres && !needsProviders && !needsStinger && !needsRelease && !needsYear {
 		return
 	}
 	tmdb := p.providers.Get("tmdb")
@@ -2276,6 +2278,9 @@ func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta 
 	}
 	if needsStinger {
 		meta.Stinger = extra.Stinger
+	}
+	if needsYear {
+		meta.Year = extra.Year
 	}
 	if needsRelease {
 		meta.ReleaseStatus = extra.ReleaseStatus

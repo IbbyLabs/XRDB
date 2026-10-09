@@ -13,6 +13,7 @@ import (
 // another source.
 func TestOverlayMetaIsToppedUpFromTMDBForOtherArtworkSources(t *testing.T) {
 	tmdbMeta := &provider.MediaMeta{
+		Year:            2026,
 		ContentRating:   "PG-13",
 		Genres:          []string{"Drama"},
 		WatchProviders:  []provider.WatchProvider{{ID: 8, Name: "Netflix"}},
@@ -31,6 +32,9 @@ func TestOverlayMetaIsToppedUpFromTMDBForOtherArtworkSources(t *testing.T) {
 		{"stinger", func(c *imageconfig.Config) { c.Stinger = true }, func(m provider.MediaMeta) bool { return m.Stinger.Has() }},
 		{"release status", func(c *imageconfig.Config) { c.ReleaseStatus = true }, func(m provider.MediaMeta) bool {
 			return m.ReleaseStatus == "cinemas" && m.UpcomingRelease.Kind == "digital"
+		}},
+		{"info line", func(c *imageconfig.Config) { c.MetaLine = true; c.MetaLineAgeRating = true }, func(m provider.MediaMeta) bool {
+			return m.Year == 2026 && len(m.Genres) > 0 && m.ContentRating != ""
 		}},
 	}
 	for _, tc := range cases {
