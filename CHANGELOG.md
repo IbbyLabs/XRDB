@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.120.4](https://github.com/IbbyLabs/XRDB/compare/v3.120.3...v3.120.4) (2026-10-09)
+
+
+### Fixed
+
+* **docker:** pull base images from the GCR mirror ([4b05898](https://github.com/IbbyLabs/XRDB/commit/4b0589881af8f66fd88e5a5683c2bbd8160ab4f8))
+
 ## [3.120.3](https://github.com/IbbyLabs/XRDB/compare/v3.120.2...v3.120.3) (2026-10-09)
 
 
