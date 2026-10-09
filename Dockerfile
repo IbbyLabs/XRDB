@@ -1,5 +1,5 @@
 # Stage 1: build the Next.js static export
-FROM node:22-alpine AS web-builder
+FROM mirror.gcr.io/library/node:22-alpine AS web-builder
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --ignore-scripts
@@ -8,7 +8,7 @@ RUN npm run build
 # Output lands in /src/internal/ui/dist (distDir in next.config.ts)
 
 # Stage 2: build the Go binary (with embedded UI)
-FROM golang:1.25-alpine AS go-builder
+FROM mirror.gcr.io/library/golang:1.25-alpine AS go-builder
 ARG XRDB_BUILD_VERSION
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -24,7 +24,7 @@ RUN CGO_ENABLED=0 go build -trimpath \
     -o /out/xrdb-api ./cmd/api
 
 # Stage 3: minimal runtime image
-FROM alpine:3.21
+FROM mirror.gcr.io/library/alpine:3.21
 RUN adduser -D -H -s /sbin/nologin appuser \
     && mkdir -p /data \
     && chown appuser:appuser /data
