@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.120.3](https://github.com/IbbyLabs/XRDB/compare/v3.120.2...v3.120.3) (2026-10-09)
+
+
+### Fixed
+
+* **compose:** fill release status from TMDB under Fanart art (BUG-293) ([7fa7d77](https://github.com/IbbyLabs/XRDB/commit/7fa7d77154ebd003a49be9e118fddd593db33263))
+* **compose:** fill the info line from TMDB under Fanart art (BUG-293) ([b81c679](https://github.com/IbbyLabs/XRDB/commit/b81c6791c947bb7bfffc562c9229ae7082332d7c))
+
 ## [3.120.2](https://github.com/IbbyLabs/XRDB/compare/v3.120.1...v3.120.2) (2026-10-09)
 
 
