@@ -17,10 +17,12 @@ func TestTheTermGrowsWithTheTitlesAge(t *testing.T) {
 		want time.Duration
 	}{
 		{name: "out this year", year: thisYear, want: base},
-		{name: "out last year", year: thisYear - 1, want: 2 * base},
-		{name: "two years old", year: thisYear - 2, want: 2 * base},
-		{name: "three years old", year: thisYear - 3, want: 3 * base},
-		{name: "a decade old", year: thisYear - 10, want: 3 * base},
+		{name: "out last year", year: thisYear - 1, want: 4 * base},
+		{name: "two years old", year: thisYear - 2, want: 4 * base},
+		{name: "three years old", year: thisYear - 3, want: 6 * base},
+		{name: "nine years old", year: thisYear - 9, want: 6 * base},
+		{name: "a decade old", year: thisYear - 10, want: 8 * base},
+		{name: "fifty years old", year: thisYear - 50, want: 8 * base},
 		{name: "no year at all", year: 0, want: base},
 		{name: "dated in the future", year: thisYear + 2, want: base},
 	} {
@@ -83,13 +85,13 @@ func TestTheTitlesYearScalesATermTheAnswerCannotDate(t *testing.T) {
 	answer := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "wikidata", Value: 7}}}
 
 	c.mu.Lock()
-	c.storeLocked("wikidata|movie|tt1", answer, true, titleAge{year: old})
-	c.storeLocked("wikidata|movie|tt2", answer, true, titleAge{})
-	withYear, withNone := c.entries["wikidata|movie|tt1"].TTL, c.entries["wikidata|movie|tt2"].TTL
+	c.storeLocked("tmdb|movie|tt1", answer, true, titleAge{year: old})
+	c.storeLocked("tmdb|movie|tt2", answer, true, titleAge{})
+	withYear, withNone := c.entries["tmdb|movie|tt1"].TTL, c.entries["tmdb|movie|tt2"].TTL
 	c.mu.Unlock()
 
-	if withYear != 3*base {
-		t.Errorf("term with the title's year = %s, want %s", withYear, 3*base)
+	if withYear != 8*base {
+		t.Errorf("term with the title's year = %s, want %s", withYear, 8*base)
 	}
 	if withNone != base {
 		t.Errorf("term with no year = %s, want %s", withNone, base)
@@ -109,8 +111,8 @@ func TestTheAnswersOwnYearStillCountsWhenTheTitleHasNone(t *testing.T) {
 	got := c.entries["tmdb|movie|tt1"].TTL
 	c.mu.Unlock()
 
-	if got != 3*base {
-		t.Errorf("term = %s, want %s", got, 3*base)
+	if got != 8*base {
+		t.Errorf("term = %s, want %s", got, 8*base)
 	}
 }
 
@@ -127,9 +129,9 @@ func TestTheTermUsesTheFullDateWhenThereIsOne(t *testing.T) {
 		date: lastDecember.Format("2006-01-02"),
 	})
 
-	// The year says one year old, so the 1x tier ends and 2x begins.
-	if byYear != 2*base {
-		t.Errorf("term from the year alone = %s, want %s", byYear, 2*base)
+	// The year says one year old, so the 1x tier ends and 4x begins.
+	if byYear != 4*base {
+		t.Errorf("term from the year alone = %s, want %s", byYear, 4*base)
 	}
 	// Fewer than 365 days have passed, so the title is still in its first year.
 	if !lastDecember.AddDate(1, 0, 0).After(now) {
@@ -144,8 +146,39 @@ func TestAnUnparseableDateFallsBackToTheYear(t *testing.T) {
 	base := 24 * time.Hour
 	old := time.Now().Year() - 10
 	for _, date := range []string{"", "2015", "not-a-date", "2015-13-45"} {
-		if got := ageScaledTTL(base, titleAge{year: old, date: date}); got != 3*base {
-			t.Errorf("date %q gave %s, want the year's %s", date, got, 3*base)
+		if got := ageScaledTTL(base, titleAge{year: old, date: date}); got != 8*base {
+			t.Errorf("date %q gave %s, want the year's %s", date, got, 8*base)
 		}
+	}
+}
+
+// A present Wikidata answer is a critic aggregate, held for weeks whatever the
+// title's age; its absence is not, and is re-asked as soon as any other.
+func TestAWikidataAnswerIsHeldAsSettled(t *testing.T) {
+	base := 24 * time.Hour
+	c := newRatingsCache(base, nil)
+	present := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "rt", Value: 9.1}}}
+	newTitle := titleAge{year: time.Now().Year()}
+
+	c.mu.Lock()
+	c.storeLocked("wikidata|movie|tt1", present, true, newTitle)
+	c.storeLocked("wikidata|movie|tt2", &provider.MediaMeta{}, true, newTitle)
+	c.storeLocked("wikidata|movie|tt3", present, false, newTitle)
+	c.storeLocked("mdblist|movie|tt1", present, true, newTitle)
+	held, absent, thin, other := c.entries["wikidata|movie|tt1"].TTL, c.entries["wikidata|movie|tt2"].TTL,
+		c.entries["wikidata|movie|tt3"].TTL, c.entries["mdblist|movie|tt1"].TTL
+	c.mu.Unlock()
+
+	if held != 25*24*time.Hour {
+		t.Errorf("present wikidata answer held %s, want 25 days", held)
+	}
+	if absent != AbsentRatingsCacheTTL {
+		t.Errorf("wikidata absence held %s, want %s", absent, AbsentRatingsCacheTTL)
+	}
+	if thin != PartialRatingsCacheTTL {
+		t.Errorf("thin wikidata answer held %s, want %s", thin, PartialRatingsCacheTTL)
+	}
+	if other != base {
+		t.Errorf("another source's new title held %s, want the base %s", other, base)
 	}
 }

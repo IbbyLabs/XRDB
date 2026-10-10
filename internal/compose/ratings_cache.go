@@ -301,12 +301,10 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, age titleAge,
 // later, so the answer that changes least is kept longest and the most
 // expensive part of a render is paid for less often.
 //
-// The multipliers are deliberately small. This cache is clock-bound rather than
-// full, so resident entries scale with the term. Entry-weighted across the
-// resident population on 2026-09-03, 78.1 percent fall in the 3x tier and the
-// mean multiplier is 2.71, projecting 253,569 resident against a 400,000 cap. A
-// larger ceiling makes the cache capacity-bound and evicts the answers the rule
-// just decided to keep.
+// This cache is clock-bound rather than full, so resident entries scale with the
+// term. Replaying sixteen days of recorded score movement on 2026-10-09, these
+// tiers hold 1.30 times the entries the previous 1x/2x/3x tiers did, projecting
+// about 330,000 resident against a 400,000 cap.
 //
 // Eviction takes the entries closest to expiry, which are the 1x tier, so cap
 // pressure falls on the newest titles.
@@ -316,8 +314,16 @@ var ratingsAgeTTLTiers = []struct {
 	olderThanYears int
 	multiplier     int
 }{
-	{olderThanYears: 3, multiplier: 3},
-	{olderThanYears: 1, multiplier: 2},
+	{olderThanYears: 10, multiplier: 8},
+	{olderThanYears: 3, multiplier: 6},
+	{olderThanYears: 1, multiplier: 4},
+}
+
+// settledRatingsTTL is the term for a present answer from a source whose scores
+// are critic aggregates fixed once reviews are in. Wikidata supplies only Rotten
+// Tomatoes and Metacritic. Absences keep AbsentRatingsCacheTTL.
+var settledRatingsTTL = map[string]time.Duration{
+	"wikidata": 25 * 24 * time.Hour,
 }
 
 // titleAge is what the store decision knows about when a title came out. The
@@ -391,6 +397,10 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 	// missing a source because an allowance ran out is re-asked in minutes
 	// rather than pinned for days by the title being old.
 	ttl := ageScaledTTL(c.ttl, age)
+	source, _, _ := provider.SplitGoodKey(key)
+	if settled, ok := settledRatingsTTL[source]; ok && settled > ttl {
+		ttl = settled
+	}
 	if !complete && PartialRatingsCacheTTL < ttl {
 		ttl = PartialRatingsCacheTTL
 	}
@@ -403,7 +413,7 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 		if len(prev.Meta.Ratings) == 0 {
 			// The term for an absence has to come from somewhere, and nothing has
 			// ever stored one. This line is that measurement.
-			source, contentType, id := provider.SplitGoodKey(key)
+			_, contentType, id := provider.SplitGoodKey(key)
 			c.log().Info("A remembered absence turned into a rating",
 				"source", source, "content_type", contentType, "media_id", id,
 				"absent_for_ms", time.Since(prev.ExpiresAt.Add(-prev.TTL)).Milliseconds(),
