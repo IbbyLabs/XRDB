@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.122.2](https://github.com/IbbyLabs/XRDB/compare/v3.122.1...v3.122.2) (2026-10-10)
+
+
+### Fixed
+
+* **cache:** keep a rate-limited render only until the source's Retry-After ([e413ac9](https://github.com/IbbyLabs/XRDB/commit/e413ac909bb7ff67c38eebe937b69e8866fe6ccd))
+
 ## [3.122.1](https://github.com/IbbyLabs/XRDB/compare/v3.122.0...v3.122.1) (2026-10-10)
 
 
