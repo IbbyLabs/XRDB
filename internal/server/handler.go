@@ -131,6 +131,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		if draining.Load() {
+			writeJSON(w, http.StatusServiceUnavailable, statusResponse{Service: "xrdb-api", Status: "draining", Version: version})
+			return
+		}
 		writeJSON(w, http.StatusOK, statusResponse{Service: "xrdb-api", Status: "ready", Version: version})
 	})
 

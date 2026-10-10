@@ -213,6 +213,7 @@ type Config struct {
 	// "" uses the built-in default, "off" disables it.
 	AnimeMapSupplementURL string
 	IMDbRefresh           time.Duration            // IMDb dataset rebuild interval while running
+	Drain                 time.Duration            // not-ready period before shutdown
 	AnimeMapRefresh       time.Duration            // anime mapping dataset refresh interval; 0 = default (7 days)
 	ProviderTTLs          map[string]time.Duration // per-provider TTL overrides; key = provider name
 	// SurfaceTTLs overrides the render TTL for one artwork surface. A surface
@@ -656,7 +657,16 @@ func Load() Config {
 			imdbRefresh = time.Duration(h * float64(time.Hour))
 		}
 	}
+	// How long a stopping process reports not-ready while still serving, so a
+	// load balancer stops sending it requests before it closes its listener.
+	var drain time.Duration
+	if raw := os.Getenv("XRDB_DRAIN_SECONDS"); raw != "" {
+		if sec, err := strconv.ParseFloat(raw, 64); err == nil && sec > 0 {
+			drain = time.Duration(sec * float64(time.Second))
+		}
+	}
 	return Config{
+		Drain:                 drain,
 		CacheWarm:             cacheWarmFromEnv(),
 		StatusPanel:           statusPanelFromEnv(filepath.Dir(dbPath)),
 		Address:               addr,

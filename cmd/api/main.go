@@ -344,6 +344,11 @@ func main() {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
 
+	if cfg.Drain > 0 {
+		server.BeginDrain()
+		logger.Info("Reporting not ready before shutting down", "drain_ms", cfg.Drain.Milliseconds())
+		time.Sleep(cfg.Drain)
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	logger.Info("Shutting down")

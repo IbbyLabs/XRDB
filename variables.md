@@ -90,6 +90,7 @@ back to a live per-ID lookup.
 | Variable | Default | Description |
 |---|---|---|
 | `XRDB_IMDB_REFRESH_HOURS` | `168` (7 days) | How often the local IMDb ratings index is rebuilt while the process runs. The dataset's own age check is only consulted on the first lookup, so without this a long-running container serves whatever it downloaded at startup and drifts further from IMDb the longer uptime is good. The rebuild happens in the background and the live index is only swapped once the replacement has parsed; a failed refresh leaves the previous copy serving. `0` turns it off. |
+| `XRDB_DRAIN_SECONDS` | `0` | How long a stopping container keeps serving while `/readyz` answers 503, so a load balancer that health-checks it moves traffic away before the listener closes. For running two copies during a deploy. Add the same time to the container's stop grace period. `0` turns it off. |
 
 ## Top-rated ranking
 
