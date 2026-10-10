@@ -51,6 +51,14 @@ type Request struct {
 	// when MediaID names an episode. Series-level sources are asked about this
 	// instead.
 	seriesID string
+	// episode is the series and numbers when the request named an episode as
+	// series:season:episode, for sources that answer per episode that way.
+	episode *episodeRef
+}
+
+type episodeRef struct {
+	series         string
+	season, number int
 }
 
 // Result holds the composed image bytes and metadata.
@@ -645,6 +653,13 @@ func providerWanted(p provider.Provider, cfg imageconfig.Config, contentType str
 // fetchRatings asks a provider for ratings the way that provider can be asked:
 // by id for most, by title for the ones with no id-based lookup.
 func (p *Pipeline) fetchRatings(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, error) {
+	if ep, ok := prov.(provider.EpisodeRatingProvider); ok && req.episode != nil {
+		tconst := ""
+		if strings.HasPrefix(req.MediaID, "tt") && !strings.Contains(req.MediaID, ":") {
+			tconst = req.MediaID
+		}
+		return ep.FetchEpisodeRating(ctx, req.episode.series, req.episode.season, req.episode.number, tconst)
+	}
 	byTitle, ok := prov.(provider.TitleRatingProvider)
 	if !ok {
 		return prov.Fetch(ctx, req.ContentType, req.MediaID)
@@ -1213,6 +1228,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// Series-level sources are asked about this instead. The anime map is keyed
 	// on series ids, so an episode tconst matches nothing in it.
 	ratingReq.seriesID = titleID(req.MediaID)
+	if series, season, episode, ok := parseEpisodeID(req.MediaID); ok {
+		ratingReq.episode = &episodeRef{series: series, season: season, number: episode}
+	}
 	ratingReq.artworkFrom = artworkFrom
 	// A TMDB id only becomes an IMDb one here, so this is the earliest the addon
 	// can be asked about it. Either way the call overlaps the rating fan-out and

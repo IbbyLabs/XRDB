@@ -23,6 +23,7 @@ type Trakt struct {
 	clientID   string
 	baseURL    string // overrides traktBaseURL; set in tests
 	httpClient *http.Client
+	episodes   *traktEpisodeCache
 }
 
 // UpdateCredentials swaps the live credential so a value saved in the UI takes
@@ -53,6 +54,7 @@ func NewTrakt(clientID string) *Trakt {
 	return &Trakt{
 		clientID:   clientID,
 		httpClient: newHTTPClient("trakt", 10*time.Second),
+		episodes:   newTraktEpisodeCache(),
 	}
 }
 

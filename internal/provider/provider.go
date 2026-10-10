@@ -154,6 +154,15 @@ type TitleRatingProvider interface {
 	FetchByTitle(ctx context.Context, mediaType, title, originalTitle string, year int) (*MediaMeta, error)
 }
 
+// EpisodeRatingProvider is implemented by a source that cannot look an episode
+// up by the episode's own id but can by its series and numbers. tconst is the
+// episode's IMDb id when known, for matching where the source's numbering may
+// differ from TMDB's.
+type EpisodeRatingProvider interface {
+	Provider
+	FetchEpisodeRating(ctx context.Context, series string, season, episode int, tconst string) (*MediaMeta, error)
+}
+
 // inflightCall tracks an in-progress fetch so concurrent callers for the same
 // key can wait on the single in-flight request rather than issuing duplicates.
 // The fetch runs with its own detached context so one caller's cancellation
