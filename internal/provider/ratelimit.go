@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -567,7 +568,10 @@ type throttledTransport struct {
 	// body. A throttled source produces them in bulk and the wording does not
 	// vary between them.
 	reportedRefusal atomic.Bool
-	logger          *slog.Logger
+	// inFlight counts requests sent upstream and not yet answered, so a refusal
+	// can say how many were open when it was sent.
+	inFlight atomic.Int64
+	logger   *slog.Logger
 }
 
 func (t *throttledTransport) log() *slog.Logger {
@@ -647,7 +651,9 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		}
 
 		sent := time.Now()
+		openAtSend := t.inFlight.Add(1)
 		resp, err := base.RoundTrip(attemptReq)
+		t.inFlight.Add(-1)
 		if err != nil {
 			// A stalled connection is retired rather than pooled, so the retry
 			// opens a new one. Once, and only for a stall this transport called.
@@ -745,13 +751,17 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 			// caller would try to parse as ratings.
 			drain(resp)
 			t.log().WarnContext(req.Context(), "A ratings source is rate limiting us and did not recover",
-				"source", t.source, "status", lastStatus, "retry_after", wait.String(), "attempts", attempt+1)
+				"source", t.source, "status", lastStatus, "retry_after", wait.String(), "attempts", attempt+1,
+				"in_flight_at_send", openAtSend, "served_by", resp.Header.Get("X-Served-By"),
+				"refusal", refusalText(t.source, body))
 			return nil, &RateLimitError{Source: t.source, RetryAfter: wait, Status: lastStatus}
 		}
 
 		drain(resp)
 		t.log().WarnContext(req.Context(), "A ratings source asked us to slow down; backing off",
-			"source", t.source, "status", lastStatus, "wait", wait.String(), "attempt", attempt+1)
+			"source", t.source, "status", lastStatus, "wait", wait.String(), "attempt", attempt+1,
+			"in_flight_at_send", openAtSend, "served_by", resp.Header.Get("X-Served-By"),
+			"refusal", refusalText(t.source, body))
 
 		timer := time.NewTimer(wait)
 		select {
@@ -960,4 +970,23 @@ func newHTTPClient(source string, timeout time.Duration) *http.Client {
 		transport.base = base
 	}
 	return &http.Client{Timeout: timeout, Transport: transport}
+}
+
+// refusalSources name the sources whose throttle body is safe to quote: they take
+// no credential, so their pages cannot echo one back.
+var refusalSources = map[string]bool{"wikidata": true}
+
+var markupTag = regexp.MustCompile(`<[^>]*>`)
+
+// refusalText is the first words of a throttle body, with markup removed, for a
+// source on refusalSources; "" for any other.
+func refusalText(source string, body []byte) string {
+	if !refusalSources[source] {
+		return ""
+	}
+	t := strings.Join(strings.Fields(markupTag.ReplaceAllString(string(body), " ")), " ")
+	if len(t) > 240 {
+		t = t[:240]
+	}
+	return t
 }
