@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.121.0](https://github.com/IbbyLabs/XRDB/compare/v3.120.4...v3.121.0) (2026-10-10)
+
+
+### Added
+
+* **compose:** longer rating terms for older titles and settled Wikidata scores ([5a88d17](https://github.com/IbbyLabs/XRDB/commit/5a88d17d14c4223e3bef6797198a2802ab0d6ce6))
+* **provider:** log in-flight count and refusal text on a throttle ([999088b](https://github.com/IbbyLabs/XRDB/commit/999088b8dcce659328883a40df34bc8a5b8fc390))
+
 ## [3.120.4](https://github.com/IbbyLabs/XRDB/compare/v3.120.3...v3.120.4) (2026-10-09)
 
 
