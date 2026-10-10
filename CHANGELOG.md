@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.122.1](https://github.com/IbbyLabs/XRDB/compare/v3.122.0...v3.122.1) (2026-10-10)
+
+
+### Fixed
+
+* **trakt:** rate episodes from one season request instead of two empty lookups ([86e7e5d](https://github.com/IbbyLabs/XRDB/commit/86e7e5d4ab3c31b3c7a3d98a8015015346b337c2))
+
+
+### Documentation
+
+* **context:** Trakt rates episodes ([faa09a4](https://github.com/IbbyLabs/XRDB/commit/faa09a4e4081a6d8bf521ed49a70ac402a860e83))
+
 ## [3.122.0](https://github.com/IbbyLabs/XRDB/compare/v3.121.0...v3.122.0) (2026-10-10)
 
 
