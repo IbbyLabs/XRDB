@@ -17,6 +17,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"xrdb_rewrite/internal/atomicfile"
 )
 
 // Entry is a cached render result.
@@ -311,7 +312,7 @@ func (c *Cache) set(key string, data []byte, ttl time.Duration, bulkLarge bool) 
 	if info, err := os.Stat(diskPath); err == nil {
 		prevSize = info.Size()
 	}
-	if err := os.WriteFile(diskPath, payload, 0o644); err != nil {
+	if err := atomicfile.WriteFile(diskPath, payload, 0o644); err != nil {
 		return fmt.Errorf("cache write: %w", err)
 	}
 	c.noteExpiry(filepath.Base(diskPath), exp.UnixNano())
@@ -611,6 +612,12 @@ func (c *Cache) sweepPass(fileBound int, byteBound int64, startup bool) {
 	var expired, evicted int
 	now := time.Now().UnixNano()
 	for _, de := range dirEntries {
+		if !de.IsDir() && filepath.Ext(de.Name()) == ".tmp" {
+			if info, err := de.Info(); err == nil && time.Since(info.ModTime()) > staleTempAge {
+				_ = os.Remove(filepath.Join(c.dir, de.Name()))
+			}
+			continue
+		}
 		if de.IsDir() || filepath.Ext(de.Name()) != ".bin" {
 			continue
 		}
@@ -1000,3 +1007,6 @@ func (c *Cache) wasRead(name string) bool {
 	_, ok := c.lastRead(name)
 	return ok
 }
+
+// staleTempAge is how old a leftover temporary write must be before a sweep removes it.
+const staleTempAge = time.Hour

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"xrdb_rewrite/internal/atomicfile"
 )
 
 // SIMKL meters by the day against the application's allowance rather than per
@@ -506,11 +507,7 @@ func SaveDailyBudgets() error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
-		return err
-	}
-	return os.Rename(tmp, path)
+	return atomicfile.WriteFile(path, data, 0o644)
 }
 
 // rollHistory carries the stored history forward, moving the stored day into it

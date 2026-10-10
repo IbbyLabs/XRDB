@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"xrdb_rewrite/internal/atomicfile"
 
 	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/provider"
@@ -600,11 +601,7 @@ func (c *ratingsCache) Save() error {
 	if err := os.MkdirAll(filepath.Dir(c.path), 0o755); err != nil {
 		return err
 	}
-	tmp := c.path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
-		return err
-	}
-	return os.Rename(tmp, c.path)
+	return atomicfile.WriteFile(c.path, data, 0o644)
 }
 
 // SetRatingsCachePath points the ratings cache at a file and loads whatever is
