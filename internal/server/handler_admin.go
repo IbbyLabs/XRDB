@@ -755,6 +755,8 @@ func effectiveTTL(result *compose.Result, ttls *ttlStore, surface string) time.D
 			capTTL = ttls.queueHeldTTL()
 		case result.DegradedByUs:
 			capTTL = ttls.heldOutTTL()
+		case result.FaultRetryIn > 0 && result.FaultRetryIn < capTTL:
+			capTTL = result.FaultRetryIn
 		}
 		if capTTL > 0 && (min == 0 || capTTL < min) {
 			min = capTTL

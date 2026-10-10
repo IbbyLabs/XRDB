@@ -63,3 +63,34 @@ func TestDegradedCapOfZeroChangesNothing(t *testing.T) {
 		t.Errorf("effectiveTTL = %v, want 72h", got)
 	}
 }
+
+func TestFaultedRenderLastsUntilTheSourceIsBack(t *testing.T) {
+	ttls := degradedStore(20*time.Minute, map[string]time.Duration{"tmdb": 72 * time.Hour})
+	cases := []struct {
+		name   string
+		result *compose.Result
+		want   time.Duration
+	}{
+		{"retry inside the cap", &compose.Result{RatingProviders: []string{"tmdb"}, Degraded: true, FaultRetryIn: 2 * time.Minute}, 2 * time.Minute},
+		{"retry beyond the cap", &compose.Result{RatingProviders: []string{"tmdb"}, Degraded: true, FaultRetryIn: time.Hour}, 20 * time.Minute},
+		{"no retry known", &compose.Result{RatingProviders: []string{"tmdb"}, Degraded: true}, 20 * time.Minute},
+		{"held by us", &compose.Result{RatingProviders: []string{"tmdb"}, Degraded: true, DegradedByUs: true, FaultRetryIn: 2 * time.Minute}, ttls.heldOutTTL()},
+	}
+	for _, tc := range cases {
+		want := tc.want
+		if want == 0 {
+			want = 72 * time.Hour
+		}
+		if got := effectiveTTL(tc.result, ttls, "poster"); got != want {
+			t.Errorf("%s: effectiveTTL = %v, want %v", tc.name, got, want)
+		}
+	}
+}
+
+func TestFaultRetryLeavesADisabledCapOff(t *testing.T) {
+	result := &compose.Result{RatingProviders: []string{"tmdb"}, Degraded: true, FaultRetryIn: 2 * time.Minute}
+	ttls := degradedStore(0, map[string]time.Duration{"tmdb": 72 * time.Hour})
+	if got := effectiveTTL(result, ttls, "poster"); got != 72*time.Hour {
+		t.Errorf("effectiveTTL = %v, want 72h", got)
+	}
+}

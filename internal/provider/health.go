@@ -529,6 +529,23 @@ func (h *HealthTracker) CoolingOff(source string, class CallerClass) bool {
 	return ok && time.Now().Before(st.cooldownUntil[class])
 }
 
+// CooldownRemaining is how long a source stays held out for class, or zero.
+func (h *HealthTracker) CooldownRemaining(source string, class CallerClass) time.Duration {
+	if h == nil {
+		return 0
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	st, ok := h.sources[source]
+	if !ok {
+		return 0
+	}
+	if left := time.Until(st.cooldownUntil[class]); left > 0 {
+		return left
+	}
+	return 0
+}
+
 // Failing reports whether a source can currently be relied on for a render.
 // Wider than CoolingOff: a source refusing every call sits inside its hold for
 // part of each cycle and outside it for the rest, so a caller sampling

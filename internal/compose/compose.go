@@ -96,6 +96,9 @@ type Result struct {
 	// than the daily reserve. A queue clears in seconds and the reserve stands
 	// for hours, so the two are worth caching for different lengths of time.
 	DegradedByQueue bool
+	// FaultRetryIn is when every source that failed this render is expected to
+	// answer again, or zero when any of them gave no such time.
+	FaultRetryIn time.Duration
 }
 
 // Pipeline orchestrates metadata fetch + image composition.
@@ -1238,7 +1241,8 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if resolveQuality == nil {
 		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, ratingReq.MediaID)
 	}
-	allRatings, ratingProviders, degraded, sourceFault, queueHeld, _ := p.collectRatingsWithProviders(ctx, ratingReq, meta)
+	ratingsCtx, faults := withFaultRetry(ctx)
+	allRatings, ratingProviders, degraded, sourceFault, queueHeld, _ := p.collectRatingsWithProviders(ratingsCtx, ratingReq, meta)
 	timings.mark("ratings")
 	// Resolved here, where the title's identity is, so the draw path receives an
 	// answer rather than an id and never needs to know a bundled list exists.
@@ -1251,6 +1255,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	result.Degraded = degraded
 	result.DegradedByUs = degraded && !sourceFault
 	result.DegradedByQueue = result.DegradedByUs && queueHeld
+	if degraded && sourceFault {
+		result.FaultRetryIn = faults.after()
+	}
 	// A held-out source keeps its place in the strip so the gap is visible.
 	// Kept out of allRatings deliberately: that list feeds the average, the
 	// ring and the score bar, and a placeholder carries no score to average.
@@ -1397,6 +1404,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			if !verified {
 				result.Degraded = true
 				result.DegradedByUs = false
+				result.FaultRetryIn = 0
 			}
 		}
 		if len(badges) > 0 {
@@ -1492,6 +1500,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 				"media_id", req.MediaID, "logo_url", meta.LogoURL, "error", err)
 			result.Degraded = true
 			result.DegradedByUs = false
+			result.FaultRetryIn = 0
 		}
 		timings.mark("logo_overlay")
 	} else if wantsLogoOverlay {
@@ -2608,6 +2617,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					gate := provider.HoldOutGate(err)
 					if !provider.GateIsOurOwn(gate) {
 						sourceFault.Store(true)
+						faultRetryFrom(ctx).note(p.faultWait(ctx, prov.Name(), gate, err))
 					}
 					if provider.GateIsAQueue(gate) {
 						queueHeld.Store(true)
