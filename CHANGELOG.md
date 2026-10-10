@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.122.0](https://github.com/IbbyLabs/XRDB/compare/v3.121.0...v3.122.0) (2026-10-10)
+
+
+### Added
+
+* **server:** report not ready for a set time before shutting down ([fa0ec88](https://github.com/IbbyLabs/XRDB/commit/fa0ec88c4c3ef0efc374f18712cd05c8f8d286d0))
+
+
+### Fixed
+
+* **cache:** write cache files and snapshots atomically ([fa32a90](https://github.com/IbbyLabs/XRDB/commit/fa32a9033c28b2d07a641f2d34f2db3d3d126957))
+
 ## [3.121.0](https://github.com/IbbyLabs/XRDB/compare/v3.120.4...v3.121.0) (2026-10-10)
 
 
