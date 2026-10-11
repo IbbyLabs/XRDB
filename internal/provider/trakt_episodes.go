@@ -105,7 +105,7 @@ func (t *Trakt) traktShowID(ctx context.Context, series string) (string, error) 
 	if traktIMDbIDRe.MatchString(series) {
 		return series, nil
 	}
-	tmdb := strings.TrimPrefix(series, "tmdb:")
+	tmdb := strings.TrimPrefix(strings.TrimPrefix(series, "tmdb:"), "tv:")
 	if tmdb == "" {
 		return "", fmt.Errorf("trakt: empty series id: %w", ErrNotApplicable)
 	}

@@ -85,3 +85,15 @@ func TestATMDBSeriesResolvesOnceAndAnUnratedEpisodeIsNotFound(t *testing.T) {
 		t.Errorf("%d requests, want 2 (one search, one season)", n)
 	}
 }
+
+func TestATMDBTVSeriesIDResolvesLikeABareOne(t *testing.T) {
+	var calls atomic.Int32
+	tr := traktSeasonServer(t, &calls)
+	m, err := tr.FetchEpisodeRating(context.Background(), "tmdb:tv:1396", 1, 1, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Ratings[0].Value != 8.4 {
+		t.Errorf("episode 1 = %v, want 8.4", m.Ratings[0].Value)
+	}
+}
