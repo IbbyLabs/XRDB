@@ -551,11 +551,13 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			if !placeholder && (!degraded || degradedByUs) {
 				ttl := effectiveTTL(renderResult, ttls, mediaType)
 				if renderCache != nil {
-					// A sweep's large renders are shed first: they are the one
-					// class measured never to be re-read.
-					if provider.TreatedAsBulk(provider.CallerClassFrom(r.Context())) {
+					// A recognised sweep's renders are not stored: they are not
+					// re-read. An unknown caller's are, large ones shed first.
+					switch class := provider.CallerClassFrom(r.Context()); {
+					case class == provider.CallerBulk:
+					case provider.TreatedAsBulk(class):
 						_ = renderCache.SetFromBulk(cacheKey, pngBytes, ttl)
-					} else {
+					default:
 						_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
 					}
 					if ttl <= 0 {
