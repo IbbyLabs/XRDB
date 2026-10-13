@@ -2,6 +2,37 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.123.0](https://github.com/IbbyLabs/XRDB/compare/v3.122.2...v3.123.0) (2026-10-13)
+
+
+### Added
+
+* **badges:** choose the score text colour on rating badges (FR-224) ([ba71e2b](https://github.com/IbbyLabs/XRDB/commit/ba71e2b162b23bbf89fe171e464ecc59a6036c3d))
+* **badges:** set the space between rating badges (FR-221) ([095f8be](https://github.com/IbbyLabs/XRDB/commit/095f8be5fbd8c288cc3517eee7a010d7384c5882))
+* **metaline:** toggle the line's genre apart from the badge (BUG-290) ([0ae36d8](https://github.com/IbbyLabs/XRDB/commit/0ae36d8fd429520634dd0168ee158eae3659b74e))
+* **provider:** take a base URL override for six more sources (FR-218) ([0be8085](https://github.com/IbbyLabs/XRDB/commit/0be8085f2a666491fef6a046b7b741814a32dfb8))
+
+
+### Fixed
+
+* **badges:** count the edge offset when fitting the strip (BUG-292) ([f4c22c8](https://github.com/IbbyLabs/XRDB/commit/f4c22c880d3a7f6cd78d65b2633fd8bc1190501f))
+* **badges:** fit a single-row strip to the poster width (BUG-292) ([e4e6146](https://github.com/IbbyLabs/XRDB/commit/e4e6146eb62429d1a845a5c73b619ace3fa5359f))
+* **configurator:** name the profile a save goes to (BUG-289) ([5a584aa](https://github.com/IbbyLabs/XRDB/commit/5a584aa6219cf230462f0e7cef208af80dc49d29))
+* **configurator:** stack the other-profile notice (BUG-289) ([de99348](https://github.com/IbbyLabs/XRDB/commit/de99348892124166de197448302328b5a561a60c))
+* **metaline:** keep existing cache keys for the genre toggle (BUG-290) ([9ae39de](https://github.com/IbbyLabs/XRDB/commit/9ae39de798506abd1d0a06656b474620f3a8f5b0))
+* **provider:** drop the OMDb Metacritic label's denominator (BUG-288) ([415492b](https://github.com/IbbyLabs/XRDB/commit/415492bba1a4131d53589cdd1c36b99948441934))
+* **trakt:** rate episodes of tmdb:tv: series ([f1e3de6](https://github.com/IbbyLabs/XRDB/commit/f1e3de6381578be388ab31130b3967abdc3c85ce))
+
+
+### Performance
+
+* **cache:** keep recognised sweep renders out of the render cache ([8ba7716](https://github.com/IbbyLabs/XRDB/commit/8ba771676e33d18ff3f38c9dd88d1a40858d3e3f))
+
+
+### Documentation
+
+* **variables:** list the per-source base URL overrides (FR-218) ([e3a697e](https://github.com/IbbyLabs/XRDB/commit/e3a697e2bf1504bd730d7b6313dc35df76cbd54a))
+
 ## [3.122.2](https://github.com/IbbyLabs/XRDB/compare/v3.122.1...v3.122.2) (2026-10-10)
 
 
