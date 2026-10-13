@@ -183,6 +183,49 @@ func (l *concurrencyLimiter) acquireBulk(ctx context.Context, wait time.Duration
 	}
 }
 
+// heavyWeight is the weight from which an interactive render is given the
+// second, polling phase of admission: a 4K poster or backdrop.
+const heavyWeight = 36
+
+// heavyJoinWait bounds how long a heavy render may sit in the queue once the
+// budget has room for it, so it never holds lighter renders back for longer.
+const heavyJoinWait = 200 * time.Millisecond
+
+// acquireHeavy admits a heavy interactive render in two phases: the ordinary
+// queue for first, then until total it joins the queue for at most heavyJoinWait
+// at a time with a poll interval between, so lighter renders are held back for
+// no longer than one join. polled reports the second phase ran.
+func (l *concurrencyLimiter) acquireHeavy(ctx context.Context, first, total time.Duration, w int64) (admitted, polled bool) {
+	if l == nil {
+		return true, false
+	}
+	if l.acquireWithin(ctx, first, w) {
+		return true, false
+	}
+	if ctx.Err() != nil || total <= first {
+		return false, false
+	}
+	weight := l.weight(w)
+	deadline, cancel := context.WithTimeout(ctx, total-first)
+	defer cancel()
+	ticker := time.NewTicker(bulkPollInterval)
+	defer ticker.Stop()
+	for {
+		joinCtx, joinCancel := context.WithTimeout(deadline, heavyJoinWait)
+		err := l.sem.Acquire(joinCtx, weight)
+		joinCancel()
+		if err == nil {
+			l.held.Add(weight)
+			return true, true
+		}
+		select {
+		case <-deadline.Done():
+			return false, true
+		case <-ticker.C:
+		}
+	}
+}
+
 // release frees a slot previously taken by a successful acquire. It is a no-op
 // on a nil limiter.
 func (l *concurrencyLimiter) release(w int64) {

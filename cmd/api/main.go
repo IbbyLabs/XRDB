@@ -294,6 +294,7 @@ func main() {
 		// queued, so a shed render is unexplainable without them.
 		"render_queue_wait", cfg.RenderQueueWait,
 		"render_queue_wait_bulk", cfg.RenderQueueWaitBulk,
+		"render_queue_wait_heavy", cfg.RenderQueueWaitHeavy,
 		"imdb_dataset", cfg.IMDbDatasetDir != "",
 		"imdb_top_rated", cfg.IMDbTopRated,
 	)

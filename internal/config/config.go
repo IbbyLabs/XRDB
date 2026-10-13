@@ -239,6 +239,9 @@ type Config struct {
 	// Nobody is watching a sweep, so it waits rather than being turned away, and
 	// it stands aside while interactive requests are queued.
 	RenderQueueWaitBulk time.Duration
+	// RenderQueueWaitHeavy is the total wait for a 4K poster or backdrop someone
+	// is looking at; past RenderQueueWait it polls rather than holding the queue.
+	RenderQueueWaitHeavy time.Duration
 	// ArtFetchTimeout bounds the source-artwork HTTP fetch. A stalled fetch
 	// otherwise holds a render slot doing nothing until it elapses, starving
 	// the renders queued behind it.
@@ -625,6 +628,13 @@ func Load() Config {
 			renderQueueWait = time.Duration(n) * time.Second
 		}
 	}
+	// Clients have been seen waiting 18s for a render; a 4K one takes up to 4s.
+	renderQueueWaitHeavy := 14 * time.Second
+	if raw := os.Getenv("XRDB_RENDER_QUEUE_WAIT_HEAVY_SECONDS"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n >= 0 {
+			renderQueueWaitHeavy = time.Duration(n) * time.Second
+		}
+	}
 	// Bounds the source-artwork fetch. A normal fetch runs around a second, so
 	// this is generous while still failing fast: a stalled fetch that ran the
 	// old 15s default held a render slot idle, which deepened the queue for
@@ -716,6 +726,7 @@ func Load() Config {
 		RenderConcurrency:     renderConcurrency,
 		RenderQueueWait:       renderQueueWait,
 		RenderQueueWaitBulk:   renderQueueWaitBulk,
+		RenderQueueWaitHeavy:  renderQueueWaitHeavy,
 		RenderCapPerMinute:    renderCapPerMinute,
 		SharedProfileAliases:  sharedProfileAliases,
 		ArtFetchTimeout:       artFetchTimeout,

@@ -454,10 +454,14 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// and one under the ordinary ceiling have different causes, and the
 			// message alone cannot tell them apart.
 			queueTier := "normal"
+			polled := false
 			switch {
 			case provider.TreatedAsBulk(provider.CallerClassFrom(r.Context())):
 				queueTier = "bulk"
 				admitted = renderLimiter.acquireBulk(r.Context(), cfg.RenderQueueWaitBulk, weight)
+			case weight >= heavyWeight && cfg.RenderQueueWaitHeavy > cfg.RenderQueueWait && cfg.RenderQueueWait > 0:
+				queueTier = "heavy"
+				admitted, polled = renderLimiter.acquireHeavy(r.Context(), cfg.RenderQueueWait, cfg.RenderQueueWaitHeavy, weight)
 			default:
 				admitted = renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWait, weight)
 			}
@@ -501,6 +505,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				return
 			}
 			queueWaitMs = time.Since(queueStart).Milliseconds()
+			if polled {
+				logger.InfoContext(r.Context(), "Admitted a 4K render after waiting past the ordinary queue",
+					"id", logging.RequestID(r.Context()),
+					"media_type", mediaType, "media_id", id, "waited_ms", queueWaitMs, "weight", weight)
+			}
 			didQueue = true
 			if rec, ok := w.(*statusRecorder); ok {
 				rec.queueWaitMs, rec.queued = queueWaitMs, true
