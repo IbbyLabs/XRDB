@@ -140,3 +140,27 @@ func mutate(v reflect.Value) bool {
 	}
 	return true
 }
+
+// A render showing a trending rank is keyed to the day its list was read, not
+// to the clock, so a new day's key never carries the old day's rank.
+func TestTheTrendingRankKeyFollowsTheListDay(t *testing.T) {
+	day := "2026-10-13"
+	SetTrendingRankDay(func() string { return day })
+	defer SetTrendingRankDay(func() string { return "" })
+	cfg := Default()
+	cfg.TrendingRank = true
+	before := CacheKey(cfg)
+	if CacheKey(Default()) == before {
+		t.Fatal("the rank toggle did not move the key")
+	}
+	day = "2026-10-14"
+	if CacheKey(cfg) == before {
+		t.Error("a new list day kept the old key")
+	}
+	plain := Default()
+	k := CacheKey(plain)
+	day = "2026-10-15"
+	if CacheKey(plain) != k {
+		t.Error("a config without the rank moved with the list day")
+	}
+}

@@ -162,7 +162,7 @@ func (p *Pipeline) SetTrendingResolver(t trendingResolver) { p.trending = t }
 
 // rankResolver is satisfied by *provider.TrendingRankIndex.
 type rankResolver interface {
-	Rank(ctx context.Context, ids ...string) (int, bool)
+	Rank(ctx context.Context, kind string, ids ...string) (int, bool)
 }
 
 // SetTrendingRankResolver attaches today's trending ranks.
@@ -173,11 +173,15 @@ func (p *Pipeline) trendingRankOf(ctx context.Context, req Request, meta *provid
 	if p.trendingRank == nil {
 		return 0, false
 	}
+	kind := "movie"
+	if provider.IsSeriesContentType(p.resolveContentKind(ctx, req)) {
+		kind = "tv"
+	}
 	ids := []string{req.MediaID}
 	if meta != nil {
-		ids = append(ids, meta.TMDBID, meta.IMDbID)
+		ids = append(ids, meta.TMDBID)
 	}
-	return p.trendingRank.Rank(ctx, ids...)
+	return p.trendingRank.Rank(ctx, kind, ids...)
 }
 
 // isTrending reports whether the title is in the trending list.

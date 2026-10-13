@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
+	"sync/atomic"
 
 	"xrdb_rewrite/internal/render"
 )
@@ -2490,6 +2490,11 @@ func isHexColor(s string) bool {
 // only when pixel output actually changed.
 const renderVersion = "r23"
 
+var trendingRankDay atomic.Pointer[func() string]
+
+// SetTrendingRankDay tells CacheKey which day's trending list ranks come from.
+func SetTrendingRankDay(f func() string) { trendingRankDay.Store(&f) }
+
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always
 // produces the same key regardless of field insertion order.
@@ -2731,7 +2736,9 @@ func CacheKey(cfg Config) string {
 		RandomPosterConfig:            cfg.RandomPosterConfig,
 	}
 	if c.TrendingRank {
-		c.TrendingRankDay = time.Now().UTC().Format("2006-01-02")
+		if f := trendingRankDay.Load(); f != nil {
+			c.TrendingRankDay = (*f)()
+		}
 	}
 	b, _ := json.Marshal(c)
 	// Fold any preserved-but-unmodeled fields into the key so two migrated

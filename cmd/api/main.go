@@ -23,6 +23,7 @@ import (
 	"xrdb_rewrite/internal/cache"
 	"xrdb_rewrite/internal/compose"
 	"xrdb_rewrite/internal/config"
+	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/provider"
@@ -246,7 +247,9 @@ func main() {
 				Window: cfg.TrendingWindow,
 				Depth:  cfg.TrendingDepth,
 			}))
-			pipeline.SetTrendingRankResolver(provider.NewTrendingRankIndex(tmdb))
+			ranks := provider.NewTrendingRankIndex(tmdb)
+			pipeline.SetTrendingRankResolver(ranks)
+			imageconfig.SetTrendingRankDay(ranks.Day)
 		}
 		// Keeps the last good answer per source, so a source that breaks or gets
 		// throttled falls back instead of quietly dropping its badge.

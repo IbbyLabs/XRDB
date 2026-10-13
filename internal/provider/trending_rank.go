@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
 
 // trendingRankDepth is how far down TMDB's daily list ranks are read.
 const trendingRankDepth = 100
+
+// trendingRankRetry is how long a failed refresh waits before the next attempt.
+const trendingRankRetry = 15 * time.Minute
 
 // TrendingRankIndex gives a title's place in today's TMDB trending list. Films
 // not yet out on digital are skipped and the titles below them move up.
@@ -21,10 +25,11 @@ type TrendingRankIndex struct {
 	// list pages the daily list.
 	list func(ctx context.Context, page int) ([]tmdbListItem, error)
 
-	mu         sync.RWMutex
-	day        string
-	ranks      map[string]int
-	refreshing bool
+	mu          sync.RWMutex
+	day         string
+	ranks       map[string]int // "movie:ID" | "tv:ID"
+	refreshing  bool
+	lastAttempt time.Time
 }
 
 // NewTrendingRankIndex builds the index. A nil TMDB client ranks nothing.
@@ -40,29 +45,41 @@ func NewTrendingRankIndex(tmdb *TMDB) *TrendingRankIndex {
 // TrendingDay is the UTC date ranks are read for.
 func TrendingDay(now time.Time) string { return now.UTC().Format("2006-01-02") }
 
-// Rank returns the title's place, 1 first, for any of the ids held for it. A new
-// day's list is fetched in the background; until it lands the last one answers.
-func (t *TrendingRankIndex) Rank(ctx context.Context, ids ...string) (int, bool) {
-	if t == nil || t.list == nil {
+// Rank returns the title's place, 1 first, for any of the ids held for it; kind
+// is "movie" or "tv", since TMDB numbers the two separately. A new day's list is
+// fetched in the background; until it lands the last one answers.
+func (t *TrendingRankIndex) Rank(ctx context.Context, kind string, ids ...string) (int, bool) {
+	if t == nil || t.list == nil || (kind != "movie" && kind != "tv") {
 		return 0, false
 	}
-	today := TrendingDay(t.now())
+	now := t.now()
+	today := TrendingDay(now)
 	t.mu.Lock()
-	if t.day != today && !t.refreshing {
-		t.refreshing = true
+	if t.day != today && !t.refreshing && now.Sub(t.lastAttempt) >= trendingRankRetry {
+		t.refreshing, t.lastAttempt = true, now
 		go t.refresh(context.WithoutCancel(ctx), today)
 	}
 	t.mu.Unlock()
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	for _, id := range ids {
-		if key := normalizeTrendingKey(id); key != "" {
-			if r, ok := t.ranks[key]; ok {
+		if key := normalizeTrendingKey(id); key != "" && !strings.HasPrefix(key, "tt") {
+			if r, ok := t.ranks[kind+":"+key]; ok {
 				return r, true
 			}
 		}
 	}
 	return 0, false
+}
+
+// Day is the UTC date of the list ranks are answered from; "" before the first.
+func (t *TrendingRankIndex) Day() string {
+	if t == nil {
+		return ""
+	}
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.day
 }
 
 func (t *TrendingRankIndex) refresh(ctx context.Context, day string) {
@@ -112,7 +129,7 @@ func (t *TrendingRankIndex) fetch(ctx context.Context) (map[string]int, error) {
 				continue
 			}
 			rank++
-			ranks[strconv.Itoa(it.ID)] = rank
+			ranks[it.MediaType+":"+strconv.Itoa(it.ID)] = rank
 		}
 	}
 	return ranks, nil

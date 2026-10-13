@@ -883,4 +883,4 @@ func TestOverlayMetadataSurvivesEveryArtworkSource(t *testing.T) {
 
 type alwaysRanked struct{}
 
-func (alwaysRanked) Rank(context.Context, ...string) (int, bool) { return 9, true }
+func (alwaysRanked) Rank(context.Context, string, ...string) (int, bool) { return 9, true }
