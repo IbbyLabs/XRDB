@@ -57,8 +57,13 @@ func TestOMDBParsesRatings(t *testing.T) {
 
 	// Verify per-source values are correctly parsed and scaled.
 	ratingsBySource := make(map[string]float64, len(meta.Ratings))
+	labelsBySource := make(map[string]string, len(meta.Ratings))
 	for _, r := range meta.Ratings {
 		ratingsBySource[r.Source] = r.Value
+		labelsBySource[r.Source] = r.Label
+	}
+	if got := labelsBySource["metacritic"]; got != "74" {
+		t.Errorf("metacritic label = %q, want 74", got)
 	}
 	if v := ratingsBySource["imdb"]; v < 8.9 || v > 9.1 {
 		t.Errorf("imdb rating = %v, want ~9.0", v)

@@ -17,8 +17,8 @@ func TestWikidataLabelDropsTheDenominator(t *testing.T) {
 		{"a ten point fraction is still a value", "8/10", "8"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := wikidataLabel(tc.raw); got != tc.want {
-				t.Errorf("wikidataLabel(%q) = %q, want %q", tc.raw, got, tc.want)
+			if got := scoreLabel(tc.raw); got != tc.want {
+				t.Errorf("scoreLabel(%q) = %q, want %q", tc.raw, got, tc.want)
 			}
 		})
 	}

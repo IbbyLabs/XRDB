@@ -215,7 +215,7 @@ func wikidataMeta(rows []wikidataBinding) *MediaMeta {
 		best[source] = Rating{
 			Source: source,
 			Value:  value,
-			Label:  wikidataLabel(b.Score.Value),
+			Label:  scoreLabel(b.Score.Value),
 		}
 		if wanted {
 			exact[source] = true
@@ -248,11 +248,9 @@ func isIMDbID(s string) bool {
 	return true
 }
 
-// wikidataLabel is the native value a badge draws. Wikidata records a Metacritic
-// score as "81/100", and a denominator is the scale rather than the value: the
-// badge marks a scale itself, and marks neither percent nor hundred-point ones.
-// A percent sign stays, since it is a unit on the number rather than a fraction.
-func wikidataLabel(raw string) string {
+// scoreLabel is the numerator of a "81/100" score; the badge marks the scale itself.
+// A percent sign stays.
+func scoreLabel(raw string) string {
 	s := strings.TrimSpace(raw)
 	if num, _, found := strings.Cut(s, "/"); found {
 		return strings.TrimSpace(num)
