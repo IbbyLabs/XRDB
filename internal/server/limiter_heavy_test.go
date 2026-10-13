@@ -153,3 +153,34 @@ func TestAHeavyRenderStopsPollingWhenTheCallerLeaves(t *testing.T) {
 		t.Errorf("admitted %v after %v; want a refusal soon after the caller left", ok, time.Since(start))
 	}
 }
+
+// A whole 4K row polling at once takes turns at the head of the queue, so a
+// 1080p browser beside it is held back by one join, not forty.
+func TestAHeavyRowDoesNotStackUpAtTheHeadOfTheQueue(t *testing.T) {
+	l := newConcurrencyLimiter(256)
+	stop := make(chan struct{})
+	waits := lightStream(l, stop)
+	time.Sleep(50 * time.Millisecond)
+	var wg sync.WaitGroup
+	var admitted atomic.Int32
+	for i := 0; i < 40; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if ok, _ := l.acquireHeavy(context.Background(), 50*time.Millisecond, 3*time.Second, heavyWeight); ok {
+				admitted.Add(1)
+				time.Sleep(100 * time.Millisecond)
+				l.release(heavyWeight)
+			}
+		}()
+	}
+	wg.Wait()
+	close(stop)
+	light := p95(waits())
+	if admitted.Load() != 40 {
+		t.Errorf("admitted %d of 40", admitted.Load())
+	}
+	if light > 150*time.Millisecond {
+		t.Errorf("light p95 wait %v beside a polling 4K row, want under 150ms", light)
+	}
+}

@@ -25,6 +25,8 @@ type concurrencyLimiter struct {
 	// occupancy, and a shed line that cannot say what the budget was holding
 	// leaves contention unanswerable after the fact.
 	held atomic.Int64
+	// heavyJoin admits one heavy render's phase-two join to the queue at a time.
+	heavyJoin chan struct{}
 }
 
 // bulkPollInterval is how often a bulk caller re-checks for a free slot.
@@ -97,7 +99,7 @@ func newConcurrencyLimiter(n int) *concurrencyLimiter {
 	if n <= 0 {
 		return nil
 	}
-	return &concurrencyLimiter{sem: semaphore.NewWeighted(int64(n)), capacity: int64(n)}
+	return &concurrencyLimiter{sem: semaphore.NewWeighted(int64(n)), capacity: int64(n), heavyJoin: make(chan struct{}, 1)}
 }
 
 // acquire blocks until a slot is free. It returns false only when ctx is done
@@ -193,8 +195,9 @@ const heavyJoinWait = 200 * time.Millisecond
 
 // acquireHeavy admits a heavy interactive render in two phases: the ordinary
 // queue for first, then until total it joins the queue for at most heavyJoinWait
-// at a time with a poll interval between, so lighter renders are held back for
-// no longer than one join. polled reports the second phase ran.
+// at a time with a poll interval between. Only one heavy render joins at once,
+// so lighter renders are held back by no more than one join however many heavy
+// ones are waiting. polled reports the second phase ran.
 func (l *concurrencyLimiter) acquireHeavy(ctx context.Context, first, total time.Duration, w int64) (admitted, polled bool) {
 	if l == nil {
 		return true, false
@@ -211,12 +214,17 @@ func (l *concurrencyLimiter) acquireHeavy(ctx context.Context, first, total time
 	ticker := time.NewTicker(bulkPollInterval)
 	defer ticker.Stop()
 	for {
-		joinCtx, joinCancel := context.WithTimeout(deadline, heavyJoinWait)
-		err := l.sem.Acquire(joinCtx, weight)
-		joinCancel()
-		if err == nil {
-			l.held.Add(weight)
-			return true, true
+		select {
+		case l.heavyJoin <- struct{}{}:
+			joinCtx, joinCancel := context.WithTimeout(deadline, heavyJoinWait)
+			err := l.sem.Acquire(joinCtx, weight)
+			joinCancel()
+			<-l.heavyJoin
+			if err == nil {
+				l.held.Add(weight)
+				return true, true
+			}
+		default:
 		}
 		select {
 		case <-deadline.Done():
