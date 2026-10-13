@@ -582,6 +582,7 @@ export interface ConfigState {
   metaLineOffsetY: number; // percent; 0 = 100
   aggregateAccentWidth: number; // px; 0 = default
   ratingBadgeDensity: number; // percent of default padding; 0 = 100
+  ratingBadgeGap: number; // percent of the default gap between badges; 0 = 100
   ratingBadgeBorderSourceTint: boolean;
   ratingBadgeBorderGlow: boolean;
   ratingBadgeBorderGlowStrength: number; // 0 = built-in default
@@ -800,6 +801,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   metaLineOffsetY: 0,
   aggregateAccentWidth: 0,
   ratingBadgeDensity: 0,
+  ratingBadgeGap: 0,
   ratingBadgeBorderSourceTint: false,
   ratingBadgeBorderGlow: false,
   ratingBadgeBorderGlowStrength: 0,

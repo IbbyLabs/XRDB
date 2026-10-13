@@ -712,6 +712,9 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
       <NumField id={`${uid}-badge-density`} label="Badge density (%)" value={config.ratingBadgeDensity}
         onChange={v => onUpdate('ratingBadgeDensity', v)} min={60} max={140} step={5}
         hint="Padding inside each badge and the gap to its logo. Lower hugs the contents." />
+      <NumField id={`${uid}-badge-gap`} label="Space between badges (%)" value={config.ratingBadgeGap}
+        onChange={v => onUpdate('ratingBadgeGap', v)} min={20} max={300} step={10}
+        hint="The gap between rating badges and between their rows. Blank keeps the default." />
       <div className="field">
         <label className="label" htmlFor={`${uid}-badge-border`}>Badge outline</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
