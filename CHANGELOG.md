@@ -2,6 +2,22 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.126.0](https://github.com/IbbyLabs/XRDB/compare/v3.125.0...v3.126.0) (2026-10-13)
+
+
+### Added
+
+* **compose:** name the source an artwork stage cut was waiting on ([c51a55d](https://github.com/IbbyLabs/XRDB/commit/c51a55df81cae398ea44894df97b56469d60d575))
+* **trending:** hang the rank tab from the top edge, sized (FR-226) ([5b89d5b](https://github.com/IbbyLabs/XRDB/commit/5b89d5b4cee6f7949be4dddc4e19b83d42ec17c1))
+* **trending:** set the tile colour of the tag and rank tab (FR-226) ([1931c9a](https://github.com/IbbyLabs/XRDB/commit/1931c9ae5496cde7886a08bddb95d71af59d1114))
+* **trending:** show today's trending rank as a tab (FR-226) ([58f741d](https://github.com/IbbyLabs/XRDB/commit/58f741dde08b08c551b9f873a9cffd5dcdcd53b1))
+
+
+### Fixed
+
+* **trending:** key ranks by kind and by the list's day (FR-226) ([80e7c5b](https://github.com/IbbyLabs/XRDB/commit/80e7c5bd6d4527f68e2bb2f6eb743fb8f9922a48))
+* **trending:** match the trending list by film or series ([527e68c](https://github.com/IbbyLabs/XRDB/commit/527e68c4443a8b5e02b69d706edb609a0e898c40))
+
 ## [3.125.0](https://github.com/IbbyLabs/XRDB/compare/v3.124.0...v3.125.0) (2026-10-13)
 
 
