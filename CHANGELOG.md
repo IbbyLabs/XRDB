@@ -2,6 +2,25 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.125.0](https://github.com/IbbyLabs/XRDB/compare/v3.124.0...v3.125.0) (2026-10-13)
+
+
+### Added
+
+* **mdblist:** learn a key's batch cap from a refused or cut batch ([c255add](https://github.com/IbbyLabs/XRDB/commit/c255addb7b9622a1875335ab6126af584d149562))
+* **server:** give a 4K render a longer wait that leaves the queue alone ([2722701](https://github.com/IbbyLabs/XRDB/commit/272270118cb9139f430b2c37f61cd5fd28debe1e))
+
+
+### Fixed
+
+* **mdblist:** name the refusal status when the batch size drops ([a1d4be1](https://github.com/IbbyLabs/XRDB/commit/a1d4be10117ea71fb7960cb320d3c1d3e00e3b29))
+* **server:** let one 4K render at a time join the queue's head ([3938e83](https://github.com/IbbyLabs/XRDB/commit/3938e83a6a0f8f804703150b2a4763ddd24ba12a))
+
+
+### Documentation
+
+* **variables:** give the ratings cache its real entry cap (FR-201) ([252caba](https://github.com/IbbyLabs/XRDB/commit/252cabafb1605be9a86a1a0ef3fe6c4dc96695bb))
+
 ## [3.124.0](https://github.com/IbbyLabs/XRDB/compare/v3.123.0...v3.124.0) (2026-10-13)
 
 
