@@ -844,7 +844,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 			if !seen[p.ProviderID] && p.ProviderName != "" {
 				seen[p.ProviderID] = true
 				meta.WatchProviders = append(meta.WatchProviders, WatchProvider{
-					ID: p.ProviderID, Name: p.ProviderName, LogoPath: p.LogoPath,
+					ID: p.ProviderID, Name: p.ProviderName, LogoPath: p.LogoPath, Rental: true,
 				})
 			}
 		}

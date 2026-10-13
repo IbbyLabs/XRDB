@@ -80,6 +80,7 @@ func richMeta() provider.MediaMeta {
 			{ID: 8, Name: "Netflix"},
 			{ID: 9, Name: "Amazon Prime Video"},
 			{ID: 337, Name: "Disney Plus"},
+			{ID: 3, Name: "Google Play Movies", Rental: true},
 		},
 		Ratings: []provider.Rating{
 			{Source: "imdb", Value: 8.6, Votes: 1500000, Label: "8.6"},
@@ -462,6 +463,8 @@ func keyMutations() map[string]keyOverride {
 		"stingerPos":       {mut: func(c *imageconfig.Config) { c.StingerPos = "tl" }},
 		"genrePos":         {mut: func(c *imageconfig.Config) { c.GenrePos = "tr" }},
 		"providersPos":     {mut: func(c *imageconfig.Config) { c.ProvidersPos = "tl" }},
+		"providersMax":     {mut: func(c *imageconfig.Config) { c.ProvidersMax = 1 }},
+		"providersAllow":   {mut: func(c *imageconfig.Config) { c.ProvidersAllow = []string{"Disney Plus", "Netflix"} }},
 		"aggregateBarPos":  {mut: func(c *imageconfig.Config) { c.AggregateBarPos = "top" }},
 		"ratingRingPos":    {mut: func(c *imageconfig.Config) { c.RatingRingPos = "bl" }},
 		"qualityBadgesPos": {mut: func(c *imageconfig.Config) { c.QualityBadgesPos = "bl" }},

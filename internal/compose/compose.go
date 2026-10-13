@@ -1451,7 +1451,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime, statedContentKind(req)))
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {
-		drawProviderBadges(composed, meta.WatchProviders, scale, occ, providerOptsFromConfig(req.Config))
+		drawProviderBadges(composed, selectProviders(meta.WatchProviders, req.Config), scale, occ, providerOptsFromConfig(req.Config))
 	}
 	if req.Config.AggregateBar {
 		drawAggregateBar(req.MediaType, composed, allRatings, req.Config, meta.Genres, meta.IsAnime)

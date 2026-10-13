@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -1021,6 +1022,7 @@ type providerBadgeOpts struct {
 	offsetY      int
 	tileColor    string // "#RRGGBB" behind the chips
 	noShadow     bool
+	max          int // 0 = 5
 }
 
 func providerOptsFromConfig(cfg imageconfig.Config) providerBadgeOpts {
@@ -1031,7 +1033,51 @@ func providerOptsFromConfig(cfg imageconfig.Config) providerBadgeOpts {
 		offsetY:      cfg.ProviderBadgeOffsetY,
 		tileColor:    cfg.NetworkTileColor,
 		noShadow:     !cfg.BadgeShadow,
+		max:          cfg.ProvidersMax,
 	}
+}
+
+// providerBrandAliases folds a rebranded service onto its current name.
+var providerBrandAliases = map[string]string{"hbomax": "max"}
+
+func providerMatchKey(name string) string {
+	k := providerBrandKey(name)
+	if a, ok := providerBrandAliases[k]; ok {
+		return a
+	}
+	return k
+}
+
+// selectProviders keeps the services the config allows, in its order of preference.
+func selectProviders(providers []provider.WatchProvider, cfg imageconfig.Config) []provider.WatchProvider {
+	out := make([]provider.WatchProvider, 0, len(providers))
+	for _, p := range providers {
+		if cfg.ProvidersSubscriptionOnly && p.Rental {
+			continue
+		}
+		out = append(out, p)
+	}
+	if len(cfg.ProvidersAllow) == 0 {
+		return out
+	}
+	rank := make(map[string]int, len(cfg.ProvidersAllow))
+	for i, n := range cfg.ProvidersAllow {
+		if k := providerMatchKey(n); k != "" {
+			if _, dup := rank[k]; !dup {
+				rank[k] = i
+			}
+		}
+	}
+	allowed := out[:0]
+	for _, p := range out {
+		if _, ok := rank[providerMatchKey(p.Name)]; ok {
+			allowed = append(allowed, p)
+		}
+	}
+	sort.SliceStable(allowed, func(i, j int) bool {
+		return rank[providerMatchKey(allowed[i].Name)] < rank[providerMatchKey(allowed[j].Name)]
+	})
+	return allowed
 }
 
 func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, occ *occupancy, opts providerBadgeOpts) {
@@ -1055,8 +1101,12 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	}
 
 	shown := dedupeProviders(providers)
-	if len(shown) > 5 {
-		shown = shown[:5]
+	limit := 5
+	if opts.max > 0 && opts.max < limit {
+		limit = opts.max
+	}
+	if len(shown) > limit {
+		shown = shown[:limit]
 	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }

@@ -446,6 +446,9 @@ export interface ConfigState {
   providersCountry: string; // ISO country for watch providers; '' = default
   networkTileColor: string; // '#RRGGBB' tile behind provider chips; '' = default
   providersPos: string; // 'inherit' | six positions
+  providersAllow: string[]; // services to show, most wanted first; [] = all
+  providersMax: number; // 1-5; 0 = 5
+  providersSubscriptionOnly: boolean;
   providerBadgeScale: number;
   providerBadgeOffsetX: number;
   providerBadgeOffsetY: number;
@@ -667,6 +670,9 @@ export const DEFAULT_CONFIG: ConfigState = {
   providersCountry: '',
   networkTileColor: '',
   providersPos: 'inherit',
+  providersAllow: [],
+  providersMax: 0,
+  providersSubscriptionOnly: false,
   providerBadgeScale: 0,
   providerBadgeOffsetX: 0,
   providerBadgeOffsetY: 0,
@@ -931,6 +937,7 @@ function coerceConfig(raw: unknown): ConfigState {
     ratingProviderIconScale: coerceNumberMap(input.ratingProviderIconScale),
     ringCriticsPriority: coerceStringArray(input.ringCriticsPriority, []),
     ringAudiencePriority: coerceStringArray(input.ringAudiencePriority, []),
+    providersAllow: coerceStringArray(input.providersAllow, []),
   };
 }
 

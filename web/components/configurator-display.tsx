@@ -10,6 +10,14 @@ import {
 } from './configurator-types';
 import { QualityFine, GenreFine, OutlineFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine, ScaleOffsetFields, hasAnyRatingSource } from './configurator-fine';
 
+// TMDB's names for the major services; matching folds variants such as "with Ads".
+const STREAMING_SERVICES = [
+  'Netflix', 'Amazon Prime Video', 'Disney Plus', 'Max', 'Hulu', 'Apple TV Plus',
+  'Paramount Plus', 'Peacock', 'Crunchyroll', 'Starz', 'MGM Plus', 'AMC Plus',
+  'Shudder', 'MUBI', 'BritBox', 'Discovery Plus', 'Now TV', 'BBC iPlayer', 'ITVX',
+  'Channel 4', 'Tubi TV', 'Pluto TV',
+];
+
 // An unset position falls back to the top right, matching the renderer.
 function qualityPosLabel(pos: string): string {
   const id = !pos || pos === 'inherit' ? 'tr' : pos;
@@ -618,6 +626,42 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
 
         {config.providers && (
           <>
+            <div className="field">
+              <span className="label" id={`${uid}-provider-allow`}>Services to show</span>
+              <div role="group" aria-labelledby={`${uid}-provider-allow`} style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)' }}>
+                {STREAMING_SERVICES.map(name => {
+                  const rank = config.providersAllow.indexOf(name);
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      className={`opt-btn${rank >= 0 ? ' opt-btn--active' : ''}`}
+                      aria-pressed={rank >= 0}
+                      onClick={() => onUpdate('providersAllow', rank >= 0
+                        ? config.providersAllow.filter(n => n !== name)
+                        : [...config.providersAllow, name])}
+                    >
+                      {rank >= 0 ? `${rank + 1}. ${name}` : name}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="hint">
+                None picked shows every service. Picked ones show in the order you pick them, so pick the one you care about most first.
+              </span>
+            </div>
+            <Field label="Most services shown" htmlFor={`${uid}-provider-max`} hint="1 to 5. Blank shows up to 5.">
+              <input id={`${uid}-provider-max`} className="input" type="number" inputMode="numeric"
+                min={1} max={5} step={1} value={config.providersMax || ''} placeholder="5"
+                style={{ maxWidth: '6rem' }}
+                onChange={e => onUpdate('providersMax', e.target.value === '' ? 0 : Math.max(1, Math.min(5, Number(e.target.value))))} />
+            </Field>
+            <ToggleRow
+              label="Subscriptions only"
+              hint="Leave out services that only rent the title"
+              checked={config.providersSubscriptionOnly}
+              onChange={() => onUpdate('providersSubscriptionOnly', !config.providersSubscriptionOnly)}
+            />
             <div className="field">
               <label className="label" htmlFor={`${uid}-network-tile`}>Chip tile color</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>

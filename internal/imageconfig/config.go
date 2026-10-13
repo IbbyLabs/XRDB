@@ -225,6 +225,12 @@ type Config struct {
 	// as every other badge family. ProvidersPos is tl|tr|bl|br|tc|bc; "" keeps
 	// the wide strip centred along the bottom edge.
 	ProvidersPos         string `json:"providersPos,omitempty"`
+	// ProvidersAllow limits the chips to these services, most wanted first; empty shows every service.
+	ProvidersAllow []string `json:"providersAllow,omitempty"`
+	// ProvidersMax caps how many chips draw, 1-5; 0 = 5.
+	ProvidersMax int `json:"providersMax,omitempty"`
+	// ProvidersSubscriptionOnly drops services that only rent the title.
+	ProvidersSubscriptionOnly bool `json:"providersSubscriptionOnly,omitempty"`
 	ProviderBadgeScale   int    `json:"providerBadgeScale,omitempty"`
 	ProviderBadgeOffsetX int    `json:"providerBadgeOffsetX,omitempty"`
 	ProviderBadgeOffsetY int    `json:"providerBadgeOffsetY,omitempty"`
@@ -814,6 +820,9 @@ type raw struct {
 	ProvidersCountry              *string   `json:"providersCountry"`
 	NetworkTileColor              *string   `json:"networkTileColor"`
 	ProvidersPos                  *string   `json:"providersPos"`
+	ProvidersAllow                *[]string `json:"providersAllow"`
+	ProvidersMax                  *int      `json:"providersMax"`
+	ProvidersSubscriptionOnly     *bool     `json:"providersSubscriptionOnly"`
 	ProviderBadgeScale            *int      `json:"providerBadgeScale"`
 	ProviderBadgeOffsetX          *int      `json:"providerBadgeOffsetX"`
 	ProviderBadgeOffsetY          *int      `json:"providerBadgeOffsetY"`
@@ -1289,6 +1298,21 @@ func Parse(data json.RawMessage) Config {
 		if p := sixPos(*r.ProvidersPos); p != "" {
 			cfg.ProvidersPos = p
 		}
+	}
+	if r.ProvidersAllow != nil {
+		var names []string
+		for _, n := range dedupeStrings(*r.ProvidersAllow) {
+			if n = strings.TrimSpace(n); n != "" && len(n) <= 60 && len(names) < 25 {
+				names = append(names, n)
+			}
+		}
+		cfg.ProvidersAllow = names
+	}
+	if r.ProvidersMax != nil && *r.ProvidersMax != 0 {
+		cfg.ProvidersMax = clampInt(*r.ProvidersMax, 1, 5)
+	}
+	if r.ProvidersSubscriptionOnly != nil {
+		cfg.ProvidersSubscriptionOnly = *r.ProvidersSubscriptionOnly
 	}
 	if r.ProviderBadgeScale != nil && *r.ProviderBadgeScale != 0 {
 		// 200 was not enough on a large or 4k poster, where the chips still read
@@ -2514,6 +2538,9 @@ func CacheKey(cfg Config) string {
 		Providers                     bool           `json:"providers"`
 		ProvidersCountry              string         `json:"providersCountry"`
 		ProvidersPos                  string         `json:"providersPos"`
+		ProvidersAllow                []string       `json:"providersAllow,omitempty"`
+		ProvidersMax                  int            `json:"providersMax,omitempty"`
+		ProvidersSubscriptionOnly     bool           `json:"providersSubscriptionOnly,omitempty"`
 		ProviderBadgeScale            int            `json:"providerBadgeScale"`
 		ProviderBadgeOffsetX          int            `json:"providerBadgeOffsetX"`
 		ProviderBadgeOffsetY          int            `json:"providerBadgeOffsetY"`
@@ -2630,6 +2657,9 @@ func CacheKey(cfg Config) string {
 		Providers:                     cfg.Providers,
 		ProvidersCountry:              cfg.ProvidersCountry,
 		ProvidersPos:                  cfg.ProvidersPos,
+		ProvidersAllow:                cfg.ProvidersAllow,
+		ProvidersMax:                  cfg.ProvidersMax,
+		ProvidersSubscriptionOnly:     cfg.ProvidersSubscriptionOnly,
 		ProviderBadgeScale:            cfg.ProviderBadgeScale,
 		ProviderBadgeOffsetX:          cfg.ProviderBadgeOffsetX,
 		ProviderBadgeOffsetY:          cfg.ProviderBadgeOffsetY,
