@@ -159,7 +159,87 @@ func (bt *mdblistBatcher) run(callerCtx context.Context, b *mdblistBatch) {
 	}
 	bt.mu.Unlock()
 	defer cancel()
-	b.items, b.err = bt.send(ctx, ids)
+	b.items, b.err = bt.sendAll(ctx, ids)
+}
+
+// mdblistFreeBatch is the batch size of MDBList's free plan.
+const mdblistFreeBatch = 10
+
+// sendAll sends ids in batches no larger than the current size. A batch refused
+// as too large, or answered with exactly a plan's batch size, lowers the size for
+// the rest of the process and the remaining titles are sent again.
+func (bt *mdblistBatcher) sendAll(ctx context.Context, ids []string) (map[string]mdblistPayload, error) {
+	items := make(map[string]mdblistPayload, len(ids))
+	pending := ids
+	for len(pending) > 0 {
+		size := bt.size()
+		chunk := pending
+		if len(chunk) > size {
+			chunk = chunk[:size]
+		}
+		got, err := bt.send(ctx, chunk)
+		if err != nil && len(chunk) > mdblistFreeBatch && errors.Is(err, errMDBListBatchTooLarge) {
+			bt.lower(ctx, mdblistFreeBatch, "refused as too large")
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		for id, p := range got {
+			items[id] = p
+		}
+		pending = pending[len(chunk):]
+		n := len(got)
+		if n == 0 || n >= len(chunk) || n >= size || (n != mdblistFreeBatch && n != 100) {
+			continue
+		}
+		// Exactly a plan's size answered: either a cap or genuine misses. The
+		// leftovers decide; any answer among them means the batch was cut.
+		var missed []string
+		for _, id := range chunk {
+			if _, ok := got[id]; !ok {
+				missed = append(missed, id)
+			}
+		}
+		probe := missed
+		if len(probe) > n {
+			probe = probe[:n]
+		}
+		again, err := bt.send(ctx, probe)
+		if err != nil {
+			return nil, err
+		}
+		for id, p := range again {
+			items[id] = p
+		}
+		if len(again) > 0 {
+			bt.lower(ctx, n, "answered only a plan's batch size")
+			pending = append(missed[len(probe):], pending...)
+		}
+	}
+	return items, nil
+}
+
+// errMDBListBatchTooLarge is a batch refused for its size rather than its key.
+var errMDBListBatchTooLarge = errors.New("mdblist: batch too large for this key")
+
+func (bt *mdblistBatcher) size() int {
+	bt.mu.Lock()
+	defer bt.mu.Unlock()
+	return bt.max
+}
+
+func (bt *mdblistBatcher) lower(ctx context.Context, to int, why string) {
+	bt.mu.Lock()
+	from := bt.max
+	if to < bt.max {
+		bt.max = to
+	}
+	bt.mu.Unlock()
+	if to < from {
+		bt.m.log().WarnContext(ctx, "Lowered the MDBList batch size to what this key's plan allows",
+			"id", logging.RequestID(ctx), "from", from, "to", to, "reason", why)
+	}
 }
 
 func (bt *mdblistBatcher) send(ctx context.Context, ids []string) (map[string]mdblistPayload, error) {
@@ -191,6 +271,8 @@ func (bt *mdblistBatcher) send(ctx context.Context, ids []string) (map[string]md
 		return nil, m.refusal(ctx, resp, used)
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return nil, fmt.Errorf("mdblist: unauthorized (check api key): %w", HTTPFault("mdblist", resp.StatusCode))
+	case http.StatusBadRequest, http.StatusRequestEntityTooLarge, http.StatusUnprocessableEntity:
+		return nil, fmt.Errorf("%w: %w", HTTPFault("mdblist", resp.StatusCode), errMDBListBatchTooLarge)
 	}
 	if resp.StatusCode >= 500 {
 		return nil, fmt.Errorf("%w: %w", HTTPFault("mdblist", resp.StatusCode), errHostUnreachable)

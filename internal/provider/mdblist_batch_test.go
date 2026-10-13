@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -170,5 +171,76 @@ func TestMDBListRefusedBatchCountsOnce(t *testing.T) {
 	wg.Wait()
 	if posts.Load() != 1 || counted != 1 || riders != 2 {
 		t.Errorf("posts %d, counted %d, riders %d; want 1, 1, 2", posts.Load(), counted, riders)
+	}
+}
+
+// capServer answers like a plan with a batch cap of 10: refusing or cutting short a bigger batch.
+func capServer(t *testing.T, refuse bool, known func(string) bool, posts *atomic.Int32, maxSeen *atomic.Int32) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		posts.Add(1)
+		var body struct {
+			IDs []string `json:"ids"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if n := int32(len(body.IDs)); n > maxSeen.Load() {
+			maxSeen.Store(n)
+		}
+		if refuse && len(body.IDs) > 10 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		var out []map[string]any
+		for _, id := range body.IDs {
+			if len(out) == 10 || !known(id) {
+				continue
+			}
+			out = append(out, map[string]any{"type": "movie", "ids": map[string]any{"imdb": id}, "score": 80.0})
+		}
+		_ = json.NewEncoder(w).Encode(out)
+	}))
+}
+
+func titles(n int) []string {
+	out := make([]string, n)
+	for i := range out {
+		out[i] = fmt.Sprintf("tt%07d", i+1)
+	}
+	return out
+}
+
+func TestMDBListBatchLearnsAPlansCap(t *testing.T) {
+	all := func(string) bool { return true }
+	for _, refuse := range []bool{true, false} {
+		var posts, maxSeen atomic.Int32
+		srv := capServer(t, refuse, all, &posts, &maxSeen)
+		m := newBatchingMDBList(srv, 50, time.Second)
+		got, err := m.batcher.sendAll(WithCallerClass(context.Background(), CallerBulk), titles(30))
+		srv.Close()
+		if err != nil || len(got) != 30 {
+			t.Fatalf("refuse=%v: %d of 30 answered, err %v", refuse, len(got), err)
+		}
+		if size := m.batcher.size(); size != 10 {
+			t.Errorf("refuse=%v: size = %d, want 10", refuse, size)
+		}
+	}
+}
+
+// Ten answers from thirty can be twenty titles MDBList does not have.
+func TestMDBListBatchKeepsItsSizeForGenuineMisses(t *testing.T) {
+	var posts, maxSeen atomic.Int32
+	known := func(id string) bool { return id <= "tt0000010" }
+	srv := capServer(t, false, known, &posts, &maxSeen)
+	defer srv.Close()
+	m := newBatchingMDBList(srv, 50, time.Second)
+	got, err := m.batcher.sendAll(WithCallerClass(context.Background(), CallerBulk), titles(30))
+	if err != nil || len(got) != 10 {
+		t.Fatalf("%d answered, err %v; want 10", len(got), err)
+	}
+	if size := m.batcher.size(); size != 50 {
+		t.Errorf("size = %d, want 50 kept", size)
+	}
+	if posts.Load() != 2 {
+		t.Errorf("requests = %d, want the batch and one probe", posts.Load())
 	}
 }
