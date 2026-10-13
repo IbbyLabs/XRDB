@@ -423,7 +423,7 @@ export function ProfilePanel({
                     : `Saving to “${configKey}” as you edit. Only artwork URLs with config=${configKey} change.`}
             </span>
             {otherUsernames.length > 0 && !locked && (
-              <div className="notice notice-warn" role="note">
+              <div className="notice notice-warn" role="note" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                 <span>
                   This profile has no username. If your addon’s artwork URL says
                   config={otherUsernames.join(' or config=')}, that is a different profile and
