@@ -329,8 +329,9 @@ func TestMDBListRemembersWhichEndpointHoldsATitle(t *testing.T) {
 
 	m := NewMDBList("k")
 	m.baseURL = srv.URL
+	ctx := WithCallerClass(context.Background(), CallerInteractive)
 	for i := 0; i < 4; i++ {
-		if _, err := m.Fetch(context.Background(), "", "tt0903747"); err != nil {
+		if _, err := m.Fetch(ctx, "", "tt0903747"); err != nil {
 			t.Fatalf("fetch %d: %v", i, err)
 		}
 	}

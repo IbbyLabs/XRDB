@@ -42,6 +42,8 @@ type MDBList struct {
 	// spend a guaranteed 404 on the movie endpoint every single render, against
 	// the one source that meters by the day.
 	knownType sync.Map // imdb id -> "movie" | "show"
+	// batcher joins sweep lookups into one request; nil when batching is off.
+	batcher *mdblistBatcher
 }
 
 // NewMDBList creates an MDBList provider.
@@ -53,6 +55,9 @@ func NewMDBList(apiKey string) *MDBList {
 	// The budget counts every key's calls together, so it needs to know how many
 	// there are to hold its reserve against the ring rather than one key.
 	noteKeyRingSize("mdblist", m.keys.size())
+	if size := mdblistBatchSize(); size > 1 {
+		m.batcher = newMDBListBatcher(m, size, mdblistBatchWindow())
+	}
 	return m
 }
 
@@ -103,6 +108,9 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 	}
 	if !isIMDbTitleOnly(id) {
 		return nil, fmt.Errorf("mdblist: requires imdb tt-id, got %q: %w", id, ErrNotApplicable)
+	}
+	if m.batcher.batches(ctx) {
+		return m.batcher.fetch(ctx, id)
 	}
 
 	// MDBList serves movies and shows from distinct endpoints, but the artwork
