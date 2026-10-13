@@ -14,7 +14,8 @@
     "stinger_mid": "CENA NO MEIO DOS CRÉDITOS",
     "stinger_post": "CENA PÓS-CRÉDITOS",
     "top_rated": "TOP",
-    "trending": "EM ALTA"
+    "trending": "EM ALTA",
+    "trending_today": "Hoje"
   },
   "_ui_gaps": {
     "placeholders": "placeholder_anime, placeholder_movie, placeholder_show and placeholder_age have no Portuguese: the placeholders were added after this contribution and fall back to English."

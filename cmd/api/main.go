@@ -246,6 +246,7 @@ func main() {
 				Window: cfg.TrendingWindow,
 				Depth:  cfg.TrendingDepth,
 			}))
+			pipeline.SetTrendingRankResolver(provider.NewTrendingRankIndex(tmdb))
 		}
 		// Keeps the last good answer per source, so a source that breaks or gets
 		// throttled falls back instead of quietly dropping its badge.

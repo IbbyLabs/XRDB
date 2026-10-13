@@ -257,6 +257,7 @@ func effectPipeline() *Pipeline {
 	p := &Pipeline{providers: reg, fetcher: &distinctFetcher{}}
 	p.SetAnimeResolver(alwaysAnime{})
 	p.SetTrendingResolver(alwaysTrending{})
+	p.SetTrendingRankResolver(alwaysRanked{})
 	// Hold one source out so the strip has an unavailable badge to draw. The
 	// mark is the only key whose effect needs a degraded source to exist.
 	reg.Register(&effectProvider{name: "mal"})
@@ -853,6 +854,7 @@ func TestOverlayMetadataSurvivesEveryArtworkSource(t *testing.T) {
 	p := &Pipeline{providers: reg, fetcher: &distinctFetcher{}}
 	p.SetAnimeResolver(alwaysAnime{})
 	p.SetTrendingResolver(alwaysTrending{})
+	p.SetTrendingRankResolver(alwaysRanked{})
 
 	// Each toggle draws from metadata the artwork source does not carry.
 	toggles := map[string]func(*imageconfig.Config, bool){
@@ -878,3 +880,7 @@ func TestOverlayMetadataSurvivesEveryArtworkSource(t *testing.T) {
 		}
 	}
 }
+
+type alwaysRanked struct{}
+
+func (alwaysRanked) Rank(context.Context, ...string) (int, bool) { return 9, true }

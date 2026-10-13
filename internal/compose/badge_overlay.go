@@ -3005,6 +3005,7 @@ func trendingStyleFromConfig(s imageconfig.TrendingStyle) trendingStyle {
 // hairline and the plain surface's original shadow-free label.
 type trendingBadgeOpts struct {
 	lang         string // config language for the fixed wording this badge draws
+	label        string // replaces the TRENDING wording when set
 	scalePercent int
 	offsetX      int
 	offsetY      int
@@ -3029,6 +3030,15 @@ func trendingOptsFromConfig(cfg imageconfig.Config) trendingBadgeOpts {
 		outlineGlow:  cfg.NoBackgroundBadgeOutlineGlow,
 		noShadow:     !cfg.BadgeShadow,
 	}
+}
+
+// drawTrendingRankTab draws "#9 Today" as a tab centred at the top, in the
+// trending badge's surface and colours.
+func drawTrendingRankTab(base *image.NRGBA, scale float64, occ *occupancy, rank int, cfg imageconfig.Config) {
+	opts := trendingOptsFromConfig(cfg)
+	opts.label = fmt.Sprintf("#%d %s", rank, UIString("trending_today", cfg.Language, "Today"))
+	opts.offsetX, opts.offsetY = 0, 0
+	drawTrendingBadgeSurfaced(base, scale, occ, trendingWordOnly, "tc", cfg.TrendingTextColor, cfg.TrendingTagStyle, opts)
 }
 
 // drawTrendingBadge draws a premium "TRENDING" pill at the top-left corner: a
@@ -3062,6 +3072,9 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 	}
 
 	label := UIString("trending", opts.lang, "TRENDING")
+	if opts.label != "" {
+		label = opts.label
+	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	padX := s(13)

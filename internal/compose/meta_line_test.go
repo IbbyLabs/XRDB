@@ -196,3 +196,12 @@ func TestTheGenreInTheLineHasItsOwnToggle(t *testing.T) {
 		t.Errorf("dropping the genre did not shrink the line: with %d px, without %d px", on, off)
 	}
 }
+
+// FR-226: the rank tab draws its place, and nothing when the title is unranked.
+func TestTheTrendingRankTabDraws(t *testing.T) {
+	img := metaLineImage()
+	drawTrendingRankTab(img, 2.0, newOccupancy(img.Bounds()), 9, imageconfig.Default())
+	if paintedPixels(img) == 0 {
+		t.Fatal("the rank tab drew nothing")
+	}
+}

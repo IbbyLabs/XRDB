@@ -97,6 +97,7 @@ var inelasticOverlays = []string{
 	"drawReleaseBadge",
 	"drawStingerBadge",
 	"drawTopRatedBadge",
+	"drawTrendingRankTab",
 }
 
 var elasticOverlays = []string{

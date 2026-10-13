@@ -813,6 +813,12 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           checked={config.trending}
           onChange={() => onUpdate('trending', !config.trending)}
         />
+        <ToggleRow
+          label="Trending rank"
+          hint="A tab at the top centre with the title's place in today's trending list, like #9 Today. Films not yet out on digital are skipped. No tab when the title is not on the list."
+          checked={config.trendingRank}
+          onChange={() => onUpdate('trendingRank', !config.trendingRank)}
+        />
 
         {config.trending && (
           <>

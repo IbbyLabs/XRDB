@@ -455,6 +455,7 @@ export interface ConfigState {
   aggregateBar: boolean;
   aggregateBarPos: string;
   trending: boolean;
+  trendingRank: boolean; // "#9 Today" tab from today's trending list
   trendingStyle: string;
   backdropAsPoster: boolean;
   logoWidth: number;
@@ -679,6 +680,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateBar: false,
   aggregateBarPos: 'bottom',
   trending: false,
+  trendingRank: false,
   trendingStyle: 'arrow-word',
   backdropAsPoster: false,
   logoWidth: 0,

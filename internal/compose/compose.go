@@ -120,6 +120,8 @@ type Pipeline struct {
 	health *provider.HealthTracker
 	// trending reports whether a title is trending. Optional: nil draws no badge.
 	trending trendingResolver
+	// trendingRank gives today's trending place. Optional: nil draws no tab.
+	trendingRank rankResolver
 	// ratings remembers what each source said about a title, so the same title
 	// under a different config is not fetched twice. Optional: nil disables it.
 	ratings *ratingsCache
@@ -157,6 +159,26 @@ type trendingResolver interface {
 
 // SetTrendingResolver attaches the trending index.
 func (p *Pipeline) SetTrendingResolver(t trendingResolver) { p.trending = t }
+
+// rankResolver is satisfied by *provider.TrendingRankIndex.
+type rankResolver interface {
+	Rank(ctx context.Context, ids ...string) (int, bool)
+}
+
+// SetTrendingRankResolver attaches today's trending ranks.
+func (p *Pipeline) SetTrendingRankResolver(r rankResolver) { p.trendingRank = r }
+
+// trendingRankOf returns the title's place in today's trending list.
+func (p *Pipeline) trendingRankOf(ctx context.Context, req Request, meta *provider.MediaMeta) (int, bool) {
+	if p.trendingRank == nil {
+		return 0, false
+	}
+	ids := []string{req.MediaID}
+	if meta != nil {
+		ids = append(ids, meta.TMDBID, meta.IMDbID)
+	}
+	return p.trendingRank.Rank(ctx, ids...)
+}
 
 // isTrending reports whether the title is in the trending list.
 func (p *Pipeline) isTrending(ctx context.Context, req Request, meta *provider.MediaMeta) bool {
@@ -1438,6 +1460,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 	if req.Config.Stinger && meta.Stinger.Has() {
 		drawStingerBadge(composed, meta.Stinger, req.Config.StingerPos, scale, occ, stingerOptsFromConfig(req.Config))
+	}
+	if req.Config.TrendingRank {
+		if rank, ok := p.trendingRankOf(ctx, req, meta); ok {
+			drawTrendingRankTab(composed, scale, occ, rank, req.Config)
+		}
 	}
 	// The ring claims its corner before the strips do. It is a fixed circle that
 	// can neither narrow nor move, while a genre strip can drop a genre and a

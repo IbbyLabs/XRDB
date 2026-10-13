@@ -17,7 +17,8 @@
     "stinger_mid": "MID-CREDITS",
     "stinger_post": "POST-CREDITS",
     "top_rated": "TOP",
-    "trending": "TRENDING"
+    "trending": "TRENDING",
+    "trending_today": "Today"
   },
   "action": "Action",
   "animation": "Animation",

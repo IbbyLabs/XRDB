@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"xrdb_rewrite/internal/render"
 )
@@ -224,17 +225,17 @@ type Config struct {
 	// The streaming-provider chips take the same placement and sizing controls
 	// as every other badge family. ProvidersPos is tl|tr|bl|br|tc|bc; "" keeps
 	// the wide strip centred along the bottom edge.
-	ProvidersPos         string `json:"providersPos,omitempty"`
+	ProvidersPos string `json:"providersPos,omitempty"`
 	// ProvidersAllow limits the chips to these services, most wanted first; empty shows every service.
 	ProvidersAllow []string `json:"providersAllow,omitempty"`
 	// ProvidersMax caps how many chips draw, 1-5; 0 = 5.
 	ProvidersMax int `json:"providersMax,omitempty"`
 	// ProvidersSubscriptionOnly drops services that only rent the title.
-	ProvidersSubscriptionOnly bool `json:"providersSubscriptionOnly,omitempty"`
-	ProviderBadgeScale   int    `json:"providerBadgeScale,omitempty"`
-	ProviderBadgeOffsetX int    `json:"providerBadgeOffsetX,omitempty"`
-	ProviderBadgeOffsetY int    `json:"providerBadgeOffsetY,omitempty"`
-	NetworkTileColor     string `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
+	ProvidersSubscriptionOnly bool   `json:"providersSubscriptionOnly,omitempty"`
+	ProviderBadgeScale        int    `json:"providerBadgeScale,omitempty"`
+	ProviderBadgeOffsetX      int    `json:"providerBadgeOffsetX,omitempty"`
+	ProviderBadgeOffsetY      int    `json:"providerBadgeOffsetY,omitempty"`
+	NetworkTileColor          string `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
 	// RatingBadgeDensity scales the padding inside a rating badge and the gap
 	// between its mark and value, as a percent; 0 = 100. Lower hugs the contents.
 	// RatingsMovie, RatingsSeries and RatingsAnime override Ratings for that kind
@@ -293,7 +294,10 @@ type Config struct {
 	AggregateBarPos              string        `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
 	Trending                     bool          `json:"trending"`
 	TrendingStyle                TrendingStyle `json:"trendingStyle"`
-	BackdropAsPoster             bool          `json:"backdropAsPoster,omitempty"`
+	// TrendingRank draws the title's place in today's trending list, "#9 Today",
+	// as a tab centred at the top.
+	TrendingRank     bool `json:"trendingRank,omitempty"`
+	BackdropAsPoster bool `json:"backdropAsPoster,omitempty"`
 	// HideCinemetaRating strips the IMDb rating from the Stremio meta XRDB serves
 	// (both the imdbRating field and the "imdb" link), so Cinemeta's own rating
 	// does not sit beside XRDB's overlaid one. It affects the meta response, not
@@ -855,6 +859,7 @@ type raw struct {
 	AggregateBar                  *bool     `json:"aggregateBar"`
 	AggregateBarPos               *string   `json:"aggregateBarPos"`
 	Trending                      *bool     `json:"trending"`
+	TrendingRank                  *bool     `json:"trendingRank"`
 	TrendingStyle                 *string   `json:"trendingStyle"`
 	BackdropAsPoster              *bool     `json:"backdropAsPoster"`
 	HideCinemetaRating            *bool     `json:"hideCinemetaRating"`
@@ -1414,6 +1419,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.Trending != nil {
 		cfg.Trending = *r.Trending
+	}
+	if r.TrendingRank != nil {
+		cfg.TrendingRank = *r.TrendingRank
 	}
 	if r.TrendingStyle != nil {
 		if v := normalizeTrendingStyle(*r.TrendingStyle); v != "" {
@@ -2571,24 +2579,27 @@ func CacheKey(cfg Config) string {
 		AggregateBar                  bool           `json:"aggregateBar"`
 		AggregateBarPos               string         `json:"aggregateBarPos"`
 		Trending                      bool           `json:"trending"`
-		TrendingStyle                 TrendingStyle  `json:"trendingStyle"`
-		BackdropAsPoster              bool           `json:"backdropAsPoster"`
-		BackdropLogo                  bool           `json:"backdropLogo"`
-		LogoWidth                     int            `json:"logoWidth"`
-		LogoHeight                    int            `json:"logoHeight"`
-		LogoPos                       int            `json:"logoPos"`
-		LogoAnchor                    string         `json:"logoAnchor"`
-		LogoScrimSize                 int            `json:"logoScrimSize,omitempty"`
-		LogoScrimOpacity              int            `json:"logoScrimOpacity,omitempty"`
-		LogoShadowOffsetX             int            `json:"logoShadowOffsetX,omitempty"`
-		LogoShadowOffsetY             int            `json:"logoShadowOffsetY,omitempty"`
-		LogoShadowStyle               string         `json:"logoShadowStyle,omitempty"`
-		LogoShadowColor               string         `json:"logoShadowColor,omitempty"`
-		RatingRing                    bool           `json:"ratingRing"`
-		RatingRingPos                 string         `json:"ratingRingPos"`
-		RatingRingColor               string         `json:"ratingRingColor"`
-		OutputFormat                  OutputFormat   `json:"outputFormat,omitempty"`
-		OutputQuality                 int            `json:"outputQuality,omitempty"`
+		TrendingRank                  bool           `json:"trendingRank,omitempty"`
+		// The rank changes daily, so a render showing one is keyed to its day.
+		TrendingRankDay   string        `json:"trendingRankDay,omitempty"`
+		TrendingStyle     TrendingStyle `json:"trendingStyle"`
+		BackdropAsPoster  bool          `json:"backdropAsPoster"`
+		BackdropLogo      bool          `json:"backdropLogo"`
+		LogoWidth         int           `json:"logoWidth"`
+		LogoHeight        int           `json:"logoHeight"`
+		LogoPos           int           `json:"logoPos"`
+		LogoAnchor        string        `json:"logoAnchor"`
+		LogoScrimSize     int           `json:"logoScrimSize,omitempty"`
+		LogoScrimOpacity  int           `json:"logoScrimOpacity,omitempty"`
+		LogoShadowOffsetX int           `json:"logoShadowOffsetX,omitempty"`
+		LogoShadowOffsetY int           `json:"logoShadowOffsetY,omitempty"`
+		LogoShadowStyle   string        `json:"logoShadowStyle,omitempty"`
+		LogoShadowColor   string        `json:"logoShadowColor,omitempty"`
+		RatingRing        bool          `json:"ratingRing"`
+		RatingRingPos     string        `json:"ratingRingPos"`
+		RatingRingColor   string        `json:"ratingRingColor"`
+		OutputFormat      OutputFormat  `json:"outputFormat,omitempty"`
+		OutputQuality     int           `json:"outputQuality,omitempty"`
 		// Grouped components keep their omitempty tags, so a config with none of
 		// these set hashes exactly as it did before the fields existed.
 		GenreBadgeConfig
@@ -2690,6 +2701,7 @@ func CacheKey(cfg Config) string {
 		AggregateBar:                  cfg.AggregateBar,
 		AggregateBarPos:               cfg.AggregateBarPos,
 		Trending:                      cfg.Trending,
+		TrendingRank:                  cfg.TrendingRank,
 		TrendingStyle:                 cfg.TrendingStyle,
 		BackdropAsPoster:              cfg.BackdropAsPoster,
 		BackdropLogo:                  cfg.BackdropLogo,
@@ -2717,6 +2729,9 @@ func CacheKey(cfg Config) string {
 		PerSurfaceBaseConfig:          cfg.PerSurfaceBaseConfig,
 		RatingRingConfig:              cfg.RatingRingConfig,
 		RandomPosterConfig:            cfg.RandomPosterConfig,
+	}
+	if c.TrendingRank {
+		c.TrendingRankDay = time.Now().UTC().Format("2006-01-02")
 	}
 	b, _ := json.Marshal(c)
 	// Fold any preserved-but-unmodeled fields into the key so two migrated
