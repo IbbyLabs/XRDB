@@ -965,6 +965,17 @@ func ratingIDForSources(id string, meta *provider.MediaMeta) string {
 // a fact about the title, and our own impatience is not.
 var errArtStageDeadline = errors.New("artwork stage deadline")
 
+// artStageCut is our stage cut, naming what was being waited on when it fired.
+type artStageCut struct {
+	waitingOn  string // the source being asked
+	waitingFor string // metadata | image | episode
+	waited     time.Duration
+	err        error
+}
+
+func (c *artStageCut) Error() string   { return errArtStageDeadline.Error() + ": " + c.err.Error() }
+func (c *artStageCut) Unwrap() []error { return []error{errArtStageDeadline, c.err} }
+
 // defaultArtFetchTimeout bounds the source-artwork fetch absent an override
 // from config. A normal fetch runs around a second; a stalled one otherwise
 // holds a render slot idle, deepening the queue for everything behind it.
@@ -1196,11 +1207,15 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 
 	if err != nil || len(sourceBytes) == 0 {
-		p.log().WarnContext(ctx, "No source artwork was available; serving a placeholder",
-			"id", logging.RequestID(ctx),
+		attrs := []any{"id", logging.RequestID(ctx),
 			"media_type", req.MediaType, "media_id", req.MediaID,
 			"artwork_source", string(req.Config.ArtworkSource),
-			"artwork_url", artworkURL, "error", err)
+			"artwork_url", artworkURL, "error", err}
+		var cut *artStageCut
+		if errors.As(err, &cut) {
+			attrs = append(attrs, "waiting_on", cut.waitingOn, "waiting_for", cut.waitingFor, "waited_ms", cut.waited.Milliseconds())
+		}
+		p.log().WarnContext(ctx, "No source artwork was available; serving a placeholder", attrs...)
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
 		result.Placeholder = true
 		result.PlaceholderIsOurs = errors.Is(err, errArtStageDeadline)
@@ -1908,6 +1923,8 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	// answered by the next provider without letting a dead one be tried by all
 	// of them.
 	parent := ctx
+	started := time.Now()
+	waitingOn, waitingFor := "", ""
 	var stageCtx context.Context
 	if d := p.artStageTimeout(); d > 0 {
 		var cancel context.CancelFunc
@@ -1921,7 +1938,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	defer func() {
 		if err != nil && stageCtx != nil &&
 			stageCtx.Err() == context.DeadlineExceeded && parent.Err() == nil {
-			err = fmt.Errorf("%w: %w", errArtStageDeadline, err)
+			err = &artStageCut{waitingOn: waitingOn, waitingFor: waitingFor, waited: time.Since(started), err: err}
 		}
 	}()
 	// Series-episode requests (thumbnails from AIOMetadata) resolve the episode
@@ -1948,6 +1965,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	episodeRatingID := ""
 	var episodeRating *provider.Rating
 	if ok {
+		waitingOn, waitingFor = "tmdb", "episode"
 		data, meta, ratingID, stillURL, handled, absent := p.fetchEpisode(ctx, req, series, season, episode)
 		if absent && season > 1 {
 			// BUG-286 case 1. Callers outside XRDB put a catalogue id where the
@@ -2033,6 +2051,8 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	if contentType == "" {
 		contentType = knownType
 	}
+	// urlFrom names the source of each artwork URL, for a merged fallback.
+	urlFrom := map[string]string{}
 	for _, name := range order {
 		prov := p.providers.Get(name)
 		if prov == nil {
@@ -2081,8 +2101,10 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 			if baseMeta != nil && baseMeta.TMDBID != "" {
 				srcOpts.TMDBID = baseMeta.TMDBID
 			}
+			waitingOn, waitingFor = name, "metadata"
 			meta, err = af.FetchArtwork(ctx, contentType, providerID, srcOpts)
 		} else {
+			waitingOn, waitingFor = name, "metadata"
 			meta, err = prov.Fetch(ctx, contentType, providerID)
 		}
 		if err != nil || meta == nil {
@@ -2091,6 +2113,11 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 				"provider", name, "media_type", req.MediaType, "media_id", req.MediaID,
 				"error", err)
 			continue
+		}
+		for _, u := range []string{meta.PosterURL, meta.BackdropURL, meta.LogoURL} {
+			if u != "" && urlFrom[u] == "" {
+				urlFrom[u] = name
+			}
 		}
 		if baseMeta == nil {
 			// Copied at the provider boundary: a provider may hand the same
@@ -2110,6 +2137,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 		// loop keeps trying other providers for a real logo first.
 		if url := selectSurfaceURL(meta, req.MediaType, req.Config); url != "" {
 			url = p.posterURLFor(ctx, meta, url)
+			waitingOn, waitingFor = name, "image"
 			if data, ferr := p.fetcher.Fetch(ctx, url); ferr == nil && len(data) > 0 {
 				data, url = p.betterPoster(ctx, req, meta, url, data)
 				p.enrichMetaForOverlays(ctx, req, baseMeta)
@@ -2124,6 +2152,10 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	// for a missing logo/thumbnail, using art merged from every source tried.
 	p.enrichMetaForOverlays(ctx, req, baseMeta)
 	if url := selectArtworkURL(baseMeta, req.MediaType, req.Config); url != "" {
+		waitingOn, waitingFor = urlFrom[url], "image"
+		if waitingOn == "" {
+			waitingOn = baseFrom
+		}
 		data, err := p.fetcher.Fetch(ctx, url)
 		if err == nil && len(data) > 0 {
 			return data, baseMeta, ratingIDFor(episodeRatingID, req.MediaID), baseFrom, url, nil

@@ -1,9 +1,12 @@
 package compose
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -98,5 +101,46 @@ func TestACallerGivingUpIsNotOurDeadline(t *testing.T) {
 	}
 	if res.PlaceholderIsOurs {
 		t.Error("a caller giving up was recorded as our own deadline")
+	}
+}
+
+// The placeholder line names what our cut was waiting on, which the configured
+// artwork source alone cannot say.
+func TestOurCutNamesTheSourceItWasWaitingOn(t *testing.T) {
+	if testing.Short() {
+		t.Skip("times a real deadline")
+	}
+	hang := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	defer hang.Close()
+
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{ProviderName: "tmdb", Meta: &provider.MediaMeta{Title: "T"}})
+	reg.Register(&provider.StubProvider{
+		ProviderName: "fanart",
+		Meta:         &provider.MediaMeta{Title: "T", PosterURL: hang.URL + "/poster.jpg"},
+	})
+	p := New(reg)
+	p.SetArtFetchTimeout(120 * time.Millisecond)
+
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, nil)))
+	defer slog.SetDefault(prev)
+
+	cfg := imageconfig.Default()
+	cfg.ArtworkSource = imageconfig.ArtworkTMDB
+	if _, err := p.Render(context.Background(), Request{MediaType: "poster", MediaID: "tt0111161", Config: cfg}); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "serving a placeholder") {
+		t.Fatal("no placeholder line")
+	}
+	for _, want := range [][2]string{{"waiting_on=fanart", `"waiting_on":"fanart"`}, {"waiting_for=image", `"waiting_for":"image"`}, {"waited_ms=", `"waited_ms":`}} {
+		if !strings.Contains(out, want[0]) && !strings.Contains(out, want[1]) {
+			t.Errorf("placeholder line lacks %s (the configured source was tmdb): %s", want, out)
+		}
 	}
 }
