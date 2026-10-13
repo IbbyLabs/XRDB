@@ -733,6 +733,12 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               checked={config.metaLineAgeRating}
               onChange={() => onUpdate('metaLineAgeRating', !config.metaLineAgeRating)}
             />
+            <ToggleRow
+              label="Genre in the info line"
+              hint="Off leaves the age rating and year. Separate from the genre badge, so the genre need not show twice."
+              checked={config.metaLineGenre}
+              onChange={() => onUpdate('metaLineGenre', !config.metaLineGenre)}
+            />
             <Field label="Info line scale (%)" htmlFor={`${uid}-metaline-scale`}
               hint="60–200. Blank keeps the default size.">
               <input id={`${uid}-metaline-scale`} className="input" type="number" inputMode="numeric"

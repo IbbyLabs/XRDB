@@ -246,6 +246,8 @@ type Config struct {
 	// the other has to be able to say so. No omitempty — the default is true and
 	// omitempty would drop an explicit false.
 	MetaLineAgeRating bool `json:"metaLineAgeRating"`
+	// MetaLineGenre draws the genre inside that line, separate from the genre badge. No omitempty: default true.
+	MetaLineGenre bool `json:"metaLineGenre"`
 	// MetaLineScale sizes that line as a percent; 0 = 100.
 	MetaLineScale int `json:"metaLineScale,omitempty"`
 	// MetaLineOffsetX and MetaLineOffsetY nudge the info line from its centred
@@ -746,6 +748,7 @@ func Default() Config {
 		BadgeTheme:            ThemeDark,
 		AgeRating:             true,
 		MetaLineAgeRating:     true,
+		MetaLineGenre:         true,
 		RatingUnavailableMark: false,
 		BadgeShadow:           true,
 		AgeRatingPos:          "inherit",
@@ -816,6 +819,7 @@ type raw struct {
 	RatingsAnime                  []string  `json:"ratingsAnime"`
 	MetaLine                      *bool     `json:"metaLine"`
 	MetaLineAgeRating             *bool     `json:"metaLineAgeRating"`
+	MetaLineGenre                 *bool     `json:"metaLineGenre"`
 	MetaLineScale                 *int      `json:"metaLineScale"`
 	MetaLineOffsetX               *int      `json:"metaLineOffsetX"`
 	MetaLineOffsetY               *int      `json:"metaLineOffsetY"`
@@ -1306,6 +1310,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.MetaLineAgeRating != nil {
 		cfg.MetaLineAgeRating = *r.MetaLineAgeRating
+	}
+	if r.MetaLineGenre != nil {
+		cfg.MetaLineGenre = *r.MetaLineGenre
 	}
 	if r.MetaLineScale != nil && *r.MetaLineScale != 0 {
 		cfg.MetaLineScale = clampInt(*r.MetaLineScale, 60, 200)
@@ -2505,6 +2512,7 @@ func CacheKey(cfg Config) string {
 		RatingsAnime                  []string       `json:"ratingsAnime"`
 		MetaLine                      bool           `json:"metaLine"`
 		MetaLineAgeRating             bool           `json:"metaLineAgeRating"`
+		MetaLineGenre                 bool           `json:"metaLineGenre"`
 		MetaLineScale                 int            `json:"metaLineScale"`
 		MetaLineOffsetX               int            `json:"metaLineOffsetX,omitempty"`
 		MetaLineOffsetY               int            `json:"metaLineOffsetY,omitempty"`
@@ -2618,6 +2626,7 @@ func CacheKey(cfg Config) string {
 		RatingsAnime:                  cfg.RatingsAnime,
 		MetaLine:                      cfg.MetaLine,
 		MetaLineAgeRating:             cfg.MetaLineAgeRating,
+		MetaLineGenre:                 cfg.MetaLineGenre,
 		MetaLineScale:                 cfg.MetaLineScale,
 		MetaLineOffsetX:               cfg.MetaLineOffsetX,
 		MetaLineOffsetY:               cfg.MetaLineOffsetY,

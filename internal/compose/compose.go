@@ -2267,7 +2267,7 @@ func mergeArtworkURLs(dst, src *provider.MediaMeta) {
 func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta *provider.MediaMeta) {
 	metaLine := req.Config.MetaLine
 	needsRating := (req.Config.AgeRating || metaLine && req.Config.MetaLineAgeRating) && meta.ContentRating == ""
-	needsGenres := (req.Config.Genre || metaLine) && len(meta.Genres) == 0
+	needsGenres := (req.Config.Genre || metaLine && req.Config.MetaLineGenre) && len(meta.Genres) == 0
 	needsYear := metaLine && meta.Year == 0
 	needsProviders := req.Config.Providers && len(meta.WatchProviders) == 0
 	// Stinger is read from TMDB's keywords, so any other artwork source leaves it

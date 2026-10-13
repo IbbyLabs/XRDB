@@ -576,6 +576,7 @@ export interface ConfigState {
   ratingsAnime: string[];
   metaLine: boolean;
   metaLineAgeRating: boolean;
+  metaLineGenre: boolean;
   metaLineScale: number;
   metaLineOffsetX: number;
   metaLineOffsetY: number; // percent; 0 = 100
@@ -793,6 +794,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingsAnime: [],
   metaLine: false,
   metaLineAgeRating: true,
+  metaLineGenre: true,
   metaLineScale: 0,
   metaLineOffsetX: 0,
   metaLineOffsetY: 0,

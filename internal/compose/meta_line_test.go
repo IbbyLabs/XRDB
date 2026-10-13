@@ -170,3 +170,29 @@ func TestTheBadgeToggleDoesNotGovernTheLine(t *testing.T) {
 			paintedPixels(badgeOn), paintedPixels(badgeOff))
 	}
 }
+
+// BUG-290: the genre badge and the info line both drew the genre, with no way to keep just one.
+func TestTheGenreInTheLineHasItsOwnToggle(t *testing.T) {
+	meta := provider.MediaMeta{Year: 2020, Genres: []string{"Comedy"}}
+
+	cfg := imageconfig.Default()
+	cfg.MetaLine = true
+	if !cfg.MetaLineGenre {
+		t.Fatal("the genre should be in the line by default")
+	}
+
+	withGenre := metaLineImage()
+	drawMetaLine(withGenre, meta, cfg, 2.0, newOccupancy(withGenre.Bounds()))
+
+	cfg.MetaLineGenre = false
+	withoutGenre := metaLineImage()
+	drawMetaLine(withoutGenre, meta, cfg, 2.0, newOccupancy(withoutGenre.Bounds()))
+
+	on, off := paintedPixels(withGenre), paintedPixels(withoutGenre)
+	if off == 0 {
+		t.Fatal("the year must still draw with only the genre turned off")
+	}
+	if off >= on {
+		t.Errorf("dropping the genre did not shrink the line: with %d px, without %d px", on, off)
+	}
+}
