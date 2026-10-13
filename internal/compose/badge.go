@@ -1188,20 +1188,24 @@ func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Confi
 		return false
 	}
 	rows := stripRowsAt(scale, ratings, cfg, availW, facts)
-	if cfg.BottomRatingsRow {
-		total := 0
-		for i, r := range ratings {
-			if i > 0 {
-				total += d.badgeGap
-			}
-			total += widestBadgeAt(scale, []provider.Rating{r}, cfg, facts)
-		}
-		if total > availW {
-			return false
-		}
+	if cfg.BottomRatingsRow && singleRowWidthAt(scale, ratings, cfg, facts) > availW {
+		return false
 	}
 	innerH := badgeHeightAt(scale, cfg)
 	return rows*innerH+(rows-1)*d.rowGap <= availH
+}
+
+// singleRowWidthAt is the width of every badge on one line, gaps included.
+func singleRowWidthAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) int {
+	d := ratingStripDimsFor(scale, cfg)
+	total := 0
+	for i, r := range ratings {
+		if i > 0 {
+			total += d.badgeGap
+		}
+		total += widestBadgeAt(scale, []provider.Rating{r}, cfg, facts)
+	}
+	return total
 }
 
 // fitBadgesToFrame decides how much of the strip to draw and at what size.
@@ -1940,6 +1944,9 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 			availH = share
 		}
 		widest := widestBadgeAt(scale, ratings, cfg, facts)
+		if cfg.BottomRatingsRow {
+			widest = singleRowWidthAt(scale, ratings, cfg, facts)
+		}
 		tallest := badgeHeightAt(scale, cfg)
 		if availW <= 0 || availH <= 0 {
 			return scale
