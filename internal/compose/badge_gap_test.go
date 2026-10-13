@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"image/color"
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
@@ -23,5 +24,18 @@ func TestBadgeGapWidensTheRow(t *testing.T) {
 	}
 	if d := ratingStripDimsFor(1, cfg); d.rowGap != 33 {
 		t.Errorf("row gap at 300%% = %d, want 33", d.rowGap)
+	}
+}
+
+// FR-224: the score text on rating badges takes its own colour, over the aggregate's.
+func TestRatingValueColorOverridesTheStyle(t *testing.T) {
+	cfg := imageconfig.Default()
+	if got := chromeFor(cfg).valueColor; got != (color.NRGBA{R: 255, G: 255, B: 255, A: 255}) {
+		t.Fatalf("default value colour = %v, want white", got)
+	}
+	cfg.AggregateValueColor = "#ff0000"
+	cfg.RatingValueColor = "#102030"
+	if got := chromeFor(cfg).valueColor; got != (color.NRGBA{R: 0x10, G: 0x20, B: 0x30, A: 255}) {
+		t.Errorf("value colour = %v, want #102030", got)
 	}
 }

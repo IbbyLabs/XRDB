@@ -715,6 +715,8 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
       <NumField id={`${uid}-badge-gap`} label="Space between badges (%)" value={config.ratingBadgeGap}
         onChange={v => onUpdate('ratingBadgeGap', v)} min={20} max={300} step={10}
         hint="The gap between rating badges and between their rows. Blank keeps the default." />
+      <ColorField id={`${uid}-rating-value`} label="Score text colour" value={config.ratingValueColor}
+        onChange={v => onUpdate('ratingValueColor', v)} fallback="#ffffff" resetLabel="Style default" />
       <div className="field">
         <label className="label" htmlFor={`${uid}-badge-border`}>Badge outline</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>

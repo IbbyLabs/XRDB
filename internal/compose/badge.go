@@ -900,6 +900,10 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		v.A = 255
 		c.valueColor = v
 	}
+	if v, err := parseHexColor(cfg.RatingValueColor); cfg.RatingValueColor != "" && err == nil {
+		v.A = 255
+		c.valueColor = v
+	}
 	// Last, so it reaches every style including the ones that draw no border of
 	// their own.
 	if b, err := parseHexColor(cfg.RatingBadgeBorderColor); cfg.RatingBadgeBorderColor != "" && err == nil {
