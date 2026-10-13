@@ -143,6 +143,10 @@ export function ProfilePanel({
   }, []);
 
   const configKey = loaded ? (loaded.alias || loaded.id) : '';
+  // Usernames this browser has opened besides the loaded profile. Edits never reach those.
+  const otherUsernames = loaded && !loaded.alias
+    ? recents.map(r => r.key).filter(k => k !== configKey && /^[a-z]{3,32}$/.test(k)).slice(0, 3)
+    : [];
   const sampleUrl = configKey
     ? `${renderOrigin()}/${mediaType}/${encodeURIComponent(mediaId)}?config=${encodeURIComponent(configKey)}`
       + (loaded?.versionToken ? `&v=${encodeURIComponent(loaded.versionToken)}` : '')
@@ -415,9 +419,26 @@ export function ProfilePanel({
                   : isDirty && saveError
                     ? `Not saved: ${saveError.replace(/\.?$/, '.')} Edit anything to try again.`
                   : isDirty
-                    ? 'Storing your changes to this profile.'
-                    : 'Editing this profile — changes are saved as you make them.'}
+                    ? `Storing your changes to “${configKey}”.`
+                    : `Saving to “${configKey}” as you edit. Only artwork URLs with config=${configKey} change.`}
             </span>
+            {otherUsernames.length > 0 && !locked && (
+              <div className="notice notice-warn" role="note">
+                <span>
+                  This profile has no username. If your addon’s artwork URL says
+                  config={otherUsernames.join(' or config=')}, that is a different profile and
+                  these edits do not reach it.
+                </span>
+                <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                  {otherUsernames.map(k => (
+                    <button key={k} type="button" className="btn btn-ghost btn-sm" disabled={busy}
+                      onClick={() => void handleLoad(k)}>
+                      Open {k}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {locked && (
               <form
                 className="notice notice-warn profile-unlock"
