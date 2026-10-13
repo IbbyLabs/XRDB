@@ -154,7 +154,7 @@ type Pipeline struct {
 
 // trendingResolver is satisfied by *provider.TrendingIndex.
 type trendingResolver interface {
-	IsTrending(ctx context.Context, ids ...string) bool
+	IsTrending(ctx context.Context, kind string, ids ...string) bool
 }
 
 // SetTrendingResolver attaches the trending index.
@@ -173,15 +173,19 @@ func (p *Pipeline) trendingRankOf(ctx context.Context, req Request, meta *provid
 	if p.trendingRank == nil {
 		return 0, false
 	}
-	kind := "movie"
-	if provider.IsSeriesContentType(p.resolveContentKind(ctx, req)) {
-		kind = "tv"
-	}
 	ids := []string{req.MediaID}
 	if meta != nil {
 		ids = append(ids, meta.TMDBID)
 	}
-	return p.trendingRank.Rank(ctx, kind, ids...)
+	return p.trendingRank.Rank(ctx, p.tmdbKind(ctx, req), ids...)
+}
+
+// tmdbKind is the TMDB list kind of the requested title, "movie" or "tv".
+func (p *Pipeline) tmdbKind(ctx context.Context, req Request) string {
+	if provider.IsSeriesContentType(p.resolveContentKind(ctx, req)) {
+		return "tv"
+	}
+	return "movie"
 }
 
 // isTrending reports whether the title is in the trending list.
@@ -195,7 +199,7 @@ func (p *Pipeline) isTrending(ctx context.Context, req Request, meta *provider.M
 		// TMDB id the metadata fetch already resolved.
 		ids = append(ids, meta.TMDBID, meta.IMDbID)
 	}
-	return p.trending.IsTrending(ctx, ids...)
+	return p.trending.IsTrending(ctx, p.tmdbKind(ctx, req), ids...)
 }
 
 // animeResolver reports whether a media ID belongs to a known anime. Satisfied

@@ -233,7 +233,7 @@ func (alwaysAnime) Resolve(_ context.Context, _, _ string) (animemap.IDs, bool) 
 // alwaysTrending marks every title trending, so the trending badge draws.
 type alwaysTrending struct{}
 
-func (alwaysTrending) IsTrending(_ context.Context, _ ...string) bool { return true }
+func (alwaysTrending) IsTrending(_ context.Context, _ string, _ ...string) bool { return true }
 
 // bareEffectPipeline renders a title with nothing for the placeholder badges to
 // replace, which is the only state in which they draw.

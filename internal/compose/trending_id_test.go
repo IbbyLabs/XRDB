@@ -13,7 +13,7 @@ type recordingTrending struct {
 	hits map[string]bool
 }
 
-func (r *recordingTrending) IsTrending(_ context.Context, ids ...string) bool {
+func (r *recordingTrending) IsTrending(_ context.Context, _ string, ids ...string) bool {
 	r.got = append([]string(nil), ids...)
 	for _, id := range ids {
 		if r.hits[id] {

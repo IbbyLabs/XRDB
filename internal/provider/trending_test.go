@@ -10,14 +10,14 @@ import (
 // poster. Nothing is trending until the list says so.
 func TestTrendingIndexReportsNothingWithoutAClient(t *testing.T) {
 	idx := NewTrendingIndex(nil, TrendingOptions{})
-	if idx.IsTrending(context.Background(), "155", "tt0468569") {
+	if idx.IsTrending(context.Background(), "movie", "155", "tt0468569") {
 		t.Error("reported trending with no TMDB client")
 	}
 }
 
 func TestTrendingIndexMatchesEveryIDForm(t *testing.T) {
 	idx := NewTrendingIndex(nil, TrendingOptions{})
-	idx.ids = map[string]bool{"1399": true, "tt0944947": true}
+	idx.ids = map[string]bool{"tv:1399": true}
 
 	for _, id := range []string{"1399", "tmdb:1399", "tmdb:series:1399", "series:1399", "tmdb:series:1399:1:1"} {
 		if got := normalizeTrendingKey(id); got != "1399" {
@@ -53,20 +53,24 @@ func TestTrendingOptionsClampToSaneValues(t *testing.T) {
 // one of them may match.
 func TestTrendingIndexMatchesOnAnyIDTheCallerHolds(t *testing.T) {
 	idx := NewTrendingIndex(&TMDB{}, TrendingOptions{})
-	idx.ids = map[string]bool{"1368337": true}
+	idx.ids = map[string]bool{"movie:1368337": true}
 	idx.refreshed = time.Now()
 
 	ctx := context.Background()
-	if !idx.IsTrending(ctx, "tt33764258", "1368337", "tt33764258") {
+	if !idx.IsTrending(ctx, "movie", "tt33764258", "1368337", "tt33764258") {
 		t.Error("a resolved TMDB id alongside a tt id did not match")
 	}
-	if idx.IsTrending(ctx, "tt33764258") {
+	if idx.IsTrending(ctx, "movie", "tt33764258") {
 		t.Error("a tt id alone matched an index that holds only TMDB ids")
 	}
-	if idx.IsTrending(ctx, "", "") {
+	if idx.IsTrending(ctx, "movie", "", "") {
 		t.Error("an empty id matched")
 	}
-	if idx.IsTrending(ctx) {
+	if idx.IsTrending(ctx, "movie") {
 		t.Error("no ids at all matched")
+	}
+	// TMDB numbers films and series separately.
+	if idx.IsTrending(ctx, "tv", "1368337") {
+		t.Error("series 1368337 matched because film 1368337 is trending")
 	}
 }

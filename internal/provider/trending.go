@@ -19,7 +19,7 @@ type TrendingIndex struct {
 	ttl    time.Duration
 
 	mu        sync.RWMutex
-	ids       map[string]bool
+	ids       map[string]bool // "movie:ID" | "tv:ID"
 	refreshed time.Time
 	// failed marks the last refresh as unsuccessful; lookups then report false.
 	failed bool
@@ -61,12 +61,12 @@ func NewTrendingIndex(tmdb *TMDB, opts TrendingOptions) *TrendingIndex {
 	return &TrendingIndex{tmdb: tmdb, window: window, depth: depth, ttl: ttl, ids: map[string]bool{}}
 }
 
-// IsTrending matches any of the ids the caller holds for a title. The list TMDB
-// serves carries no external ids, so the index is keyed by TMDB id alone and a
-// request made under an IMDb id only matches once its TMDB id is passed here
-// too.
-func (t *TrendingIndex) IsTrending(ctx context.Context, ids ...string) bool {
-	if t == nil || t.tmdb == nil {
+// IsTrending matches any of the ids the caller holds for a title of the given
+// kind, "movie" or "tv": TMDB numbers the two separately. The list carries no
+// external ids, so a request made under an IMDb id only matches once its TMDB
+// id is passed here too.
+func (t *TrendingIndex) IsTrending(ctx context.Context, kind string, ids ...string) bool {
+	if t == nil || t.tmdb == nil || (kind != "movie" && kind != "tv") {
 		return false
 	}
 	t.refreshIfStale(ctx)
@@ -76,7 +76,7 @@ func (t *TrendingIndex) IsTrending(ctx context.Context, ids ...string) bool {
 		return false
 	}
 	for _, id := range ids {
-		if key := normalizeTrendingKey(id); key != "" && t.ids[key] {
+		if key := normalizeTrendingKey(id); key != "" && t.ids[kind+":"+key] {
 			return true
 		}
 	}
@@ -159,7 +159,7 @@ func (t *TrendingIndex) fetch(ctx context.Context) (map[string]bool, error) {
 			if kept >= t.depth {
 				return out, nil
 			}
-			out[strconv.Itoa(item.ID)] = true
+			out[item.MediaType+":"+strconv.Itoa(item.ID)] = true
 			kept++
 		}
 	}
