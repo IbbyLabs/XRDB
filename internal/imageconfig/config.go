@@ -296,8 +296,10 @@ type Config struct {
 	TrendingStyle                TrendingStyle `json:"trendingStyle"`
 	// TrendingRank draws the title's place in today's trending list, "#9 Today",
 	// as a tab centred at the top.
-	TrendingRank     bool `json:"trendingRank,omitempty"`
-	BackdropAsPoster bool `json:"backdropAsPoster,omitempty"`
+	TrendingRank bool `json:"trendingRank,omitempty"`
+	// TrendingRankScale sizes that tab as a percent, 50-200; 0 = 100.
+	TrendingRankScale int  `json:"trendingRankScale,omitempty"`
+	BackdropAsPoster  bool `json:"backdropAsPoster,omitempty"`
 	// HideCinemetaRating strips the IMDb rating from the Stremio meta XRDB serves
 	// (both the imdbRating field and the "imdb" link), so Cinemeta's own rating
 	// does not sit beside XRDB's overlaid one. It affects the meta response, not
@@ -860,6 +862,7 @@ type raw struct {
 	AggregateBarPos               *string   `json:"aggregateBarPos"`
 	Trending                      *bool     `json:"trending"`
 	TrendingRank                  *bool     `json:"trendingRank"`
+	TrendingRankScale             *int      `json:"trendingRankScale"`
 	TrendingStyle                 *string   `json:"trendingStyle"`
 	BackdropAsPoster              *bool     `json:"backdropAsPoster"`
 	HideCinemetaRating            *bool     `json:"hideCinemetaRating"`
@@ -1422,6 +1425,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.TrendingRank != nil {
 		cfg.TrendingRank = *r.TrendingRank
+	}
+	if r.TrendingRankScale != nil && *r.TrendingRankScale != 0 {
+		cfg.TrendingRankScale = clampInt(*r.TrendingRankScale, 50, 200)
 	}
 	if r.TrendingStyle != nil {
 		if v := normalizeTrendingStyle(*r.TrendingStyle); v != "" {
@@ -2585,6 +2591,7 @@ func CacheKey(cfg Config) string {
 		AggregateBarPos               string         `json:"aggregateBarPos"`
 		Trending                      bool           `json:"trending"`
 		TrendingRank                  bool           `json:"trendingRank,omitempty"`
+		TrendingRankScale             int            `json:"trendingRankScale,omitempty"`
 		// The rank changes daily, so a render showing one is keyed to its day.
 		TrendingRankDay   string        `json:"trendingRankDay,omitempty"`
 		TrendingStyle     TrendingStyle `json:"trendingStyle"`
@@ -2707,6 +2714,7 @@ func CacheKey(cfg Config) string {
 		AggregateBarPos:               cfg.AggregateBarPos,
 		Trending:                      cfg.Trending,
 		TrendingRank:                  cfg.TrendingRank,
+		TrendingRankScale:             cfg.TrendingRankScale,
 		TrendingStyle:                 cfg.TrendingStyle,
 		BackdropAsPoster:              cfg.BackdropAsPoster,
 		BackdropLogo:                  cfg.BackdropLogo,

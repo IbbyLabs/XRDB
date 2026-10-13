@@ -200,7 +200,7 @@ func TestTheGenreInTheLineHasItsOwnToggle(t *testing.T) {
 // FR-226: the rank tab draws its place, and nothing when the title is unranked.
 func TestTheTrendingRankTabDraws(t *testing.T) {
 	img := metaLineImage()
-	drawTrendingRankTab(img, 2.0, newOccupancy(img.Bounds()), 9, imageconfig.Default())
+	drawTrendingRankTab(img, newOccupancy(img.Bounds()), 9, imageconfig.Default())
 	if paintedPixels(img) == 0 {
 		t.Fatal("the rank tab drew nothing")
 	}

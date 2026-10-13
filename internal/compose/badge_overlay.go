@@ -3032,13 +3032,73 @@ func trendingOptsFromConfig(cfg imageconfig.Config) trendingBadgeOpts {
 	}
 }
 
-// drawTrendingRankTab draws "#9 Today" as a tab centred at the top, in the
-// trending badge's surface and colours.
-func drawTrendingRankTab(base *image.NRGBA, scale float64, occ *occupancy, rank int, cfg imageconfig.Config) {
-	opts := trendingOptsFromConfig(cfg)
-	opts.label = fmt.Sprintf("#%d %s", rank, UIString("trending_today", cfg.Language, "Today"))
-	opts.offsetX, opts.offsetY = 0, 0
-	drawTrendingBadgeSurfaced(base, scale, occ, trendingWordOnly, "tc", cfg.TrendingTextColor, cfg.TrendingTagStyle, opts)
+// drawTrendingRankTab draws "#9 Today" as a tab hanging from the top edge,
+// half the artwork wide, in the trending tag's surface and colours.
+func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imageconfig.Config) {
+	ensureFaces()
+	bounds := base.Bounds()
+	w, h := bounds.Dx(), bounds.Dy()
+	size := 1.0
+	if cfg.TrendingRankScale != 0 {
+		size = float64(cfg.TrendingRankScale) / 100
+	}
+	// Cap height about 4% of the artwork's height at 100%.
+	probe := valueFaceFor(1)
+	if probe == nil {
+		return
+	}
+	cap1 := probe.Metrics().CapHeight.Ceil()
+	if cap1 <= 0 {
+		cap1 = probe.Metrics().Ascent.Ceil() * 7 / 10
+	}
+	face := valueFaceFor(0.04 * float64(h) * size / float64(maxInt(1, cap1)))
+	if face == nil {
+		return
+	}
+	label := fmt.Sprintf("#%d %s", rank, UIString("trending_today", cfg.Language, "Today"))
+	fm := face.Metrics()
+	capH := fm.CapHeight.Ceil()
+	if capH <= 0 {
+		capH = fm.Ascent.Ceil() * 7 / 10
+	}
+	padY := capH * 6 / 10
+	tabH := capH + padY*2
+	tabW := maxInt(int(float64(w)*0.5*size+0.5), textWidth(face, label)+capH*2)
+	if tabW > w {
+		tabW = w
+	}
+	r := image.Rect(bounds.Min.X+(w-tabW)/2, bounds.Min.Y, bounds.Min.X+(w-tabW)/2+tabW, bounds.Min.Y+tabH)
+	if occ != nil {
+		occ.reserve(r)
+	}
+
+	radius := capH * 7 / 10
+	switch cfg.TrendingTagStyle {
+	case "square":
+		radius = maxInt(1, capH/5)
+		fallthrough
+	case "", "glass":
+		blendRoundedRectSquared(base, r, radius, squareTop, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
+		border := color.NRGBA{R: 255, G: 150, B: 92, A: 66}
+		if c, err := parseHexColor(cfg.TrendingAccentColor); cfg.TrendingAccentColor != "" && err == nil {
+			border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 220}
+		}
+		bottom := image.Rect(r.Min.X, r.Max.Y-1, r.Max.X, r.Max.Y)
+		blendRoundedRectSquared(base, bottom.Inset(radius/2), 0, squareNone, border)
+	}
+	labelCol := color.NRGBA{R: 255, G: 244, B: 238, A: 255}
+	if c, err := parseHexColor(cfg.TrendingTextColor); cfg.TrendingTextColor != "" && err == nil {
+		labelCol = c
+	}
+	tx := r.Min.X + (tabW-textWidth(face, label))/2
+	ty := r.Min.Y + padY + capH
+	if cfg.TrendingTagStyle == "plain" {
+		if c, err := parseHexColor(cfg.NoBackgroundBadgeOutlineColor); cfg.NoBackgroundBadgeOutlineColor != "" && err == nil {
+			drawLabelOutlined(base, face, tx, ty, labelCol, c, maxInt(1, cfg.NoBackgroundBadgeOutlineWidth), cfg.NoBackgroundBadgeOutlineGlow, label)
+			return
+		}
+	}
+	drawText(base, face, tx, ty, labelCol, label)
 }
 
 // drawTrendingBadge draws a premium "TRENDING" pill at the top-left corner: a

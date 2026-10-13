@@ -819,6 +819,15 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           checked={config.trendingRank}
           onChange={() => onUpdate('trendingRank', !config.trendingRank)}
         />
+        {config.trendingRank && (
+          <Field label="Trending rank size (%)" htmlFor={`${uid}-trending-rank-scale`}
+            hint="50–200. At 100 the tab is half the artwork wide. Blank keeps the default.">
+            <input id={`${uid}-trending-rank-scale`} className="input" type="number" inputMode="numeric"
+              min={50} max={200} step={5} value={config.trendingRankScale || ''} placeholder="default"
+              style={{ maxWidth: '7rem' }}
+              onChange={e => onUpdate('trendingRankScale', e.target.value === '' ? 0 : Number(e.target.value))} />
+          </Field>
+        )}
 
         {config.trending && (
           <>
