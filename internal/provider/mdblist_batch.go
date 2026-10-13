@@ -179,7 +179,7 @@ func (bt *mdblistBatcher) sendAll(ctx context.Context, ids []string) (map[string
 		}
 		got, err := bt.send(ctx, chunk)
 		if err != nil && len(chunk) > mdblistFreeBatch && errors.Is(err, errMDBListBatchTooLarge) {
-			bt.lower(ctx, mdblistFreeBatch, "refused as too large")
+			bt.lower(ctx, mdblistFreeBatch, err.Error())
 			continue
 		}
 		if err != nil {
