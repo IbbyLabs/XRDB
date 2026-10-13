@@ -1178,7 +1178,7 @@ func stripRowsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Confi
 // row would have held.
 func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, frameW, frameH int, facts titleFacts) bool {
 	d := ratingStripDimsFor(scale, cfg)
-	availW := frameW - d.edgeX*2
+	availW := frameW - (d.edgeX+posterEdgeInsetAt(scale, cfg))*2
 	availH := frameH - d.edgeY*2
 	if availW <= 0 || availH <= 0 {
 		return false
@@ -1193,6 +1193,11 @@ func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Confi
 	}
 	innerH := badgeHeightAt(scale, cfg)
 	return rows*innerH+(rows-1)*d.rowGap <= availH
+}
+
+// posterEdgeInsetAt is the configured edge offset at scale, as the draw adds it.
+func posterEdgeInsetAt(scale float64, cfg imageconfig.Config) int {
+	return int(float64(cfg.PosterEdgeOffset)*scale + 0.5)
 }
 
 // singleRowWidthAt is the width of every badge on one line, gaps included.
@@ -1262,7 +1267,7 @@ func ratingsBandHeight(mediaType string, frameW, frameH int, ratings []provider.
 	padY, rowGap, edgeX, edgeY := d.padY, d.rowGap, d.edgeX, d.edgeY
 	// The configured edge offset pushes the strip further in from the edge it
 	// sits against, on top of the built-in inset.
-	edgeInset := int(float64(cfg.PosterEdgeOffset)*scale + 0.5)
+	edgeInset := posterEdgeInsetAt(scale, cfg)
 	edgeX += edgeInset
 	edgeY += edgeInset
 	if cfg.RatingsAnchored {
@@ -1346,7 +1351,7 @@ func drawBadgesInPlace(mediaType string, out *image.NRGBA, ratings []provider.Ra
 	iconGap, badgeGap, rowGap, edgeX, edgeY := d.iconGap, d.badgeGap, d.rowGap, d.edgeX, d.edgeY
 	// The configured edge offset pushes the strip further in from the edge it
 	// sits against, on top of the built-in inset.
-	edgeInset := int(float64(cfg.PosterEdgeOffset)*scale + 0.5)
+	edgeInset := posterEdgeInsetAt(scale, cfg)
 	edgeX += edgeInset
 	edgeY += edgeInset
 	if cfg.RatingsAnchored {
@@ -1932,7 +1937,7 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 	widthShare, heightShare := badgeShareCaps(cfg, frameW, frameH)
 	for i := 0; i < 6; i++ {
 		d := ratingStripDimsFor(scale, cfg)
-		availW := frameW - d.edgeX*2
+		availW := frameW - (d.edgeX+posterEdgeInsetAt(scale, cfg))*2
 		if share := int(float64(frameW)*widthShare + 0.5); share < availW {
 			availW = share
 		}

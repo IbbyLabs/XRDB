@@ -23,8 +23,12 @@ func TestSingleRowStripFitsThePoster(t *testing.T) {
 	cfg.BottomRatingsRow = true
 
 	const w, h = 1000, 1500
-	shown, scale := fitBadgesToFrame("movie", cfg, w, h, eight, titleFacts{})
-	if !stripFitsAt(scale, shown, cfg, w, h, titleFacts{}) {
-		t.Errorf("single row of %d badges at scale %.2f overflows a %dpx poster", len(shown), scale, w)
+	for _, offset := range []int{0, 60} {
+		cfg.PosterEdgeOffset = offset
+		shown, scale := fitBadgesToFrame("movie", cfg, w, h, eight, titleFacts{})
+		inset := ratingStripDimsFor(scale, cfg).edgeX + posterEdgeInsetAt(scale, cfg)
+		if got := singleRowWidthAt(scale, shown, cfg, titleFacts{}); got > w-2*inset {
+			t.Errorf("edge offset %d: row of %d badges is %dpx, room is %dpx", offset, len(shown), got, w-2*inset)
+		}
 	}
 }
