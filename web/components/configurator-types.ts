@@ -562,6 +562,7 @@ export interface ConfigState {
   trendingTextColor: string;
   trendingTagStyle: string; // '' = glass; square | plain
   trendingAccentColor: string; // '#RRGGBB' border/hairline tint; '' = default warm orange
+  trendingTileColor: string; // '#RRGGBB' tile fill for the trending tag and rank tab; '' = dark
   ageRatingBadgeStyle: string; // 'default' | plain | tile
   ageRatingTileColor: string;
   ageRatingBackgroundOpacity: number; // 0 = the style's own
@@ -787,6 +788,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   trendingTextColor: '',
   trendingTagStyle: '',
   trendingAccentColor: '',
+  trendingTileColor: '',
   ageRatingBadgeStyle: 'default',
   ageRatingTileColor: '',
   ageRatingBackgroundOpacity: 0,

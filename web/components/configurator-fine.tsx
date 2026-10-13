@@ -1592,6 +1592,10 @@ export function TrendingFine({ uid, config, onUpdate }: GroupProps) {
         <ColorField id={`${uid}-trending-accent`} label="Border color" value={config.trendingAccentColor}
           onChange={v => onUpdate('trendingAccentColor', v)} fallback="#ff7e2a" resetLabel="Default" />
       )}
+      {config.trendingTagStyle !== 'plain' && (
+        <ColorField id={`${uid}-trending-tile`} label="Tile color" value={config.trendingTileColor}
+          onChange={v => onUpdate('trendingTileColor', v)} fallback="#12141a" resetLabel="Dark" />
+      )}
       <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
         scaleKey="trendingScale" offXKey="trendingOffsetX" offYKey="trendingOffsetY" />
     </FineGroup>

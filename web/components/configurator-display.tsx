@@ -819,6 +819,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           checked={config.trendingRank}
           onChange={() => onUpdate('trendingRank', !config.trendingRank)}
         />
+        {config.trendingRank && !config.trending && fine && <TrendingFine uid={uid} config={config} onUpdate={onUpdate} />}
         {config.trendingRank && (
           <Field label="Trending rank size (%)" htmlFor={`${uid}-trending-rank-scale`}
             hint="50–200. At 100 the tab is half the artwork wide. Blank keeps the default.">

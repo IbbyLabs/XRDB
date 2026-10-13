@@ -477,6 +477,7 @@ func keyMutations() map[string]keyOverride {
 		"trendingStyle":       {mut: func(c *imageconfig.Config) { c.TrendingStyle = imageconfig.TrendingFlame }},
 		"trendingTextColor":   str(setColor(func(c *imageconfig.Config, v string) { c.TrendingTextColor = v })),
 		"trendingTagStyle":    {mut: func(c *imageconfig.Config) { c.TrendingTagStyle = "square" }},
+		"trendingTileColor":   str(setColor(func(c *imageconfig.Config, v string) { c.TrendingTileColor = v })),
 		"trendingAccentColor": str(setColor(func(c *imageconfig.Config, v string) { c.TrendingAccentColor = v })),
 
 		// Logo background is only meaningful on the logo surface.

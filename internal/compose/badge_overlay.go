@@ -3010,6 +3010,7 @@ type trendingBadgeOpts struct {
 	offsetX      int
 	offsetY      int
 	accentColor  string // "#RRGGBB" border/hairline tint for the capsule/square surfaces
+	tileColor    string // "#RRGGBB" tile fill; "" = the dark default
 	outlineColor string // "#RRGGBB" outline for the plain surface; "" = none
 	outlineWidth int    // px outline width for the plain surface; 0 = none
 	outlineGlow  bool   // fade the outline outward instead of a hard edge
@@ -3025,11 +3026,20 @@ func trendingOptsFromConfig(cfg imageconfig.Config) trendingBadgeOpts {
 		offsetX:      cfg.TrendingOffsetX,
 		offsetY:      cfg.TrendingOffsetY,
 		accentColor:  cfg.TrendingAccentColor,
+		tileColor:    cfg.TrendingTileColor,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
 		outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow:  cfg.NoBackgroundBadgeOutlineGlow,
 		noShadow:     !cfg.BadgeShadow,
 	}
+}
+
+// trendingTile is the trending tile's fill: the configured colour, opaque, or the dark default.
+func trendingTile(hex string) color.NRGBA {
+	if c, err := parseHexColor(hex); hex != "" && err == nil {
+		return color.NRGBA{R: c.R, G: c.G, B: c.B, A: 245}
+	}
+	return color.NRGBA{R: 18, G: 20, B: 26, A: 233}
 }
 
 // drawTrendingRankTab draws "#9 Today" as a tab hanging from the top edge,
@@ -3078,7 +3088,7 @@ func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imagec
 		radius = maxInt(1, capH/5)
 		fallthrough
 	case "", "glass":
-		blendRoundedRectSquared(base, r, radius, squareTop, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
+		blendRoundedRectSquared(base, r, radius, squareTop, trendingTile(cfg.TrendingTileColor))
 		border := color.NRGBA{R: 255, G: 150, B: 92, A: 66}
 		if c, err := parseHexColor(cfg.TrendingAccentColor); cfg.TrendingAccentColor != "" && err == nil {
 			border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 220}
@@ -3186,7 +3196,7 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 		if !opts.noShadow {
 			drawTileShadow(base, r, radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
 		}
-		blendRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
+		blendRoundedRect(base, r, radius, trendingTile(opts.tileColor))
 		border := color.NRGBA{R: 255, G: 150, B: 92, A: 66} // warm hairline
 		if c, err := parseHexColor(opts.accentColor); opts.accentColor != "" && err == nil {
 			border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 220}

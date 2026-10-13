@@ -700,6 +700,8 @@ type TrendingConfig struct {
 	// TrendingAccentColor tints the capsule/square surface's hairline border.
 	// "" keeps the built-in warm orange hairline.
 	TrendingAccentColor string `json:"trendingAccentColor,omitempty"`
+	// TrendingTileColor fills the trending tag's and rank tab's tile; "" keeps the dark default.
+	TrendingTileColor string `json:"trendingTileColor,omitempty"`
 }
 
 // GenreBadgeConfig groups the genre-badge styling controls. v2 exposed these
@@ -947,6 +949,7 @@ type rawTrending struct {
 	TrendingScale       *int    `json:"trendingScale"`
 	TrendingTextColor   *string `json:"trendingTextColor"`
 	TrendingAccentColor *string `json:"trendingAccentColor"`
+	TrendingTileColor   *string `json:"trendingTileColor"`
 }
 
 type rawAge struct {
@@ -1836,6 +1839,9 @@ func parseTrending(cfg *Config, r *raw) {
 	}
 	if r.TrendingAccentColor != nil && isHexColor(*r.TrendingAccentColor) {
 		cfg.TrendingAccentColor = strings.TrimSpace(*r.TrendingAccentColor)
+	}
+	if r.TrendingTileColor != nil && isHexColor(*r.TrendingTileColor) {
+		cfg.TrendingTileColor = strings.TrimSpace(*r.TrendingTileColor)
 	}
 }
 
