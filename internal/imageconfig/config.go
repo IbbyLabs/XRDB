@@ -2512,7 +2512,7 @@ func CacheKey(cfg Config) string {
 		RatingsAnime                  []string       `json:"ratingsAnime"`
 		MetaLine                      bool           `json:"metaLine"`
 		MetaLineAgeRating             bool           `json:"metaLineAgeRating"`
-		MetaLineGenre                 bool           `json:"metaLineGenre"`
+		MetaLineGenreOff              bool           `json:"metaLineGenreOff,omitempty"`
 		MetaLineScale                 int            `json:"metaLineScale"`
 		MetaLineOffsetX               int            `json:"metaLineOffsetX,omitempty"`
 		MetaLineOffsetY               int            `json:"metaLineOffsetY,omitempty"`
@@ -2626,7 +2626,7 @@ func CacheKey(cfg Config) string {
 		RatingsAnime:                  cfg.RatingsAnime,
 		MetaLine:                      cfg.MetaLine,
 		MetaLineAgeRating:             cfg.MetaLineAgeRating,
-		MetaLineGenre:                 cfg.MetaLineGenre,
+		MetaLineGenreOff:              !cfg.MetaLineGenre,
 		MetaLineScale:                 cfg.MetaLineScale,
 		MetaLineOffsetX:               cfg.MetaLineOffsetX,
 		MetaLineOffsetY:               cfg.MetaLineOffsetY,
