@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const filmwebBaseURL = "https://www.filmweb.pl"
+var filmwebBaseURL = sourceBaseURL("FILMWEB", "https://www.filmweb.pl")
 
 // Filmweb reads the community score from Filmweb, the Polish film database. It
 // is a 0–10 score like IMDb's, from a largely separate audience.

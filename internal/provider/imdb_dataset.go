@@ -16,8 +16,9 @@ import (
 	"time"
 )
 
+var imdbRatingsURL = sourceBaseURL("IMDB_RATINGS", "https://datasets.imdbws.com/title.ratings.tsv.gz")
+
 const (
-	imdbRatingsURL    = "https://datasets.imdbws.com/title.ratings.tsv.gz"
 	imdbDatasetFile   = "imdb_ratings.tsv.gz"
 	imdbDatasetMaxAge = 7 * 24 * time.Hour // re-download weekly
 )

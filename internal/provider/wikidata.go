@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const wikidataEndpoint = "https://query.wikidata.org/sparql"
+var wikidataEndpoint = sourceBaseURL("WIKIDATA", "https://query.wikidata.org/sparql")
 
 // Wikidata reviewer entities. Matching on the entity rather than on a label
 // avoids joining the label service and cannot be broken by a rename.

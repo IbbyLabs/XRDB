@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const allocineBaseURL = "https://www.allocine.fr"
+var allocineBaseURL = sourceBaseURL("ALLOCINE", "https://www.allocine.fr")
 
 // AlloCine reads the two scores AlloCiné publishes for a title: the audience
 // score ("spectateurs") and the press score ("presse"). Both are French star

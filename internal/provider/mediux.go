@@ -15,9 +15,9 @@ import (
 
 // mediuxGraphQL is MediUX's GraphQL endpoint, and mediuxAssets is where a poster
 // or backdrop asset is fetched by id. Both require the Bearer token.
-const (
-	mediuxGraphQL = "https://images.mediux.io/graphql"
-	mediuxAssets  = "https://images.mediux.io/assets/"
+var (
+	mediuxGraphQL = sourceBaseURL("MEDIUX_GRAPHQL", "https://images.mediux.io/graphql")
+	mediuxAssets  = sourceBaseURL("MEDIUX_ASSETS", "https://images.mediux.io/assets/")
 )
 
 // MediUX is a curated-artwork source. It is keyed on a TMDB id and returns the

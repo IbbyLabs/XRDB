@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const omdbBaseURL = "https://www.omdbapi.com/"
+var omdbBaseURL = sourceBaseURL("OMDB", "https://www.omdbapi.com/")
 
 // OMDB is the Open Movie Database metadata provider.
 // It returns Rotten Tomatoes and Metacritic ratings for movies and TV.

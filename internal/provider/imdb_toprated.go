@@ -14,7 +14,7 @@ import (
 // imdbBasicsURL carries one row per title with its type. The ratings file does
 // not, and without it a "top rated" list is dominated by single episodes of
 // popular shows, which routinely out-rate every film ever made.
-const imdbBasicsURL = "https://datasets.imdbws.com/title.basics.tsv.gz"
+var imdbBasicsURL = sourceBaseURL("IMDB_BASICS", "https://datasets.imdbws.com/title.basics.tsv.gz")
 
 const (
 	// topRatedMinVotes is the vote floor for eligibility. It is also the weight
