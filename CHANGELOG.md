@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.124.0](https://github.com/IbbyLabs/XRDB/compare/v3.123.0...v3.124.0) (2026-10-13)
+
+
+### Added
+
+* **mdblist:** batch a sweep's lookups into one request ([6fb1979](https://github.com/IbbyLabs/XRDB/commit/6fb1979b6a7e688bf7136d8d2b0c83450d74a336))
+* **providers:** choose which services show, and how many (FR-223) ([5bec1cf](https://github.com/IbbyLabs/XRDB/commit/5bec1cfe17b9d84250a1ef394cdf0da4f3fa441e))
+
+
+### Documentation
+
+* **env:** list the MDBList batch settings in the template ([726c298](https://github.com/IbbyLabs/XRDB/commit/726c2981cc1752fc8ffacf9438a7612e18744bae))
+* **stremio:** install the addon above Cinemeta ([1e05f39](https://github.com/IbbyLabs/XRDB/commit/1e05f39aac6a717d13f09fb33353c52eaac7bbc4))
+
 ## [3.123.0](https://github.com/IbbyLabs/XRDB/compare/v3.122.2...v3.123.0) (2026-10-13)
 
 
