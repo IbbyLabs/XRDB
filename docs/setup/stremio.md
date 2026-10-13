@@ -20,9 +20,14 @@ Editing the profile updates the art in place. There is no need to reinstall.
 
 ## Where it sits in your addon list
 
-XRDB's addon answers for the same titles as Cinemeta, and it supplies **poster
-and background art only** — no description, cast, or episode list. Install it
-*below* Cinemeta so Cinemeta still provides the metadata.
+Install it *above* Cinemeta. Stremio shows the first addon's answer for a title
+and does not merge them, so an addon below Cinemeta is never shown. XRDB's answer
+carries Cinemeta's own metadata (description, cast, episodes) with XRDB's poster
+and background in place of Cinemeta's, so nothing is lost by putting it first.
+
+Keep Cinemeta installed. XRDB has no catalogue rows of its own, so the badges
+appear when you open a title; Popular, New and your library keep the artwork
+their own source supplies.
 
 If you want logos and episode thumbnails as well, use
 [AIOMetadata](aiometadata.md) instead: it takes XRDB's artwork URLs and keeps
