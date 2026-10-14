@@ -418,3 +418,16 @@ func TestSIMKLRefreshFailureLogsNoSecrets(t *testing.T) {
 		}
 	}
 }
+
+func TestOAuthErrorCodeDropsAnythingButACode(t *testing.T) {
+	for in, want := range map[string]string{
+		"invalid_grant":                "invalid_grant",
+		"":                             "unrecognised_error",
+		"refresh_token=abc secret=xyz": "unrecognised_error",
+		strings.Repeat("a", 41):        "unrecognised_error",
+	} {
+		if got := oauthErrorCode(in); got != want {
+			t.Errorf("oauthErrorCode(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -322,7 +323,7 @@ func (s *SIMKL) exchange(ctx context.Context, fields map[string]string) (tok sim
 			ExpiresAt: a.now().Add(life),
 		}, false, nil
 	}
-	err = fmt.Errorf("simkl token request: http %d %s", status, reply.Error)
+	err = fmt.Errorf("simkl token request: http %d %s", status, oauthErrorCode(reply.Error))
 	return tok, status >= 400 && status < 500 && status != http.StatusTooManyRequests, err
 }
 
@@ -438,4 +439,15 @@ func containsAny(s string, subs ...string) bool {
 		}
 	}
 	return false
+}
+
+var oauthErrorCodeRe = regexp.MustCompile(`^[a-z_]{1,40}$`)
+
+// oauthErrorCode keeps an RFC 6749 error code and drops anything else Simkl
+// might put in the field.
+func oauthErrorCode(code string) string {
+	if oauthErrorCodeRe.MatchString(code) {
+		return code
+	}
+	return "unrecognised_error"
 }
