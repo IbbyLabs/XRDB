@@ -233,6 +233,13 @@ func main() {
 		// on every restart.
 		if simkl, ok := reg.Get("simkl").(*provider.SIMKL); ok && simkl != nil {
 			simkl.SetIDCachePath(cfg.CacheDir, logger)
+			// A V2 client id answers nothing without a linked user token. Left
+			// unset, SIMKL keeps using the V1 client id.
+			simkl.ConfigureV2(cfg.SIMKLV2ClientID, cfg.SIMKLV2Secret, cfg.CacheDir, logger)
+			server.SetSIMKLLinker(simkl)
+			if simkl.V2Enabled() && !simkl.LinkStatus().Linked {
+				logger.Warn("Simkl V2 is configured but not linked; Simkl is skipped until it is linked through the admin API")
+			}
 			simklProvider = simkl
 		}
 		// Lets the genre badge tell anime apart from animation generally. The

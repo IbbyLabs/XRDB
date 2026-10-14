@@ -202,6 +202,8 @@ type Config struct {
 	FanartAPIKey      string
 	TraktClientID     string
 	SIMKLClientID     string
+	SIMKLV2ClientID   string
+	SIMKLV2Secret     string
 	PMDBAPIKey        string
 	IMDbDatasetDir    string // directory for cached IMDb dataset file; empty = disabled
 	// IMDbTopRated enables the locally computed top-rated film ranking. It is
@@ -711,6 +713,8 @@ func Load() Config {
 		FanartAPIKey:          credential("XRDB_FANART_API_KEY", "FANART_API_KEY"),
 		TraktClientID:         credential("XRDB_TRAKT_CLIENT_ID", "TRAKT_CLIENT_ID"),
 		SIMKLClientID:         credential("XRDB_SIMKL_CLIENT_ID", "SIMKL_CLIENT_ID"),
+		SIMKLV2ClientID:       credential("XRDB_SIMKL_V2_CLIENT_ID"),
+		SIMKLV2Secret:         credential("XRDB_SIMKL_V2_CLIENT_SECRET"),
 		PMDBAPIKey:            credential("XRDB_PMDB_API_KEY"),
 		IMDbDatasetDir:        os.Getenv("XRDB_IMDB_DATASET_DIR"),
 		IMDbTopRated:          boolEnv("XRDB_IMDB_TOP_RATED"),

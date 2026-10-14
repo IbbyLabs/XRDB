@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -35,6 +37,9 @@ type SIMKL struct {
 	// map that only grows must not be held whole in a 768 MB process.
 	store       *simklIDStore
 	idCachePath string
+	// auth is set when a V2 client id is configured; V2 ids refuse every
+	// request that lacks a user token. Nil leaves the V1 behaviour untouched.
+	auth *simklAuth
 	// nowFn is swapped in tests so no test waits on a real clock.
 	nowFn func() time.Time
 
@@ -78,7 +83,81 @@ func (s *SIMKL) UpdateCredentials(clientID string) {
 
 // HasCredentials reports whether the provider can make authenticated requests.
 func (s *SIMKL) HasCredentials() bool {
-	return s.cred(context.Background()) != ""
+	c := s.cred(context.Background())
+	if c == "" {
+		return false
+	}
+	if s.usesV2(c) {
+		return s.auth.usable()
+	}
+	return true
+}
+
+// ConfigureV2 turns on Simkl's V2 authentication: the client id becomes the
+// server credential and every request carries the linked user's bearer token.
+// Tokens are kept in dir. An empty id leaves V2 off.
+func (s *SIMKL) ConfigureV2(clientID, clientSecret, dir string, log *slog.Logger) {
+	if s == nil || clientID == "" {
+		return
+	}
+	s.mu.Lock()
+	s.auth = newSIMKLAuth(clientID, clientSecret, dir, log)
+	s.mu.Unlock()
+}
+
+// V2Enabled reports whether V2 authentication is configured.
+func (s *SIMKL) V2Enabled() bool { return s != nil && s.auth != nil }
+
+// LinkStatus reports the V2 link.
+func (s *SIMKL) LinkStatus() SIMKLLinkStatus {
+	if s == nil || s.auth == nil {
+		return SIMKLLinkStatus{}
+	}
+	return s.auth.status()
+}
+
+// usesV2 reports whether a request made with this client id is a V2 request.
+// An owner-supplied V1 key is not, unless it is the V2 id itself.
+func (s *SIMKL) usesV2(cred string) bool {
+	return s.auth != nil && cred == s.auth.clientID
+}
+
+// get sends a GET built by build for the credential in force, adding the bearer
+// token on a V2 request. A 401 refreshes the token once and retries once.
+func (s *SIMKL) get(ctx context.Context, build func(cred string) string) (*http.Response, error) {
+	cred := s.cred(ctx)
+	send := func(access string) (*http.Response, error) {
+		req, err := simklRequest(ctx, build(cred))
+		if err != nil {
+			return nil, err
+		}
+		if access != "" {
+			req.Header.Set("Authorization", "Bearer "+access)
+		}
+		resp, err := s.httpClient.Do(req)
+		if err != nil {
+			return nil, redactHTTPErr(err)
+		}
+		return resp, nil
+	}
+	if !s.usesV2(cred) {
+		return send("")
+	}
+	access, err := s.auth.accessToken(s, ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := send(access)
+	if err != nil || resp.StatusCode != http.StatusUnauthorized {
+		return resp, err
+	}
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<16))
+	resp.Body.Close()
+	access, err = s.auth.refresh(s, ctx, access)
+	if err != nil {
+		return nil, err
+	}
+	return send(access)
 }
 
 func (s *SIMKL) cred(ctx context.Context) string {
@@ -88,6 +167,10 @@ func (s *SIMKL) cred(ctx context.Context) string {
 	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	// The V1 id carries on until the V2 link is usable.
+	if s.auth != nil && (s.clientID == "" || s.auth.usable()) {
+		return s.auth.clientID
+	}
 	return s.clientID
 }
 
@@ -179,19 +262,17 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 	if s.baseURL != "" {
 		base = s.baseURL
 	}
-	used := s.cred(ctx)
 	// extended=full is not sent: SIMKL's CDN copy already carries every field
 	// parsed here, and the parameter only creates a second cache key for it.
-	u := fmt.Sprintf("%s/%s/%s?client_id=%s%s",
-		base, segment, simklID, url.QueryEscape(used), simklAppParams())
-	req, err := simklRequest(ctx, u)
+	resp, err := s.get(ctx, func(cred string) string {
+		return fmt.Sprintf("%s/%s/%s?client_id=%s%s",
+			base, segment, simklID, url.QueryEscape(cred), simklAppParams())
+	})
 	if err != nil {
-		return nil, fmt.Errorf("simkl: build request: %w", err)
-	}
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("simkl: http get: %w", redactHTTPErr(err))
+		if errors.Is(err, ErrNotApplicable) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("simkl: http get: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
@@ -328,17 +409,15 @@ func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error
 	if s.baseURL != "" {
 		base = s.baseURL
 	}
-	used := s.cred(ctx)
-	u := fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s%s",
-		base, url.QueryEscape(used), imdbID, simklAppParams())
-	req, err := simklRequest(ctx, u)
+	resp, err := s.get(ctx, func(cred string) string {
+		return fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s%s",
+			base, url.QueryEscape(cred), imdbID, simklAppParams())
+	})
 	if err != nil {
-		return "", fmt.Errorf("simkl lookup: build request: %w", err)
-	}
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("simkl lookup: http get: %w", redactHTTPErr(err))
+		if errors.Is(err, ErrNotApplicable) {
+			return "", err
+		}
+		return "", fmt.Errorf("simkl lookup: http get: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {

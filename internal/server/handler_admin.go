@@ -136,6 +136,8 @@ func registerAdminRoutes(
 	renderCache *cache.Cache,
 	ttls *ttlStore,
 ) {
+	registerSIMKLLinkRoute(mux, cfg)
+
 	mux.HandleFunc("/api/admin/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
