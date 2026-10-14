@@ -1,8 +1,9 @@
 package compose
 
 import (
+	_ "embed"
 	"image"
-	"image/color"
+	"log/slog"
 	"sync"
 
 	"golang.org/x/image/font"
@@ -10,13 +11,33 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// The clean genre label: bold at the tiled label's size times 1.2, tracked tight.
+// The clean genre label: a grotesque bold at 20px, v2's half of a 40px badge.
 const (
-	cleanLabelSize     = 17 * 1.2 // pt at 96 DPI
-	cleanLabelTracking = -0.03    // em
+	cleanLabelSize     = 20.0 // px
+	cleanLabelTracking = 0.01 // em
+	cleanLabelAlpha    = 220
 )
 
-var scaledCleanFaces sync.Map
+//go:embed assets/fonts/LiberationSans-Bold.ttf
+var cleanLabelTTF []byte
+
+var (
+	onceCleanFont    sync.Once
+	cleanFontParsed  *opentype.Font
+	scaledCleanFaces sync.Map
+)
+
+func cleanFont() *opentype.Font {
+	onceCleanFont.Do(func() {
+		f, err := opentype.Parse(cleanLabelTTF)
+		if err != nil {
+			slog.Warn("Failed to parse the clean label font", "error", err)
+			return
+		}
+		cleanFontParsed = f
+	})
+	return cleanFontParsed
+}
 
 // trackedFace adds a fixed amount to every glyph advance.
 type trackedFace struct {
@@ -42,7 +63,8 @@ func (f trackedFace) GlyphAdvance(r rune) (fixed.Int26_6, bool) {
 // cleanLabelFaceFor returns the clean style's label face for the output scale.
 func cleanLabelFaceFor(scale float64) font.Face {
 	ensureFaces()
-	if fontBoldParsed == nil {
+	tt := cleanFont()
+	if tt == nil {
 		return labelFaceFor(scale * 1.2)
 	}
 	key := int(scale * 100)
@@ -50,27 +72,13 @@ func cleanLabelFaceFor(scale float64) font.Face {
 		return f.(font.Face)
 	}
 	size := cleanLabelSize * scale
-	f, err := opentype.NewFace(fontBoldParsed, &opentype.FaceOptions{
-		Size: size, DPI: 96, Hinting: font.HintingFull,
+	f, err := opentype.NewFace(tt, &opentype.FaceOptions{
+		Size: size, DPI: 72, Hinting: font.HintingFull,
 	})
 	if err != nil {
 		return labelFaceFor(scale * 1.2)
 	}
-	lf := &lockedFace{inner: trackedFace{Face: f, track: fixed.Int26_6(cleanLabelTracking * size * 96 / 72 * 64)}}
+	lf := &lockedFace{inner: trackedFace{Face: f, track: fixed.Int26_6(cleanLabelTracking * size * 64)}}
 	actual, _ := scaledCleanFaces.LoadOrStore(key, lf)
 	return actual.(font.Face)
-}
-
-// drawTextShadow lays a soft shadow of s, offset below the baseline at (x, y).
-func drawTextShadow(base *image.NRGBA, face font.Face, x, y int, s string, scale float64) {
-	fm := face.Metrics()
-	ascent, descent := fm.Ascent.Ceil(), fm.Descent.Ceil()
-	w := textWidth(face, s)
-	if w <= 0 {
-		return
-	}
-	mask := image.NewNRGBA(image.Rect(0, 0, w, ascent+descent))
-	drawText(mask, face, 0, ascent, color.NRGBA{A: 255}, s)
-	radius := maxInt(1, int(2*scale+0.5))
-	drawSoftShadow(base, mask, x, y-ascent, radius, 0, maxInt(1, int(scale+0.5)), 85, color.NRGBA{A: 255})
 }

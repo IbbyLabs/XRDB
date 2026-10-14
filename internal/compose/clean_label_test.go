@@ -2,43 +2,35 @@ package compose
 
 import (
 	"image"
-	"image/color"
 	"testing"
 )
 
-// FR-213: the clean genre label is bold, tracked tighter than the bold face, and casts a shadow.
-func TestCleanLabelIsBoldTrackedAndShadowed(t *testing.T) {
+// FR-213: the clean genre label is a grotesque bold at v2's 20px, slightly translucent.
+func TestCleanLabelMatchesV2(t *testing.T) {
 	ensureFaces()
 	face := cleanLabelFaceFor(1)
-	inner := face.(*lockedFace).inner.(trackedFace)
-	if inner.track >= 0 {
-		t.Fatalf("clean label tracking = %v, want negative", inner.track)
+	if face == labelFaceFor(1.2) {
+		t.Fatal("clean label fell back to the tiled label face")
 	}
-	if tracked, untracked := textWidth(face, "Science Fiction"), textWidth(inner.Face, "Science Fiction"); tracked >= untracked {
-		t.Errorf("tracked width %d is not narrower than untracked %d", tracked, untracked)
+	if got := face.Metrics().Height.Ceil(); got < 20 || got > 25 {
+		t.Errorf("clean label line height = %dpx, want about 23 for a 20px face", got)
 	}
 
-	render := func(noShadow bool) *image.NRGBA {
-		img := image.NewNRGBA(image.Rect(0, 0, 400, 120))
-		for i := range img.Pix {
-			img.Pix[i] = 200
-		}
-		drawGenreBadge(img, []string{"Anime"}, "tc", 1, newOccupancy(img.Bounds()), genreBadgeOpts{style: "clean", maxGenres: 1, noShadow: noShadow})
-		return img
+	img := image.NewNRGBA(image.Rect(0, 0, 400, 120))
+	for i := 0; i < len(img.Pix); i += 4 {
+		img.Pix[i+3] = 255
 	}
-	lum := func(img *image.NRGBA) int {
-		sum := 0
-		for y := 0; y < img.Bounds().Dy(); y++ {
-			for x := 0; x < img.Bounds().Dx(); x++ {
-				c := img.NRGBAAt(x, y)
-				if c != (color.NRGBA{R: 255, G: 255, B: 255, A: 255}) {
-					sum += int(c.R)
-				}
+	drawGenreBadge(img, []string{"Anime"}, "tc", 1, newOccupancy(img.Bounds()), genreBadgeOpts{style: "clean", maxGenres: 1})
+	brightest := uint8(0)
+	for y := 0; y < 120; y++ {
+		for x := 0; x < 400; x++ {
+			if c := img.NRGBAAt(x, y); c.R > brightest {
+				brightest = c.R
 			}
 		}
-		return sum
 	}
-	if with, without := lum(render(false)), lum(render(true)); with >= without {
-		t.Errorf("shadowed render is not darker around the label: %d vs %d", with, without)
+	// The default label ink is 225 grey.
+	if want := uint8(225 * cleanLabelAlpha / 255); brightest < want-2 || brightest > want+2 {
+		t.Errorf("label peak on black = %d, want about %d (225 grey at %d alpha)", brightest, want, cleanLabelAlpha)
 	}
 }
