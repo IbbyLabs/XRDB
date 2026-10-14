@@ -1707,6 +1707,9 @@ func ratingBadgeValue(r provider.Rating, mode string, hideNativeScale bool) stri
 		if hideNativeScale {
 			return r.Label
 		}
+		if r.NativeSuffix != "" {
+			return r.Label + r.NativeSuffix
+		}
 		return r.Label + nativeScaleSuffix[r.Source]
 	}
 }

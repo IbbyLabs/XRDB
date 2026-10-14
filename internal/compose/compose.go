@@ -54,6 +54,12 @@ type Request struct {
 	// episode is the series and numbers when the request named an episode as
 	// series:season:episode, for sources that answer per episode that way.
 	episode *episodeRef
+	// malID and malEpisode are the MAL entry and the episode inside it that the
+	// request named by anime id, captured before the id is rewritten to IMDb or
+	// TMDB numbering. Zero when it did not.
+	malID, malEpisode int
+	// episodeName is the episode's TMDB title, for checking a mapped MAL episode.
+	episodeName string
 }
 
 type episodeRef struct {
@@ -284,6 +290,7 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	if parts := strings.SplitN(rawID, ":", 3); len(parts) == 3 {
 		tail = ":" + parts[2]
 	}
+	req.malID, req.malEpisode = p.malEntryOf(service, num, head, tail)
 	target, ok := resolver.ResolveTarget(ctx, head)
 	if !ok {
 		// A season that has aired recently often carries a Kitsu id weeks before
@@ -317,6 +324,34 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	p.log().DebugContext(ctx, "Resolved an anime id to its mainstream id",
 		"id", logging.RequestID(ctx), "from", head, "to", req.MediaID)
 	return req
+}
+
+// animeMALResolver finds the MAL id of an anime-service id. Optional for the same
+// reason as the resolvers above.
+type animeMALResolver interface {
+	MALIDFor(animeID string) (int, bool)
+}
+
+// malEntryOf reads the MAL entry and episode an anime id names. A bare episode
+// number counts from the entry's own first episode; any other tail names a
+// season and episode in TMDB numbering, which says nothing about the entry.
+func (p *Pipeline) malEntryOf(service string, num int, head, tail string) (malID, episode int) {
+	episode, err := strconv.Atoi(strings.TrimPrefix(tail, ":"))
+	if err != nil || episode < 1 {
+		return 0, 0
+	}
+	if service == "mal" {
+		return num, episode
+	}
+	resolver, ok := p.anime.(animeMALResolver)
+	if !ok || resolver == nil {
+		return 0, 0
+	}
+	malID, ok = resolver.MALIDFor(head)
+	if !ok {
+		return 0, 0
+	}
+	return malID, episode
 }
 
 // seasonedEpisodeTail turns a bare absolute episode number into a season and
@@ -1311,6 +1346,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		ratingReq.episode = &episodeRef{series: series, season: season, number: episode}
 	}
 	ratingReq.artworkFrom = artworkFrom
+	if meta != nil {
+		ratingReq.episodeName = tmdbNameForMatching(meta.EpisodeName, req.Config.Language)
+	}
 	// A TMDB id only becomes an IMDb one here, so this is the earliest the addon
 	// can be asked about it. Either way the call overlaps the rating fan-out and
 	// is awaited only once the badge row is about to be drawn.
@@ -1848,10 +1886,13 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 	// viewer who wants the series poster on an episode row has not asked for the
 	// series' rating on it.
 	if req.Config.EpisodeArtworkMode == "series" {
-		id, rating := p.episodeRatingFor(ctx, req, series, season, episode)
+		id, rating, name := p.episodeRatingFor(ctx, req, series, season, episode)
 		var meta *provider.MediaMeta
-		if rating != nil {
-			meta = &provider.MediaMeta{Ratings: []provider.Rating{*rating}}
+		if rating != nil || name != "" {
+			meta = &provider.MediaMeta{EpisodeName: name}
+			if rating != nil {
+				meta.Ratings = []provider.Rating{*rating}
+			}
 		}
 		return nil, meta, id, "", false, false
 	}
@@ -1878,7 +1919,7 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 	if err != nil || len(data) == 0 {
 		return nil, nil, "", "", false, false
 	}
-	meta := &provider.MediaMeta{}
+	meta := &provider.MediaMeta{EpisodeName: info.Name}
 	if info.Rating != nil {
 		meta.Ratings = []provider.Rating{*info.Rating}
 	}
@@ -1896,24 +1937,24 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 //
 // The rating is fetched even for an IMDb id, where the id alone would do: the
 // series artwork supplies a series-level TMDB score.
-func (p *Pipeline) episodeRatingFor(ctx context.Context, req Request, series string, season, episode int) (string, *provider.Rating) {
+func (p *Pipeline) episodeRatingFor(ctx context.Context, req Request, series string, season, episode int) (string, *provider.Rating, string) {
 	id := ""
 	if strings.HasPrefix(req.MediaID, "tt") {
 		id = req.MediaID
 	}
 	tmdb := p.TMDBClient()
 	if tmdb == nil {
-		return id, nil
+		return id, nil, ""
 	}
 	info, err := tmdb.FetchEpisode(ctx, strings.TrimPrefix(series, "tmdb:"), season, episode,
 		provider.ArtworkOptions{Language: req.Config.Language, FallbackLanguage: req.Config.FallbackLanguage})
 	if err != nil || info == nil {
-		return id, nil
+		return id, nil, ""
 	}
 	if info.IMDbID != "" {
 		id = info.IMDbID
 	}
-	return id, info.Rating
+	return id, info.Rating, info.Name
 }
 
 // applyEpisodeRating puts an episode's own rating in place of the series-level
@@ -2574,6 +2615,12 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	// gets its own bound, inside the window the caller is queuing in (BUG-243).
 	ctx, cancelStage := withRatingsStage(ctx, p.ratingsStageTimeout(ctx))
 	defer cancelStage()
+	if req.episode != nil && req.malID > 0 && req.malEpisode > 0 {
+		ctx = provider.WithAnimeEpisodeHint(ctx, provider.AnimeEpisodeHint{MALID: req.malID, Episode: req.malEpisode})
+	}
+	if req.episode != nil && req.episodeName != "" {
+		ctx = provider.WithEpisodeName(ctx, req.episodeName)
+	}
 	all := make([]provider.Rating, len(artwork.Ratings))
 	copy(all, artwork.Ratings)
 	seen := make(map[string]bool, len(all))
@@ -2822,6 +2869,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			degradedSources = append(degradedSources, called[i].Name())
 		}
 	}
+	all, contributors = withEpisodeMAL(all, contributors, req.episode != nil, !req.Config.MALEpisodeOnly)
 	return all, contributors, degraded.Load(), sourceFault.Load(), queueHeld.Load(), degradedSources
 }
 

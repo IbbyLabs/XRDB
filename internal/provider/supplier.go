@@ -18,6 +18,9 @@ import "sort"
 // because two suppliers declare the same number of sources.
 var explicitSupplierOrder = map[string][]string{
 	"imdb": {"imdb_local", "omdb", "cinemeta", "mdblist", "pmdb"},
+	// malep answers as "malep", so it never competes with the others for the
+	// copy of "mal" that is kept.
+	"mal": {"mal", "malep", "mdblist"},
 }
 
 // lastResortSuppliers rank below every other supplier of a shared source.

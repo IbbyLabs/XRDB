@@ -186,7 +186,10 @@ func main() {
 		SupplementURL: cfg.AnimeMapSupplementURL,
 		TTL:           cfg.AnimeMapRefresh,
 	})
-	reg.Register(provider.NewAnimeMapped(provider.NewMALWithURL(cfg.JikanURL), animeMapper))
+	// The episode source shares MAL's client, so one pacer covers both.
+	malProvider := provider.NewMALWithURL(cfg.JikanURL)
+	reg.Register(provider.NewAnimeMapped(malProvider, animeMapper))
+	reg.Register(provider.NewMALEpisodes(malProvider, animeMapper))
 	reg.Register(provider.NewAnimeMapped(provider.NewAniList(), animeMapper))
 	reg.Register(provider.NewAnimeMapped(provider.NewKitsu(), animeMapper))
 	// Cinemeta (Stremio) — public artwork/metadata, no key required.

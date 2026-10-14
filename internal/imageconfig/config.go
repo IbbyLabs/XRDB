@@ -533,6 +533,9 @@ type RatingBadgeConfig struct {
 	// Letterboxd draws 4.6 rather than 4.6/5. The suffix is what stops a
 	// five-point score being read as a ten-point one, so this is opt-in.
 	HideNativeScale bool `json:"hideNativeScale,omitempty"`
+	// MALEpisodeOnly drops the series MAL score from an episode render whose
+	// episode has no MAL score of its own.
+	MALEpisodeOnly bool `json:"malEpisodeOnly,omitempty"`
 	// RatingMinVotes hides a rating whose vote count is too low to mean
 	// anything, drawing the held-out mark in its place when that is enabled.
 	RatingMinVotes bool `json:"ratingMinVotes,omitempty"`
@@ -1019,6 +1022,7 @@ type rawRating struct {
 	RatingBadgeFont         *string            `json:"ratingBadgeFont"`
 	RatingVoteCounts        *bool              `json:"ratingVoteCounts"`
 	HideNativeScale         *bool              `json:"hideNativeScale"`
+	MALEpisodeOnly          *bool              `json:"malEpisodeOnly"`
 	RatingMinVotes          *bool              `json:"ratingMinVotes"`
 	RatingMinVotesBySource  map[string]int     `json:"ratingMinVotesBySource"`
 	IconShape               *string            `json:"iconShape"`
@@ -1949,6 +1953,9 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if r.HideNativeScale != nil {
 		cfg.HideNativeScale = *r.HideNativeScale
+	}
+	if r.MALEpisodeOnly != nil {
+		cfg.MALEpisodeOnly = *r.MALEpisodeOnly
 	}
 	if r.RatingValueMode != nil {
 		// v2 wrote several spellings of the same mode, so fold separators away

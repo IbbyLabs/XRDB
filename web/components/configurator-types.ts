@@ -506,6 +506,7 @@ export interface ConfigState {
   ratingBadgeFont: string; // 'default' | sans | serif | mono | display
   ratingVoteCounts: boolean;
   hideNativeScale: boolean; // drop the /5 or /4 a native-scale badge carries
+  malEpisodeOnly: boolean; // on episode artwork, hide the series MAL score when the episode has none
   ratingMinVotes: boolean;
   ratingMinVotesBySource: Record<string, number>; // source → minimum; absent = built-in default, 0 = no minimum
   iconShape: string; // '' = the mark's own outline; circle|squircle|rounded
@@ -737,6 +738,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingBadgeFont: 'default',
   ratingVoteCounts: false,
   hideNativeScale: false,
+  malEpisodeOnly: false,
   ratingMinVotes: false,
   ratingMinVotesBySource: {},
   iconShape: '',

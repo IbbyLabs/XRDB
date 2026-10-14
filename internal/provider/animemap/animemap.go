@@ -84,6 +84,7 @@ type Target struct {
 type reverseEntry struct {
 	Target Target
 	Kitsu  int
+	MAL    int
 }
 
 // renderable reports whether a row can produce a poster by some route. A row
@@ -338,6 +339,10 @@ type indexes struct {
 	// seasonClaims counts the entries naming each TMDB season of a series, so a
 	// stated season can be taken only when nothing else sits in it.
 	seasonClaims map[string]int
+	// episodeRows holds the MAL entries filed under each TMDB season of a
+	// series, keyed like seasons. Only TV and ONA rows with a MAL id and a TMDB
+	// season are kept.
+	episodeRows map[string][]episodeRow
 }
 
 // statedSeason is a TMDB season an anime id names outright.
@@ -446,6 +451,7 @@ type source struct {
 	entriesPer  map[string]int
 	statedSeas  map[string]statedSeason
 	claims      map[string]int
+	episodeRs   map[string][]episodeRow
 }
 
 // New creates a Mapper. Datasets load lazily on first Resolve.
@@ -1026,6 +1032,7 @@ func (s *source) loadFromDiskLocked() error {
 	s.byIMDb, s.byTMDBMovie, s.byTMDBTV, s.byAnimeID = idx.imdb, idx.movie, idx.tv, idx.reverse
 	s.bySeason, s.partialSeas, s.animeSeas = idx.seasons, idx.partialSeasons, idx.animeSeason
 	s.entriesPer, s.statedSeas, s.claims = idx.seriesEntries, idx.statedSeasons, idx.seasonClaims
+	s.episodeRs = idx.episodeRows
 	s.loadedAt = info.ModTime()
 	return nil
 }
@@ -1280,6 +1287,7 @@ func buildIndexes(data []byte) (indexes, error) {
 		seriesEntries:  make(map[string]int),
 		statedSeasons:  make(map[string]statedSeason),
 		seasonClaims:   make(map[string]int),
+		episodeRows:    make(map[string][]episodeRow),
 	}
 	ranks := make(map[string]int)
 	for _, e := range entries {
@@ -1347,6 +1355,18 @@ func buildIndexes(data []byte) (indexes, error) {
 				}
 			}
 		}
+		if rank := rankForType(e.Type); (rank == typeRankTV || rank == typeRankONA) && ids.MAL != 0 && e.Season.tmdb > 0 {
+			row := episodeRow{malID: ids.MAL, tmdbSeason: e.Season.tmdb, offset: e.Offset.tmdb, hasOffset: e.Offset.set}
+			for _, imdbID := range e.IMDbID {
+				if imdbID != "" {
+					idx.episodeRows[imdbID] = append(idx.episodeRows[imdbID], row)
+				}
+			}
+			if e.TMDBID.TV != 0 {
+				k := "tv:" + strconv.Itoa(e.TMDBID.TV)
+				idx.episodeRows[k] = append(idx.episodeRows[k], row)
+			}
+		}
 		if e.Season.tvdb > 0 && e.Season.tmdb > 0 {
 			row := seasonRow{
 				aired:      e.Season.tvdb,
@@ -1384,7 +1404,7 @@ func insertTarget(rev map[string]reverseEntry, ranks map[string]int, ids IDs, ta
 	if !renderable(ids, target) {
 		return
 	}
-	entry := reverseEntry{Target: target, Kitsu: ids.Kitsu}
+	entry := reverseEntry{Target: target, Kitsu: ids.Kitsu, MAL: ids.MAL}
 	for _, key := range reverseKeys(ids) {
 		if _, ok := rev[key]; ok && ranks[key] <= rank {
 			continue

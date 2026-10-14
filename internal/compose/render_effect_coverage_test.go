@@ -51,6 +51,9 @@ var fixtureLimitedField = map[string]string{
 	// concrete *provider.TMDB episode-still source and an episode id; the stub
 	// registry has no episode-still provider to switch between.
 	"episodeArtworkMode": "needs a series-episode request against a TMDB episode-still source",
+	// Read only on an episode request that carries a series MAL score and no
+	// episode score; TestMALEpisodeOnlyDecidesTheFallbackOnARender covers it.
+	"malEpisodeOnly": "needs an anime episode request with a series MAL rating and an unscored episode",
 }
 
 // ── Fixture ──────────────────────────────────────────────────────────────────

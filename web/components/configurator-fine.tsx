@@ -662,6 +662,10 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
             checked={config.hideNativeScale}
             onChange={v => onUpdate('hideNativeScale', v)}
             hint="Draw a five- or four-point score bare, so Letterboxd reads 4.6 rather than 4.6/5. The scale is what stops a high five-point score being read as a low ten-point one, so leave it on unless every source in your row shares a scale." />
+          <ToggleField id={`${uid}-mal-episode-only`} label="Episode-only MAL scores"
+            checked={config.malEpisodeOnly}
+            onChange={v => onUpdate('malEpisodeOnly', v)}
+            hint="On episode artwork, hide the series MAL score when that episode has no score of its own." />
           <ToggleField id={`${uid}-min-votes`} label="Hide thin ratings"
             checked={config.ratingMinVotes}
             onChange={v => onUpdate('ratingMinVotes', v)}

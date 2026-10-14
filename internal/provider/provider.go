@@ -23,7 +23,10 @@ type WatchProvider struct {
 
 // MediaMeta holds the metadata for a piece of media fetched from a provider.
 type MediaMeta struct {
-	Title string
+	// EpisodeName is the episode's title on TMDB, set when the request named an
+	// episode and TMDB answered for it.
+	EpisodeName string
+	Title       string
 	// OriginalTitle is the title in the original language, when it differs from
 	// Title. Sources that are matched by name rather than by id search both, as
 	// a national site often indexes only one of the two.
@@ -120,6 +123,9 @@ type Rating struct {
 	// Withheld marks a source held back by a setting rather than by a fault, so
 	// the strip can say which without a second lookup.
 	Withheld bool
+	// NativeSuffix marks the native label's scale, e.g. "/5", for a rating whose
+	// scale differs from what its source key normally carries.
+	NativeSuffix string
 }
 
 // Provider is the interface all metadata providers must satisfy.
