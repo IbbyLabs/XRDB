@@ -189,7 +189,10 @@ type Config struct {
 
 	// BadgeShadow draws the drop shadow under every badge. Off leaves the
 	// badges flat against the artwork.
-	BadgeShadow          bool   `json:"badgeShadow"`
+	BadgeShadow bool `json:"badgeShadow"`
+	// BadgeFrost blurs the artwork behind every badge so each sits on a frosted
+	// panel. 0 is off; 1-100 is the strength.
+	BadgeFrost           int    `json:"badgeFrost,omitempty"`
 	AgeRatingPos         string `json:"ageRatingPos,omitempty"`
 	AgeRatingOffsetX     int    `json:"ageRatingOffsetX,omitempty"` // px nudge from the corner
 	AgeRatingOffsetY     int    `json:"ageRatingOffsetY,omitempty"`
@@ -329,6 +332,8 @@ type Config struct {
 	// solid 3D extrusion, or the raised gel look of a moulded number plate.
 	LogoShadowStyle string `json:"logoShadowStyle,omitempty"` // "" = shadow | "extrude" | "gel" | "emboss"
 	LogoShadowColor string `json:"logoShadowColor,omitempty"` // "#RRGGBB"; "" = black
+	// LogoFrost blurs the artwork behind the title logo.
+	LogoFrost       bool   `json:"logoFrost,omitempty"`
 	RatingRing      bool   `json:"ratingRing,omitempty"`
 	RatingRingPos   string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
 	RatingRingColor string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
@@ -805,6 +810,7 @@ type raw struct {
 	PlaceholderStyle              *string   `json:"placeholderStyle"`
 	RatingUnavailableMark         *bool     `json:"ratingUnavailableMark"`
 	BadgeShadow                   *bool     `json:"badgeShadow"`
+	BadgeFrost                    *int      `json:"badgeFrost"`
 	AgeRatingPos                  *string   `json:"ageRatingPos"`
 	AgeRatingOffsetX              *int      `json:"ageRatingOffsetX"`
 	AgeRatingOffsetY              *int      `json:"ageRatingOffsetY"`
@@ -887,6 +893,7 @@ type raw struct {
 	LogoShadowOffsetY             *int      `json:"logoShadowOffsetY"`
 	LogoShadowStyle               *string   `json:"logoShadowStyle"`
 	LogoShadowColor               *string   `json:"logoShadowColor"`
+	LogoFrost                     *bool     `json:"logoFrost"`
 	RatingRing                    *bool     `json:"ratingRing"`
 	RatingRingPos                 *string   `json:"ratingRingPos"`
 	RatingRingColor               *string   `json:"ratingRingColor"`
@@ -1255,6 +1262,9 @@ func Parse(data json.RawMessage) Config {
 	if r.BadgeShadow != nil {
 		cfg.BadgeShadow = *r.BadgeShadow
 	}
+	if r.BadgeFrost != nil && *r.BadgeFrost != 0 {
+		cfg.BadgeFrost = clampInt(*r.BadgeFrost, 0, 100)
+	}
 	if r.RatingUnavailableMark != nil {
 		cfg.RatingUnavailableMark = *r.RatingUnavailableMark
 	}
@@ -1489,6 +1499,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.LogoShadowColor != nil && isHexColor(strings.TrimSpace(*r.LogoShadowColor)) {
 		cfg.LogoShadowColor = strings.TrimSpace(*r.LogoShadowColor)
+	}
+	if r.LogoFrost != nil {
+		cfg.LogoFrost = *r.LogoFrost
 	}
 	if r.LogoPos != nil && *r.LogoPos != 0 {
 		cfg.LogoPos = clampInt(*r.LogoPos, 1, 100)
@@ -2564,6 +2577,7 @@ func CacheKey(cfg Config) string {
 		PlaceholderStyle              string         `json:"placeholderStyle"`
 		RatingUnavailableMark         bool           `json:"ratingUnavailableMark"`
 		BadgeShadow                   bool           `json:"badgeShadow"`
+		BadgeFrost                    int            `json:"badgeFrost,omitempty"`
 		AgeRatingPos                  string         `json:"ageRatingPos"`
 		AgeRatingOffsetX              int            `json:"ageRatingOffsetX,omitempty"`
 		AgeRatingOffsetY              int            `json:"ageRatingOffsetY,omitempty"`
@@ -2644,6 +2658,7 @@ func CacheKey(cfg Config) string {
 		LogoShadowOffsetY int           `json:"logoShadowOffsetY,omitempty"`
 		LogoShadowStyle   string        `json:"logoShadowStyle,omitempty"`
 		LogoShadowColor   string        `json:"logoShadowColor,omitempty"`
+		LogoFrost         bool          `json:"logoFrost,omitempty"`
 		RatingRing        bool          `json:"ratingRing"`
 		RatingRingPos     string        `json:"ratingRingPos"`
 		RatingRingColor   string        `json:"ratingRingColor"`
@@ -2688,6 +2703,7 @@ func CacheKey(cfg Config) string {
 		PlaceholderStyle:              cfg.PlaceholderStyle,
 		RatingUnavailableMark:         cfg.RatingUnavailableMark,
 		BadgeShadow:                   cfg.BadgeShadow,
+		BadgeFrost:                    cfg.BadgeFrost,
 		AgeRatingPos:                  cfg.AgeRatingPos,
 		AgeRatingOffsetX:              cfg.AgeRatingOffsetX,
 		AgeRatingOffsetY:              cfg.AgeRatingOffsetY,
@@ -2762,6 +2778,7 @@ func CacheKey(cfg Config) string {
 		LogoShadowOffsetY:             cfg.LogoShadowOffsetY,
 		LogoShadowStyle:               cfg.LogoShadowStyle,
 		LogoShadowColor:               cfg.LogoShadowColor,
+		LogoFrost:                     cfg.LogoFrost,
 		LogoWidth:                     cfg.LogoWidth,
 		LogoHeight:                    cfg.LogoHeight,
 		LogoPos:                       cfg.LogoPos,

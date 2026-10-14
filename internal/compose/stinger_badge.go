@@ -20,10 +20,11 @@ type stingerBadgeOpts struct {
 	scalePercent int
 	offsetX      int
 	offsetY      int
+	frost        int
 }
 
 func stingerOptsFromConfig(cfg imageconfig.Config) stingerBadgeOpts {
-	return stingerBadgeOpts{lang: cfg.Language, scalePercent: cfg.StingerScale, offsetX: cfg.StingerOffsetX, offsetY: cfg.StingerOffsetY}
+	return stingerBadgeOpts{lang: cfg.Language, scalePercent: cfg.StingerScale, offsetX: cfg.StingerOffsetX, offsetY: cfg.StingerOffsetY, frost: cfg.BadgeFrost}
 }
 
 func drawStingerBadge(base *image.NRGBA, s provider.StingerInfo, pos string, scale float64, occ *occupancy, opts stingerBadgeOpts) {
@@ -60,6 +61,7 @@ func drawStingerBadge(base *image.NRGBA, s provider.StingerInfo, pos string, sca
 		fill:   color.NRGBA{R: 12, G: 12, B: 16, A: 230},
 		border: border,
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
+		frost:  opts.frost,
 	})
 	drawText(base, face, tx, ty, stingerAccent, label)
 }

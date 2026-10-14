@@ -769,8 +769,10 @@ type badgeChrome struct {
 	// borderSourceTint recolours each badge's outline with that source's own
 	// brand colour instead of the one border colour for the whole row.
 	borderSourceTint bool
-	valueColor       color.NRGBA
-	iconColor        color.NRGBA
+	// frost is the 0-100 blur strength drawn behind each badge's background.
+	frost      int
+	valueColor color.NRGBA
+	iconColor  color.NRGBA
 	// outline is drawn behind the value when there is no tile to separate it
 	// from the artwork. Zero alpha = no outline.
 	outline      color.NRGBA
@@ -837,6 +839,7 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		iconColor:  color.NRGBA{R: 235, G: 235, B: 240, A: 255},
 	}
 	c.hideIcon = cfg.RatingIconHidden
+	c.frost = cfg.BadgeFrost
 	c.borderSourceTint = cfg.RatingBadgeBorderSourceTint
 	c.borderGlow = cfg.RatingBadgeBorderGlow
 	c.borderGlowStrength = cfg.RatingBadgeBorderGlowStrength
@@ -878,6 +881,10 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		c.bg = color.NRGBA{R: 16, G: 18, B: 24, A: 215}
 		c.stacked = true
 		c.hideAccentBar = true
+	}
+	// The plain style has no panel to sit on.
+	if cfg.BadgeStyle == imageconfig.BadgePlain {
+		c.frost = 0
 	}
 	// A stripe-carrying style can be asked to drop it without changing shape.
 	if cfg.RatingAccentBarHidden {
@@ -1022,6 +1029,7 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			// rendering fault, which is the impression this exists to remove.
 			bg, borderCol = dimmed(bg, unavailableDim), dimmed(borderCol, unavailableDim)
 		}
+		frostRoundedRect(out, bRect, radius, chrome.squared, chrome.frost)
 		if bg.A > 0 {
 			if chrome.blendFill || bg.A < 255 {
 				blendRoundedRectSquared(out, bRect, radius, chrome.squared, bg)

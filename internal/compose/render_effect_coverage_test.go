@@ -669,6 +669,8 @@ func keyMutations() map[string]keyOverride {
 		// clear of where it started.
 		"logoShadowStyle": {mut: func(c *imageconfig.Config) { c.LogoShadowStyle = "extrude" }},
 		"logoShadowColor": str(setColor(func(c *imageconfig.Config, v string) { c.LogoShadowColor = v })),
+		"logoFrost":       {mut: func(c *imageconfig.Config) { c.LogoFrost = true }},
+		"badgeFrost":      {mut: func(c *imageconfig.Config) { c.BadgeFrost = 60 }},
 	}
 }
 

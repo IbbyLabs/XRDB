@@ -23,10 +23,11 @@ type awardsBadgeOpts struct {
 	scalePercent int
 	offsetX      int
 	offsetY      int
+	frost        int
 }
 
 func awardsOptsFromConfig(cfg imageconfig.Config) awardsBadgeOpts {
-	return awardsBadgeOpts{lang: cfg.Language, scalePercent: cfg.AwardsScale, offsetX: cfg.AwardsOffsetX, offsetY: cfg.AwardsOffsetY}
+	return awardsBadgeOpts{lang: cfg.Language, scalePercent: cfg.AwardsScale, offsetX: cfg.AwardsOffsetX, offsetY: cfg.AwardsOffsetY, frost: cfg.BadgeFrost}
 }
 
 func drawAwardsBadge(base *image.NRGBA, a provider.AwardSummary, pos string, scale float64, occ *occupancy, opts awardsBadgeOpts) {
@@ -67,6 +68,7 @@ func drawAwardsBadge(base *image.NRGBA, a provider.AwardSummary, pos string, sca
 		fill:   color.NRGBA{R: 12, G: 12, B: 16, A: 230},
 		border: border,
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
+		frost:  opts.frost,
 	})
 	drawText(base, face, tx, ty, accent, label)
 }

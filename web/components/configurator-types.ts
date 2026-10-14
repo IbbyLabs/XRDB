@@ -474,6 +474,7 @@ export interface ConfigState {
   logoShadowOffsetY: number;
   logoShadowStyle: string; // '' = shadow | 'extrude' | 'gel' | 'emboss'
   logoShadowColor: string;
+  logoFrost: boolean; // blur the artwork behind the title logo
   logoHeight: number;
   logoPos: number;
   logoAnchor: string; // \'\' = centre on the position | \'bottom\'
@@ -498,6 +499,7 @@ export interface ConfigState {
   ratingsUniformWidth: boolean; // pad every badge to the widest so they share one edge
   ratingUnavailableMark: boolean; // draw a dash where a rating hidden for thin votes would go
   badgeShadow: boolean; // draw the drop shadow under every badge
+  badgeFrost: number; // 0 = off; 1-100 blurs the artwork behind every badge
   ratingsAnchored: boolean; // flush the row to the poster edge with squared corners
   ratingPresentation: string; // standard|editorial|none
   ratingValueMode: string; // native|normalized|normalizedclean|normalized100
@@ -704,6 +706,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   logoShadowOffsetY: 0,
   logoShadowStyle: '',
   logoShadowColor: '',
+  logoFrost: false,
   logoHeight: 0,
   logoPos: 0,
   logoAnchor: '',
@@ -727,6 +730,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingsUniformWidth: false,
   ratingUnavailableMark: false,
   badgeShadow: true,
+  badgeFrost: 0,
   ratingsAnchored: false,
   ratingPresentation: 'standard',
   ratingValueMode: 'native',

@@ -187,6 +187,7 @@ type logoOverlayOpts struct {
 	shadowOffsetY int    // px, may be negative
 	shadowColor   string // "#RRGGBB"; "" = black
 	shadowStyle   string // "" = shadow | "extrude" | "gel"
+	frost         bool   // blur the artwork behind the logo
 }
 
 func logoOptsFromConfig(cfg imageconfig.Config) logoOverlayOpts {
@@ -201,6 +202,7 @@ func logoOptsFromConfig(cfg imageconfig.Config) logoOverlayOpts {
 		shadowOffsetY: cfg.LogoShadowOffsetY,
 		shadowColor:   cfg.LogoShadowColor,
 		shadowStyle:   cfg.LogoShadowStyle,
+		frost:         cfg.LogoFrost,
 	}
 }
 
@@ -295,6 +297,9 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 
 	// The shadow behind the logo, for legibility over bright areas. It follows
 	// the logo's own alpha, so only the glyphs cast anything.
+	if opts.frost {
+		drawLogoFrost(base, scaled, x, logoTopY)
+	}
 	drawGlyphShadow(base, scaled, x, logoTopY, glyphShadowOptsFrom(opts))
 
 	logoRect := image.Rect(x, logoTopY, x+dstW, logoTopY+dstH)
@@ -305,6 +310,17 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 	if o := glyphShadowOptsFrom(opts); o.style == logoShadowEmboss {
 		drawEmbossRim(base, scaled, x, logoTopY, o)
 	}
+}
+
+// drawLogoFrost blurs the artwork in a soft rounded rect a little larger than
+// the mark's own pixels, placed at (x, y) in base.
+func drawLogoFrost(base, logo *image.NRGBA, x, y int) {
+	b := nonTransparentBounds(logo)
+	if b.Empty() {
+		return
+	}
+	pad := maxInt(3, b.Dy()/12)
+	frostFeatheredRect(base, b.Add(image.Pt(x, y)).Inset(-pad), maxInt(2, pad/2), frostLogoStrength)
 }
 
 // horizontalFalloff is 1 across the logo and eases to 0 at the canvas edges.

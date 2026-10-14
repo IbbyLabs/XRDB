@@ -1234,6 +1234,9 @@ export function OutlineFine({ uid, config, onUpdate }: GroupProps) {
         hint="Fades the outline outward instead of a hard edge. Applies to every plain-style badge and no-background rating badges."
         checked={config.noBackgroundBadgeOutlineGlow}
         onChange={() => onUpdate('noBackgroundBadgeOutlineGlow', !config.noBackgroundBadgeOutlineGlow)} />
+      <NumField id={`${uid}-outline-frost`} label="Frosted glass (%)" value={config.badgeFrost}
+        onChange={v => onUpdate('badgeFrost', v)} min={1} max={100} step={1} placeholder="off"
+        hint="Blurs the artwork behind every badge. Blank leaves the artwork sharp." />
       <NumField id={`${uid}-accent-width`} label="Accent outline width (px)" value={config.aggregateAccentWidth}
         onChange={v => onUpdate('aggregateAccentWidth', v)} min={1} max={8} placeholder="2"
         hint="Thickness of the score pill's accent outline." />
@@ -1520,6 +1523,10 @@ export function TitleLogoFine({ uid, config, onUpdate }: GroupProps) {
         checked={config.logoAnchor === 'bottom'}
         onChange={v => onUpdate('logoAnchor', v ? 'bottom' : '')}
         hint="Pin the lower edge at that position, so a bigger logo grows upward instead of both ways." />
+      <ToggleField id={`${uid}-logo-frost`} label="Blur behind logo"
+        checked={config.logoFrost}
+        onChange={v => onUpdate('logoFrost', v)}
+        hint="Softly blurs the artwork around the logo so it sits on a frosted panel." />
     </FineGroup>
   );
 }
