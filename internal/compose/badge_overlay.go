@@ -1562,11 +1562,10 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	}
 	ensureFaces()
 	// The clean style sets its label larger than the tiled styles.
-	labelScale := scale
+	face := labelFaceFor(scale)
 	if opts.style == "clean" {
-		labelScale = scale * 1.2
+		face = cleanLabelFaceFor(scale)
 	}
-	face := labelFaceFor(labelScale)
 	if face == nil {
 		return
 	}
@@ -1950,6 +1949,9 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			for x := stripX; x < stripX+stripW; x++ {
 				blendPixel(base, x, y, strip)
 			}
+		}
+		if !opts.noShadow {
+			drawTextShadow(base, face, tx, ty, label, scale)
 		}
 		drawText(base, face, tx, ty, textColor, label)
 		return
