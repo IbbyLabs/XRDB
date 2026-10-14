@@ -34,3 +34,16 @@ func TestCleanLabelMatchesV2(t *testing.T) {
 		t.Errorf("label peak on black = %d, want about %d (225 grey at %d alpha)", brightest, want, cleanLabelAlpha)
 	}
 }
+
+// The clean label grows with the frame the way v2's did, not with the badge tier.
+func TestCleanLabelScalesWithTheFrame(t *testing.T) {
+	if got := cleanLabelScale(image.Rect(0, 0, 580, 859), 0); got != 1 {
+		t.Errorf("580px poster scale = %v, want 1", got)
+	}
+	if got := cleanLabelScale(image.Rect(0, 0, 1280, 1896), 0); got < 2.25 || got > 2.35 {
+		t.Errorf("1280px poster scale = %v, want about 2.3", got)
+	}
+	if got := cleanLabelScale(image.Rect(0, 0, 580, 859), 150); got != 1.5 {
+		t.Errorf("150%% on a 580px poster = %v, want 1.5", got)
+	}
+}

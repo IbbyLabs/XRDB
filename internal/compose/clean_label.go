@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"image"
 	"log/slog"
+	"math"
 	"sync"
 
 	"golang.org/x/image/font"
@@ -81,4 +82,22 @@ func cleanLabelFaceFor(scale float64) font.Face {
 	lf := &lockedFace{inner: trackedFace{Face: f, track: fixed.Int26_6(cleanLabelTracking * size * 64)}}
 	actual, _ := scaledCleanFaces.LoadOrStore(key, lf)
 	return actual.(font.Face)
+}
+
+// cleanLabelScale sizes the clean label to the frame as v2 did: against a
+// 580x859 poster or a 1280x720 backdrop, raised to the 1.05 power.
+func cleanLabelScale(b image.Rectangle, scalePercent int) float64 {
+	w, h := float64(b.Dx()), float64(b.Dy())
+	if w <= 0 || h <= 0 {
+		return 1
+	}
+	linear := math.Min(w/1280, h/720)
+	if h > w {
+		linear = math.Min(w/580, h/859)
+	}
+	s := math.Max(0.75, math.Min(5, math.Pow(linear, 1.05)))
+	if scalePercent != 0 {
+		s *= float64(scalePercent) / 100
+	}
+	return s
 }

@@ -1563,7 +1563,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	ensureFaces()
 	face := labelFaceFor(scale)
 	if opts.style == "clean" {
-		face = cleanLabelFaceFor(scale)
+		face = cleanLabelFaceFor(cleanLabelScale(base.Bounds(), opts.scalePercent))
 	}
 	if face == nil {
 		return
