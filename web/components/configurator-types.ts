@@ -292,6 +292,14 @@ export const GENRE_STYLE_OPTIONS = [
   { id: 'tile',    label: 'Tile'    },
 ] as const;
 
+export const BADGE_FONT_OPTIONS = [
+  { id: 'default', label: 'Default' },
+  { id: 'sans',    label: 'Sans' },
+  { id: 'serif',   label: 'Serif' },
+  { id: 'mono',    label: 'Mono' },
+  { id: 'display', label: 'Display (caps)' },
+] as const;
+
 export const GENRE_ACCENT_OPTIONS = [
   { id: 'default', label: 'Per style', desc: 'Square caps the label, the others carry no accent' },
   { id: 'left',    label: 'Left edge', desc: 'A stripe down the left of the plate, the way v2 drew it' },
@@ -493,6 +501,7 @@ export interface ConfigState {
   ratingsAnchored: boolean; // flush the row to the poster edge with squared corners
   ratingPresentation: string; // standard|editorial|none
   ratingValueMode: string; // native|normalized|normalizedclean|normalized100
+  ratingBadgeFont: string; // 'default' | sans | serif | mono | display
   ratingVoteCounts: boolean;
   hideNativeScale: boolean; // drop the /5 or /4 a native-scale badge carries
   ratingMinVotes: boolean;
@@ -522,6 +531,7 @@ export interface ConfigState {
   qualityBadgesStyle: string; // 'default' | plain | tile
   qualityBadgesTileAccentColor: string;
   genreBadgeStyle: string; // 'default' | glass | pill | square | plain | clean | tile
+  genreBadgeFont: string; // 'default' | sans | serif | mono | display
   genreBadgeTileAccentColor: string; // '#RRGGBB' for the tile style; '' = default
   genreBadgeLabelColor: string; // '#RRGGBB'; '' = the genre family's colour
   genreBadgeBorderColor: string; // '#RRGGBB'; '' = the style's own border
@@ -720,6 +730,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingsAnchored: false,
   ratingPresentation: 'standard',
   ratingValueMode: 'native',
+  ratingBadgeFont: 'default',
   ratingVoteCounts: false,
   hideNativeScale: false,
   ratingMinVotes: false,
@@ -749,6 +760,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   qualityBadgesStyle: 'default',
   qualityBadgesTileAccentColor: '',
   genreBadgeStyle: 'default',
+  genreBadgeFont: 'default',
   genreBadgeTileAccentColor: '',
   genreBadgeLabelColor: '',
   genreBadgeBorderColor: '',

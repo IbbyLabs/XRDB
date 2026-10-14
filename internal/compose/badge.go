@@ -1272,7 +1272,7 @@ func ratingsBandHeight(mediaType string, frameW, frameH int, ratings []provider.
 		return 0
 	}
 	filtered, scale := fitBadgesToFrame(mediaType, cfg, frameW, frameH, filtered, facts)
-	face := valueFaceFor(scale)
+	face := valueFaceIn(cfg.RatingBadgeFont, scale)
 	fm := face.Metrics()
 	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
 	d := ratingStripDimsFor(scale, cfg)
@@ -1353,7 +1353,7 @@ func drawBadgesInPlace(mediaType string, out *image.NRGBA, ratings []provider.Ra
 
 	filtered, scale := fitBadgesToFrame(mediaType, cfg, out.Bounds().Dx(), out.Bounds().Dy(), filtered, facts)
 
-	face := valueFaceFor(scale)
+	face := valueFaceIn(cfg.RatingBadgeFont, scale)
 	fm := face.Metrics()
 	valAscent := fm.Ascent.Ceil()
 	valDescent := fm.Descent.Ceil()
@@ -1854,7 +1854,7 @@ func applyUniformWidth(specs []badgeSpec) {
 
 // widestBadgeAt measures the widest single badge the strip would draw at scale.
 func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) int {
-	face := valueFaceFor(scale)
+	face := valueFaceIn(cfg.RatingBadgeFont, scale)
 	d := ratingStripDimsFor(scale, cfg)
 	stacked := cfg.BadgeStyle == imageconfig.BadgeStacked
 	widest := 0
@@ -1997,7 +1997,7 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 
 // badgeHeightAt measures the height of a single badge at scale.
 func badgeHeightAt(scale float64, cfg imageconfig.Config) int {
-	face := valueFaceFor(scale)
+	face := valueFaceIn(cfg.RatingBadgeFont, scale)
 	fm := face.Metrics()
 	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
 	d := ratingStripDimsFor(scale, cfg)

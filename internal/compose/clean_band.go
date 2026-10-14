@@ -19,7 +19,7 @@ func cleanBandActive(mediaType string, cfg imageconfig.Config, hasGenres bool) b
 // edge the band starts.
 func drawCleanGenreBand(base *image.NRGBA, genres []string, scale float64, occ *occupancy, opts genreBadgeOpts) int {
 	b := base.Bounds()
-	face := cleanLabelFaceFor(cleanLabelScale(b, opts.scalePercent))
+	face := cleanLabelFaceIn(opts.font, cleanLabelScale(b, opts.scalePercent))
 	m := face.Metrics()
 	labelH := (m.Ascent + m.Descent).Ceil()
 	inset := int(math.Round(float64(b.Dy()) * 0.013))

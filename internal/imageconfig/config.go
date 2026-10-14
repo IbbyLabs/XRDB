@@ -516,6 +516,10 @@ type RatingBadgeConfig struct {
 	// "normalized" is one decimal out of ten, "normalizedclean" drops a trailing
 	// ".0", and "normalized100" rounds to a whole number out of a hundred.
 	RatingValueMode string `json:"ratingValueMode,omitempty"`
+	// RatingBadgeFont picks the typeface of the score and label text in rating
+	// badges: sans, serif, mono or display (capitals only). "" keeps the
+	// built-in face.
+	RatingBadgeFont string `json:"ratingBadgeFont,omitempty"`
 	// RatingVoteCounts appends the vote count to each rating badge. Only IMDb,
 	// MDBList and TMDB report one, so the badges that have no count are left
 	// unchanged rather than padded with a zero.
@@ -720,6 +724,7 @@ type GenreBadgeConfig struct {
 	GenreBadgeAnimeGrouping     string            `json:"genreBadgeAnimeGrouping,omitempty"`     // split | animation | secondary; "" = split
 	GenreBadgeMode              string            `json:"genreBadgeMode,omitempty"`              // off | text | icon | both
 	GenreBadgeStyle             string            `json:"genreBadgeStyle,omitempty"`             // glass | square | plain | clean | tile | pill; "" = default
+	GenreBadgeFont              string            `json:"genreBadgeFont,omitempty"`              // sans | serif | mono | display; "" = default
 	GenreBadgeScale             int               `json:"genreBadgeScale,omitempty"`             // percent 70-300; 0 = 100
 	GenreBadgeOffsetX           int               `json:"genreBadgeOffsetX,omitempty"`           // px nudge from the resolved corner
 	GenreBadgeOffsetY           int               `json:"genreBadgeOffsetY,omitempty"`           //
@@ -915,6 +920,7 @@ type rawGenre struct {
 	GenreBadgeAnimeGrouping     *string           `json:"genreBadgeAnimeGrouping"`
 	GenreBadgeMode              *string           `json:"genreBadgeMode"`
 	GenreBadgeStyle             *string           `json:"genreBadgeStyle"`
+	GenreBadgeFont              *string           `json:"genreBadgeFont"`
 	GenreBadgeScale             *int              `json:"genreBadgeScale"`
 	GenreBadgeOffsetX           *int              `json:"genreBadgeOffsetX"`
 	GenreBadgeOffsetY           *int              `json:"genreBadgeOffsetY"`
@@ -1003,6 +1009,7 @@ type rawRating struct {
 	RatingsUniformWidth     *bool              `json:"ratingsUniformWidth"`
 	RatingPresentation      *string            `json:"ratingPresentation"`
 	RatingValueMode         *string            `json:"ratingValueMode"`
+	RatingBadgeFont         *string            `json:"ratingBadgeFont"`
 	RatingVoteCounts        *bool              `json:"ratingVoteCounts"`
 	HideNativeScale         *bool              `json:"hideNativeScale"`
 	RatingMinVotes          *bool              `json:"ratingMinVotes"`
@@ -1944,6 +1951,9 @@ func parseRating(cfg *Config, r *raw) {
 			cfg.RatingValueMode = "normalized100"
 		}
 	}
+	if r.RatingBadgeFont != nil {
+		cfg.RatingBadgeFont = normalizeBadgeFont(*r.RatingBadgeFont)
+	}
 	if r.IconShape != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.IconShape)); v {
 		case "circle", "squircle", "rounded":
@@ -2360,6 +2370,9 @@ func parseGenre(cfg *Config, r *raw) {
 			cfg.GenreBadgeStyle = v
 		}
 	}
+	if r.GenreBadgeFont != nil {
+		cfg.GenreBadgeFont = normalizeBadgeFont(*r.GenreBadgeFont)
+	}
 	if r.GenreBadgeScale != nil && *r.GenreBadgeScale != 0 {
 		cfg.GenreBadgeScale = clampInt(*r.GenreBadgeScale, 70, 300)
 	}
@@ -2507,6 +2520,17 @@ func isHexColor(s string) bool {
 // an instance under real traffic goes from warm to cold in one deploy. Bump it
 // only when pixel output actually changed.
 const renderVersion = "r23"
+
+// normalizeBadgeFont maps a badge font choice to its stored form: one of
+// sans, serif, mono or display, or "" for the built-in face. Anything else,
+// including "default", is the built-in face.
+func normalizeBadgeFont(v string) string {
+	switch v = strings.ToLower(strings.TrimSpace(v)); v {
+	case "sans", "serif", "mono", "display":
+		return v
+	}
+	return ""
+}
 
 var trendingRankDay atomic.Pointer[func() string]
 

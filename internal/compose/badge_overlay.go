@@ -1322,6 +1322,7 @@ func drawLogoRoundClipped(dst, src *image.NRGBA, dstRect image.Rectangle, radius
 // reproduces the original fixed appearance, so an unconfigured render is
 // unchanged.
 type genreBadgeOpts struct {
+	font         string // sans | serif | mono | display; "" = built-in face
 	hatched      bool   // rule the plate so it cannot be read as a genre
 	placeholder  string // drawn when a title has no genres; empty draws nothing
 	scalePercent int    // 0 = 100 (no extra scaling)
@@ -1504,6 +1505,7 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool, contentKind strin
 		isAnime:      isAnime,
 		grouping:     cfg.GenreBadgeAnimeGrouping,
 		style:        cfg.GenreBadgeStyle,
+		font:         cfg.GenreBadgeFont,
 		accent:       cfg.GenreBadgeAccent,
 		labelMode:    cfg.GenreBadgeLabel,
 		labelLang:    cfg.Language,
@@ -1561,9 +1563,9 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		scale *= float64(opts.scalePercent) / 100
 	}
 	ensureFaces()
-	face := labelFaceFor(scale)
+	face := labelFaceIn(opts.font, scale)
 	if opts.style == "clean" {
-		face = cleanLabelFaceFor(cleanLabelScale(base.Bounds(), opts.scalePercent))
+		face = cleanLabelFaceIn(opts.font, cleanLabelScale(base.Bounds(), opts.scalePercent))
 	}
 	if face == nil {
 		return
@@ -2124,13 +2126,13 @@ func drawEditorialRating(base *image.NRGBA, ratings []provider.Rating, genres []
 	}
 
 	if len(genres) > 0 {
-		gf := labelFaceFor(scale)
+		gf := labelFaceIn(cfg.RatingBadgeFont, scale)
 		gm := gf.Metrics()
 		drawText(base, gf, x, y+gm.Ascent.Ceil(), accent, genres[0])
 		y += gm.Height.Ceil() + s(2)
 	}
 
-	bigFace := valueFaceFor(scale * 2.4)
+	bigFace := valueFaceIn(cfg.RatingBadgeFont, scale*2.4)
 	bm := bigFace.Metrics()
 	label := formatRatingValue(avg, cfg.RatingValueMode)
 	// Soft shadow for legibility on bright artwork, then the value.
@@ -2230,9 +2232,9 @@ func weightedMean(ratings []provider.Rating, cfg imageconfig.Config, want func(s
 // scorePillHeight is the capsule height for the minimal/dual score pills at the
 // given scale. Kept as a helper so top and bottom pills can be positioned before
 // they are drawn.
-func scorePillHeight(scale float64) int {
+func scorePillHeight(scale float64, font string) int {
 	ensureFaces()
-	return valueFaceFor(scale*1.25).Metrics().Height.Ceil() + int(8*scale+0.5)
+	return valueFaceIn(font, scale*1.25).Metrics().Height.Ceil() + int(8*scale+0.5)
 }
 
 // drawScorePill draws a centered rounded capsule with an optional accent label
@@ -2241,6 +2243,7 @@ func scorePillHeight(scale float64) int {
 // scorePillStyle carries the resolved colours and accent-rail treatment for one
 // aggregate pill.
 type scorePillStyle struct {
+	font   string // typeface family for the pill text; "" = built-in face
 	accent color.NRGBA
 	value  color.NRGBA
 	// accentShown is false when the config hides the accent rail, leaving a
@@ -2422,6 +2425,7 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 		bodyTint:       cfg.AggregatePillBodyTint,
 		radius:         scorePillRadius(cfg.BadgeStyle),
 		noShadow:       !cfg.BadgeShadow,
+		font:           cfg.RatingBadgeFont,
 	}
 
 	accentHex := aggregateAccentHex(cfg, source, genres, isAnime, score)
@@ -2465,42 +2469,42 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 // scorePillWidth is the capsule width for a label/score pair at the given
 // scale. Kept alongside scorePillHeight so a pill can be anchored to an edge
 // before it is drawn.
-func scorePillWidth(label, score string, icon image.Image, scale float64) int {
+func scorePillWidth(label, score string, icon image.Image, scale float64, font string) int {
 	ensureFaces()
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	labelW := 0
 	if label != "" {
-		labelW = textWidth(labelFaceFor(scale), label) + s(9)*2 + s(9)
+		labelW = textWidth(labelFaceIn(font, scale), label) + s(9)*2 + s(9)
 	}
 	iconW := 0
 	if icon != nil {
-		iconW = pillIconSize(scale) + s(7)
+		iconW = pillIconSize(scale, font) + s(7)
 	}
-	return labelW + iconW + textWidth(valueFaceFor(scale*1.25), score) + s(12)*2
+	return labelW + iconW + textWidth(valueFaceIn(font, scale*1.25), score) + s(12)*2
 }
 
 // pillIconSize is the box a pill mark is fitted into, sized off the capsule so
 // it tracks the badge scale.
-func pillIconSize(scale float64) int {
-	return int(float64(scorePillHeight(scale))*0.52 + 0.5)
+func pillIconSize(scale float64, font string) int {
+	return int(float64(scorePillHeight(scale, font))*0.52 + 0.5)
 }
 
 func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon image.Image, style scorePillStyle, scale float64, occ *occupancy) {
 	ensureFaces()
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	labelFace := labelFaceFor(scale)
-	valueFace := valueFaceFor(scale * 1.25)
+	labelFace := labelFaceIn(style.font, scale)
+	valueFace := valueFaceIn(style.font, scale*1.25)
 
 	padX := s(12)
 	innerGap := s(9)
 	labelPad := s(9)
-	capH := scorePillHeight(scale)
+	capH := scorePillHeight(scale, style.font)
 
 	labelW := 0
 	if label != "" {
 		labelW = textWidth(labelFace, label) + labelPad*2
 	}
-	capW := scorePillWidth(label, score, icon, scale)
+	capW := scorePillWidth(label, score, icon, scale, style.font)
 	x0 := cx - capW/2
 	rect := image.Rect(x0, topY, x0+capW, topY+capH)
 
@@ -2601,7 +2605,7 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon im
 	}
 
 	if icon != nil {
-		box := pillIconSize(scale)
+		box := pillIconSize(scale, style.font)
 		slot := image.Rect(cursor, topY+(capH-box)/2, cursor+box, topY+(capH-box)/2+box)
 		if glyph, at := scaleIconToFit(icon, slot); glyph != nil {
 			xdraw.Draw(base, at, glyph, image.Point{}, xdraw.Over)
@@ -2716,11 +2720,11 @@ func drawAggregatePills(base *image.NRGBA, cfg imageconfig.Config, scale float64
 	b := base.Bounds()
 	pad := int(14*scale + 0.5)
 	gap := int(8*scale + 0.5)
-	h := scorePillHeight(scale)
+	h := scorePillHeight(scale, cfg.RatingBadgeFont)
 
 	for i, p := range pills {
 		cx, topY := aggregatePillAnchor(b, cfg.AggregatePillPos, split,
-			scorePillWidth(p.label, p.score, p.icon, scale), h, pad, gap, i, len(pills))
+			scorePillWidth(p.label, p.score, p.icon, scale, cfg.RatingBadgeFont), h, pad, gap, i, len(pills))
 		drawScorePill(base, cx+cfg.RatingBadgeOffsetX, topY+cfg.RatingBadgeOffsetY,
 			p.label, p.score, p.icon, p.style, scale, occ)
 	}
@@ -3314,7 +3318,7 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	}
 
 	ensureFaces()
-	valueFace := valueFaceFor(ringScale * ringValueFontScale)
+	valueFace := valueFaceIn(cfg.RatingBadgeFont, ringScale*ringValueFontScale)
 
 	outerR := int(32*ringScale + 0.5)
 	// drawProgressRing draws a soft glow pad pixels beyond outerR (matched here),

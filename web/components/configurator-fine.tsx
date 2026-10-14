@@ -8,7 +8,7 @@ import {
   GENRE_ACCENT_OPTIONS, GENRE_LABEL_OPTIONS, GENRE_BORDER_OPTIONS,
   GENRE_CASE_OPTIONS, GENRE_COUNT_OPTIONS, RING_CENTER_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
-  RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
+  BADGE_FONT_OPTIONS, RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
   ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS, ACCENT_SHAPE_OPTIONS,
   LOGO_SHADOW_STYLE_OPTIONS,
   DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
@@ -293,6 +293,20 @@ function ColorField({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** The typeface picker the genre and rating badges share. */
+function FontSelect({
+  id, label, value, onChange,
+}: { id: string; label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="field">
+      <label className="label" htmlFor={id}>{label}</label>
+      <select id={id} className="select" value={value} onChange={e => onChange(e.target.value)} style={{ maxWidth: '12rem' }}>
+        {BADGE_FONT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+      </select>
     </div>
   );
 }
@@ -586,6 +600,9 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
           hint={RATING_VALUE_MODE_OPTIONS.find(o => o.id === config.ratingValueMode)?.desc}
         />
       )}
+      <FontSelect id={`${uid}-rating-font`} label="Rating badge font"
+        value={config.ratingBadgeFont}
+        onChange={v => onUpdate('ratingBadgeFont', v)} />
       {strip && (
         <StyleGrid
           id={`${uid}-icon-shape-label`}
@@ -988,6 +1005,9 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         value={config.genreBadgeStyle}
         onChange={v => onUpdate('genreBadgeStyle', v)}
       />
+      <FontSelect id={`${uid}-genre-font`} label="Genre badge font"
+        value={config.genreBadgeFont}
+        onChange={v => onUpdate('genreBadgeFont', v)} />
       {config.genreBadgeStyle !== 'plain' && (
         <ColorField id={`${uid}-genre-tile-color`}
           label={config.genreBadgeStyle === 'tile' ? 'Tile colour' : 'Border/accent colour'}

@@ -42,7 +42,7 @@ func TestPillIconWidensTheAveragePill(t *testing.T) {
 	if inkCount(b) <= inkCount(a) {
 		t.Errorf("the mark drew nothing: plain=%d marked=%d", inkCount(a), inkCount(b))
 	}
-	if w := scorePillWidth("AVG", "8.4", pillMark("imdb"), 1.0); w <= scorePillWidth("AVG", "8.4", nil, 1.0) {
+	if w := scorePillWidth("AVG", "8.4", pillMark("imdb"), 1.0, ""); w <= scorePillWidth("AVG", "8.4", nil, 1.0, "") {
 		t.Error("the mark did not widen the capsule")
 	}
 }

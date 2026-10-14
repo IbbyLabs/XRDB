@@ -487,6 +487,8 @@ func keyMutations() map[string]keyOverride {
 		"genreBadgeAnimeGrouping": {mut: func(c *imageconfig.Config) { c.GenreBadgeAnimeGrouping = "animation" }},
 		"genreBadgeMode":          {mut: func(c *imageconfig.Config) { c.GenreBadgeMode = "icon" }},
 		"genreBadgeStyle":         {mut: func(c *imageconfig.Config) { c.GenreBadgeStyle = "tile" }},
+		"genreBadgeFont":          {mut: func(c *imageconfig.Config) { c.GenreBadgeFont = "serif" }},
+		"ratingBadgeFont":         {mut: func(c *imageconfig.Config) { c.RatingBadgeFont = "serif" }},
 		"genrePlaceholder":        {bare: true},
 		"placeholderStyle": {bare: true, pre: func(c *imageconfig.Config) {
 			c.GenrePlaceholder, c.AgeRatingPlaceholder = true, true

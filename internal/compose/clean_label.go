@@ -1,9 +1,7 @@
 package compose
 
 import (
-	_ "embed"
 	"image"
-	"log/slog"
 	"math"
 	"sync"
 
@@ -19,26 +17,11 @@ const (
 	cleanLabelAlpha    = 220
 )
 
-//go:embed assets/fonts/LiberationSans-Bold.ttf
-var cleanLabelTTF []byte
-
 var (
-	onceCleanFont    sync.Once
-	cleanFontParsed  *opentype.Font
 	scaledCleanFaces sync.Map
 )
 
-func cleanFont() *opentype.Font {
-	onceCleanFont.Do(func() {
-		f, err := opentype.Parse(cleanLabelTTF)
-		if err != nil {
-			slog.Warn("Failed to parse the clean label font", "error", err)
-			return
-		}
-		cleanFontParsed = f
-	})
-	return cleanFontParsed
-}
+func cleanFont() *opentype.Font { return parsedBadgeFont(cleanLabelFile) }
 
 // trackedFace adds a fixed amount to every glyph advance.
 type trackedFace struct {
