@@ -138,7 +138,7 @@ func TestOurCutNamesTheSourceItWasWaitingOn(t *testing.T) {
 	if !strings.Contains(out, "serving a placeholder") {
 		t.Fatal("no placeholder line")
 	}
-	for _, want := range [][2]string{{"waiting_on=fanart", `"waiting_on":"fanart"`}, {"waiting_for=image", `"waiting_for":"image"`}, {"waited_ms=", `"waited_ms":`}} {
+	for _, want := range [][2]string{{"waiting_on=fanart", `"waiting_on":"fanart"`}, {"waiting_for=image", `"waiting_for":"image"`}, {"waited_ms=", `"waited_ms":`}, {"caller_class=", `"caller_class":`}} {
 		if !strings.Contains(out, want[0]) && !strings.Contains(out, want[1]) {
 			t.Errorf("placeholder line lacks %s (the configured source was tmdb): %s", want, out)
 		}

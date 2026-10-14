@@ -1213,7 +1213,8 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			"artwork_url", artworkURL, "error", err}
 		var cut *artStageCut
 		if errors.As(err, &cut) {
-			attrs = append(attrs, "waiting_on", cut.waitingOn, "waiting_for", cut.waitingFor, "waited_ms", cut.waited.Milliseconds())
+			attrs = append(attrs, "waiting_on", cut.waitingOn, "waiting_for", cut.waitingFor, "waited_ms", cut.waited.Milliseconds(),
+				"caller_class", provider.CallerClassFrom(ctx).String())
 		}
 		p.log().WarnContext(ctx, "No source artwork was available; serving a placeholder", attrs...)
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
