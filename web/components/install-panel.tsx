@@ -94,10 +94,12 @@ interface InstallPanelProps {
   /** Profile revision token, folded into the emitted URLs. */
   versionToken?: string;
   onRenderKeyChange: (value: string) => void;
+  remember: boolean;
+  onRememberChange: (on: boolean) => void;
   onNotice: (type: 'error' | 'success' | 'info', message: string) => void;
 }
 
-export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyChange, onNotice }: InstallPanelProps) {
+export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyChange, remember, onRememberChange, onNotice }: InstallPanelProps) {
   const canonicalHost = useIsCanonicalHost();
   const uid = useId();
   const [selectedInstance, setSelectedInstance] = useState(PUBLIC_INSTANCES[0].url);
@@ -167,8 +169,27 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
           <span className="hint">
             Needed only when the server sets <code>XRDB_API_KEY</code>. It&apos;s woven
             into the preview, image URLs, and the patterns below, and lets you save
-            profiles. Kept in this browser session only.
+            profiles. {remember ? 'Remembered on this device.' : 'Kept in this browser session only.'}
           </span>
+        </div>
+
+        <div className="toggle-row">
+          <div>
+            <span className="label" style={{ marginBottom: 0 }} id={`${uid}-remember-label`}>Remember on this device</span>
+            <span className="hint" style={{ marginTop: 0 }}>
+              Keeps the instance API key and profile passwords in this browser after it closes. Leave it off on a shared computer. Turning it off forgets them.
+            </span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={remember}
+            aria-labelledby={`${uid}-remember-label`}
+            className={`toggle${remember ? ' toggle--on' : ''}`}
+            onClick={() => onRememberChange(!remember)}
+          >
+            <span className="toggle-thumb" />
+          </button>
         </div>
 
         <p className="hint" style={{ marginTop: 0 }}>

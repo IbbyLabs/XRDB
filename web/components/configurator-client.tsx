@@ -6,6 +6,7 @@ import {
 import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2, Check, X, Save } from 'lucide-react';
 import { renderUrl, upcomingTitles, renderIDFor, type MediaType, type Template, type ProfilePreview } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
+import { isRemembering, setRemembering, rememberedPassword, rememberPassword } from '@/lib/remember';
 import { copyText } from '@/lib/clipboard';
 import { syncShares } from '@/lib/shares';
 import {
@@ -83,6 +84,7 @@ export function ConfiguratorClient() {
   // one the operator enters it under the Install tab and it flows into the
   // preview/image URLs and profile saves.
   const [renderKey, setRenderKeyState] = useState('');
+  const [remember, setRemember] = useState(false);
   // Reveals each badge's scale, offset and colour controls beneath the badge
   // itself. Off by default so the common controls stay a short list.
   const [fine, setFine] = useState(false);
@@ -134,8 +136,12 @@ export function ConfiguratorClient() {
     // The loaded profile is restored alongside the settings. Autosave is gated
     // on it, so a reload that brought back every control but not the identity
     // left the editor looking normal and writing nothing.
-    setLoadedProfile(readSession<LoadedProfile | null>('xrdb-loaded-profile', null));
+    const restored = readSession<LoadedProfile | null>('xrdb-loaded-profile', null);
+    setLoadedProfile(restored && restored.hasPassword && !restored.password
+      ? { ...restored, password: rememberedPassword(restored.id) }
+      : restored);
     setRenderKeyState(getRenderKey());
+    setRemember(isRemembering());
     try { setFine(localStorage.getItem(FINE_KEY) === '1'); } catch { /* unavailable */ }
     setHydrated(true);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -185,6 +191,7 @@ export function ConfiguratorClient() {
       // a tab and no longer. A restored profile that needs one comes back locked.
       if (loadedProfile) {
         sessionStorage.setItem('xrdb-loaded-profile', JSON.stringify({ ...loadedProfile, password: '' }));
+        rememberPassword(loadedProfile.id, loadedProfile.password);
       } else {
         sessionStorage.removeItem('xrdb-loaded-profile');
       }
@@ -221,6 +228,12 @@ export function ConfiguratorClient() {
     setRenderKeyState(value);
     setRenderKey(value);
   }, []);
+
+  const applyRemember = useCallback((on: boolean) => {
+    setRemember(on);
+    setRemembering(on, renderKey);
+    if (on && loadedProfile) rememberPassword(loadedProfile.id, loadedProfile.password);
+  }, [renderKey, loadedProfile]);
 
   const triggerPreview = useCallback((type: MediaType, id: string, cfg: ConfigState, immediate = false) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -774,6 +787,8 @@ export function ConfiguratorClient() {
                 renderKey={renderKey}
                 versionToken={loadedProfile?.versionToken}
                 onRenderKeyChange={applyRenderKey}
+                remember={remember}
+                onRememberChange={applyRemember}
                 onNotice={flash}
               />
             </div>

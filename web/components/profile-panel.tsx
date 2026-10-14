@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useId, useRef } from 'react';
+import { forgetPassword, isRemembering } from '@/lib/remember';
 import { Save, Download, Upload, FolderOpen, Trash2, LogOut, RefreshCw, History, Wand2, Lock } from 'lucide-react';
 import {
   createProfile, getProfile, updateProfile, deleteProfile, exportProfile, importProfiles,
@@ -329,7 +330,7 @@ export function ProfilePanel({
         setCheckpoint(stored);
       } catch (e) {
         reattachedRef.current = '';
-        if (loaded.hasPassword) setLoaded({ ...loaded, password: '' });
+        if (loaded.hasPassword) { forgetPassword(loaded.id); setLoaded({ ...loaded, password: '' }); }
         flash('error', `Could not reattach to "${loaded.name || loaded.id}" — ${(e as Error).message}`);
       }
     })();
@@ -413,7 +414,7 @@ export function ProfilePanel({
             </span>
             <span className="hint" style={{ marginTop: 0 }} role="status">
               {locked
-                ? 'Nothing is being saved. Your password is not kept after a page reload.'
+                ? `Nothing is being saved. ${isRemembering() ? 'Enter the password once and this device remembers it.' : 'Your password is not kept after a page reload.'}`
                 : reattaching
                   ? 'Reconnecting to this profile…'
                   : isDirty && saveError
