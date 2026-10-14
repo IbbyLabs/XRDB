@@ -214,6 +214,7 @@ func main() {
 		pipeline.SetRenderQueueWait(cfg.RenderQueueWait)
 		pipeline.SetRenderQueueWaitBulk(cfg.RenderQueueWaitBulk)
 		pipeline.SetMediuxKey(cfg.MediuxAPIKey)
+		pipeline.SetSourceArtCache(cfg.CacheDir, cfg.SourceArtCacheBytes, cfg.SourceArtCacheTTL, logger)
 		pipeline.SetRatingsCacheTTL(cfg.RatingsCacheTTL)
 		// Ratings are metered by the request upstream, and one source meters by the
 		// day, so what was already fetched is kept across restarts.

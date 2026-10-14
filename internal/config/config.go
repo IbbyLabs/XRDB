@@ -251,9 +251,12 @@ type Config struct {
 	// ArtFetchTimeout bounds the source-artwork HTTP fetch. A stalled fetch
 	// otherwise holds a render slot doing nothing until it elapses, starving
 	// the renders queued behind it.
-	ArtFetchTimeout  time.Duration
-	MemoryLimitBytes int64  // soft heap limit (debug.SetMemoryLimit); 0 = unset
-	LogLevel         string // debug|info|warn|error (default info)
+	ArtFetchTimeout time.Duration
+	// SourceArtCacheBytes caps the on-disk store of downloaded source images; 0 is off.
+	SourceArtCacheBytes int64
+	SourceArtCacheTTL   time.Duration
+	MemoryLimitBytes    int64  // soft heap limit (debug.SetMemoryLimit); 0 = unset
+	LogLevel            string // debug|info|warn|error (default info)
 	// TrustedProxies is a comma-separated list of CIDRs or addresses whose
 	// X-Forwarded-* and CF-Connecting-IP headers may be believed. Empty means
 	// loopback plus the private ranges, which covers the usual reverse-proxy
@@ -651,6 +654,18 @@ func Load() Config {
 			artFetchTimeout = time.Duration(n) * time.Second
 		}
 	}
+	var sourceArtCacheBytes int64
+	if raw := os.Getenv("XRDB_SOURCE_ART_CACHE_MB"); raw != "" {
+		if n, err := strconv.ParseInt(raw, 10, 64); err == nil && n > 0 && n <= math.MaxInt64>>20 {
+			sourceArtCacheBytes = n << 20
+		}
+	}
+	sourceArtCacheTTL := 168 * time.Hour
+	if raw := os.Getenv("XRDB_SOURCE_ART_CACHE_TTL"); raw != "" {
+		if d, err := time.ParseDuration(raw); err == nil && d > 0 {
+			sourceArtCacheTTL = d
+		}
+	}
 	// Optional soft heap limit so the Go runtime GCs harder before the container
 	// cgroup cap triggers a kernel OOM-kill. Set to roughly the container limit.
 	var memoryLimitBytes int64
@@ -738,6 +753,8 @@ func Load() Config {
 		RenderCapPerMinute:    renderCapPerMinute,
 		SharedProfileAliases:  sharedProfileAliases,
 		ArtFetchTimeout:       artFetchTimeout,
+		SourceArtCacheBytes:   sourceArtCacheBytes,
+		SourceArtCacheTTL:     sourceArtCacheTTL,
 		MemoryLimitBytes:      memoryLimitBytes,
 		LogLevel:              logLevel,
 		TrustedProxies:        os.Getenv("XRDB_TRUSTED_PROXIES"),

@@ -556,9 +556,21 @@ type httpFetcher struct {
 	// fetches when the render carries no owner token. MediUX gates every asset
 	// behind the Bearer header.
 	mediuxKey string
+	// store keeps fetched images on disk when the operator turned it on.
+	store *sourceArtCache
 }
 
 func (f *httpFetcher) Fetch(ctx context.Context, url string) ([]byte, error) {
+	// MediUX assets need the caller's token, so a stored copy would skip its check.
+	if f.store == nil || strings.Contains(url, "images.mediux.io") {
+		return f.fetchRemote(ctx, url)
+	}
+	return f.store.fetch(ctx, url, func(ctx context.Context) ([]byte, error) {
+		return f.fetchRemote(ctx, url)
+	})
+}
+
+func (f *httpFetcher) fetchRemote(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -1103,6 +1115,24 @@ func (p *Pipeline) SetMediuxKey(key string) {
 	if f, ok := p.fetcher.(*httpFetcher); ok {
 		f.mediuxKey = key
 	}
+}
+
+// SetSourceArtCache keeps downloaded source images on disk under cacheDir, up to
+// maxBytes, for ttl. A maxBytes of zero leaves the cache off. No-op when the
+// fetcher is a test double.
+func (p *Pipeline) SetSourceArtCache(cacheDir string, maxBytes int64, ttl time.Duration, logger *slog.Logger) {
+	f, ok := p.fetcher.(*httpFetcher)
+	if !ok || maxBytes <= 0 {
+		return
+	}
+	store, err := newSourceArtCache(cacheDir, maxBytes, ttl, logger)
+	if err != nil {
+		p.log().Error("Could not enable the source image cache", "dir", cacheDir, "error", err)
+		return
+	}
+	f.store = store
+	p.log().Info("The source image cache is on", "dir", store.dir,
+		"cap_mb", maxBytes>>20, "ttl", store.ttl)
 }
 
 // NewWithFetcher creates a Pipeline with a custom image fetcher (for testing).
