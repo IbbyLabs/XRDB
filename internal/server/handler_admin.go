@@ -19,8 +19,8 @@ import (
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/metrics"
+	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/provider"
-	"xrdb_rewrite/internal/render"
 	"xrdb_rewrite/internal/settings"
 )
 
@@ -130,6 +130,7 @@ func registerAdminRoutes(
 	mux *http.ServeMux,
 	ms *metrics.Store,
 	cfg config.Config,
+	store *profile.Store,
 	settingsStore *settings.Store,
 	pipeline *compose.Pipeline,
 	renderCache *cache.Cache,
@@ -652,7 +653,7 @@ func registerAdminRoutes(
 			return
 		}
 
-		imgCfg := imageconfig.Default()
+		var target warmTarget
 		if body.Config != "" {
 			// Unlike the public render path (which degrades gracefully), this is
 			// an operator tool — surface a malformed config instead of silently
@@ -661,13 +662,21 @@ func registerAdminRoutes(
 				http.Error(w, "invalid config JSON", http.StatusBadRequest)
 				return
 			}
-			imgCfg = imageconfig.ParseSurface(json.RawMessage(body.Config), mediaType)
+			target = warmTarget{cfg: imageconfig.ParseSurface(json.RawMessage(body.Config), mediaType),
+				configParam: body.Config, profileLoaded: true}
+		} else {
+			t, err := resolveWarmTarget(store, cfg.DefaultProfile, "", mediaType)
+			if err != nil {
+				http.Error(w, "the default profile could not be resolved", http.StatusBadRequest)
+				return
+			}
+			target = t
 		}
 
 		// Kick off warming in the background; respond immediately.
 		ids := make([]string, len(body.IDs))
 		copy(ids, body.IDs)
-		go warmPosters(pipeline, renderCache, ids, mediaType, imgCfg, ttls)
+		go warmPosters(pipeline, renderCache, ids, mediaType, target, ttls)
 
 		type warmResponse struct {
 			Accepted  int    `json:"accepted"`
@@ -684,7 +693,7 @@ func warmPosters(
 	renderCache *cache.Cache,
 	ids []string,
 	mediaType string,
-	imgCfg imageconfig.Config,
+	target warmTarget,
 	ttls *ttlStore,
 ) {
 	const concurrency = 4
@@ -693,13 +702,16 @@ func warmPosters(
 		sem <- struct{}{}
 		go func(id string) {
 			defer func() { <-sem }()
-			req := compose.Request{MediaType: mediaType, MediaID: id, Config: imgCfg}
-			cacheKey := render.TypedCacheKey(mediaType, id, imageconfig.CacheKey(imgCfg), "")
+			req := compose.Request{MediaType: mediaType, MediaID: id, Config: target.cfg}
+			cacheKey := target.cacheKey(mediaType, id)
 			if _, ok := renderCache.Get(cacheKey); ok {
 				return // already cached
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(provider.WithCallerClass(context.Background(), provider.CallerBulk), 30*time.Second)
 			defer cancel()
+			if len(target.keys) > 0 {
+				ctx = provider.WithKeys(ctx, target.keys)
+			}
 			result, err := pipeline.Render(ctx, req)
 			if err != nil || result == nil || len(result.ImageBytes) == 0 {
 				slog.Warn("Skipped warming an item", "media_type", mediaType, "media_id", id, "error", err)

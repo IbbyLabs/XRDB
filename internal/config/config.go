@@ -40,6 +40,9 @@ type CacheWarm struct {
 	MaxItems int
 	// Interval is how often the run repeats. The first run is at startup.
 	Interval time.Duration
+	// Profile is the profile id or alias the warm renders with; empty takes the
+	// instance default profile.
+	Profile string
 }
 
 // cacheWarmFromEnv reads the warm schedule. Everything is off unless
@@ -53,6 +56,7 @@ func cacheWarmFromEnv() CacheWarm {
 		LogosURL:     os.Getenv("XRDB_CACHE_WARM_LOGOS_URL"),
 		MaxItems:     200,
 		Interval:     24 * time.Hour,
+		Profile:      strings.TrimSpace(os.Getenv("XRDB_CACHE_WARM_PROFILE")),
 	}
 	if raw := os.Getenv("XRDB_CACHE_WARM_MAX_ITEMS"); raw != "" {
 		if n, err := strconv.Atoi(raw); err == nil && n > 0 {

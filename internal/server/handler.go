@@ -308,30 +308,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				"media_id", id, "parameters", strings.Join(applied, ","))
 		}
 
-		// Include a fingerprint of configParam when no profile was loaded so
-		// different inline configs produce different cache keys without allowing
-		// attackers to poison the cache with unbounded unique raw strings.
-		cfgKeyInput := imageconfig.CacheKey(imgCfg)
-		// A per-type override makes the render depend on the kind of title, so
-		// the kind joins the key. Configs without one keep their existing keys.
-		// A bare TMDB id joins it too: there the kind picks which endpoint
-		// answers, so it selects the artwork rather than only styling it.
 		reqContentType := normalizeContentType(queryValue(raw, "type", ""))
-		if imageconfig.HasPerTypeRatings(imgCfg) || imageconfig.HasPerTypeArtwork(imgCfg) || idKindIsAmbiguous(id) {
-			cfgKeyInput = cfgKeyInput + ":ct=" + reqContentType
-		}
-		if !profileLoaded {
-			h := sha256.Sum256([]byte(configParam))
-			cfgKeyInput = cfgKeyInput + ":" + hex.EncodeToString(h[:8])
-		}
-		if ownerKeyFP != "" {
-			cfgKeyInput = cfgKeyInput + ":pk=" + ownerKeyFP
-		}
-		// Hash the cache-buster so unbounded user input can't inflate the key.
-		if cb := queryValue(raw, "cb", ""); cb != "" {
-			hcb := sha256.Sum256([]byte(cb))
-			cfgKeyInput = cfgKeyInput + ":cb=" + hex.EncodeToString(hcb[:8])
-		}
+		cfgKeyInput := renderKeyInput(imgCfg, renderKeyParts{
+			id: id, configParam: configParam, profileLoaded: profileLoaded,
+			contentType: reqContentType, ownerKeyFP: ownerKeyFP, cacheBuster: queryValue(raw, "cb", ""),
+		})
 		cacheKey := render.TypedCacheKey(mediaType, id, cfgKeyInput, uuid)
 		var pngBytes []byte
 		contentType := ""
@@ -695,7 +676,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	registerProfileRoutes(mux, store, cfg, logger)
 	registerMediaRoutes(mux, pipeline)
 	registerAIOMRoutes(mux)
-	registerAdminRoutes(mux, ms, cfg, settingsStore, pipeline, renderCache, ttls)
+	registerAdminRoutes(mux, ms, cfg, store, settingsStore, pipeline, renderCache, ttls)
 
 	// Genre families: GET /api/genre-families — the id, label and built-in
 	// accent of every family, so the configurator's colour pickers read the

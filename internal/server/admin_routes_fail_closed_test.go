@@ -54,7 +54,7 @@ func TestAdminRoutesFailClosedWithoutAKey(t *testing.T) {
 
 	mux := http.NewServeMux()
 	cfg := config.Config{}
-	registerAdminRoutes(mux, nil, cfg, nil, nil, nil, nil)
+	registerAdminRoutes(mux, nil, cfg, nil, nil, nil, nil, nil)
 	registerFolderWriterRoutes(mux, cfg, nil, nil)
 
 	checked := 0

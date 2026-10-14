@@ -318,7 +318,7 @@ func main() {
 	scheduleCtx, stopSchedule := context.WithCancel(context.Background())
 	defer stopSchedule()
 	server.StartFolderWriterSchedule(scheduleCtx, cfg, pipeline, store, logger)
-	server.StartCacheWarmSchedule(scheduleCtx, cfg, pipeline, renderCache, logger)
+	server.StartCacheWarmSchedule(scheduleCtx, cfg, store, pipeline, renderCache, logger)
 	server.StartStatusPanel(scheduleCtx, cfg, pipeline, logger)
 	server.StartRatingsCacheSnapshots(scheduleCtx, pipeline, logger)
 	server.StartSIMKLIDCacheSnapshots(scheduleCtx, simklProvider, logger)

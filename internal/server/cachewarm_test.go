@@ -40,7 +40,7 @@ func TestWarmCataloguesCollectsTitlesPerSurface(t *testing.T) {
 	// A nil pipeline stops before any render is attempted, so this measures the
 	// catalogue read and the per-surface routing rather than the renderer.
 	got := warmCatalogues(context.Background(), cw, &warm.Client{}, nil, nil, nil,
-		slog.New(slog.DiscardHandler))
+		slog.New(slog.DiscardHandler), nil)
 
 	if got["poster"] != 2 {
 		t.Errorf("poster titles = %d, want 2 (the configured cap)", got["poster"])
@@ -67,7 +67,7 @@ func TestWarmCataloguesSkipsAnAddonThatFails(t *testing.T) {
 		MaxItems:     10,
 	}
 	got := warmCatalogues(context.Background(), cw, &warm.Client{}, nil, nil, nil,
-		slog.New(slog.DiscardHandler))
+		slog.New(slog.DiscardHandler), nil)
 
 	if got["poster"] != 3 {
 		t.Errorf("the healthy surface was not warmed: %v", got)
@@ -88,7 +88,7 @@ func TestStartCacheWarmScheduleStaysOffUnlessAskedFor(t *testing.T) {
 		// Nil pipeline and cache: if the schedule started it would panic on use,
 		// so returning cleanly is the assertion.
 		StartCacheWarmSchedule(context.Background(), config.Config{CacheWarm: cw},
-			nil, nil, slog.New(slog.DiscardHandler))
+			nil, nil, nil, slog.New(slog.DiscardHandler))
 		t.Logf("%s: returned without starting", name)
 	}
 }

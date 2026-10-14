@@ -9,7 +9,7 @@ import (
 	"xrdb_rewrite/internal/cache"
 	"xrdb_rewrite/internal/compose"
 	"xrdb_rewrite/internal/config"
-	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/warm"
 )
 
@@ -24,6 +24,7 @@ func warmCatalogues(
 	renderCache *cache.Cache,
 	ttls *ttlStore,
 	logger *slog.Logger,
+	resolve func(surface string) (warmTarget, error),
 ) map[string]int {
 	submitted := make(map[string]int)
 	for surface, url := range cw.Surfaces() {
@@ -42,7 +43,13 @@ func warmCatalogues(
 		if pipeline == nil || renderCache == nil {
 			continue
 		}
-		warmPosters(pipeline, renderCache, ids, surface, imageconfig.ParseSurface(nil, surface), ttls)
+		target, err := resolve(surface)
+		if err != nil {
+			logger.WarnContext(ctx, "Could not resolve the cache warming profile, so this surface is not warmed",
+				"surface", surface, "profile", cw.Profile, "error", err)
+			continue
+		}
+		warmPosters(pipeline, renderCache, ids, surface, target, ttls)
 	}
 	return submitted
 }
@@ -53,6 +60,7 @@ func warmCatalogues(
 func StartCacheWarmSchedule(
 	ctx context.Context,
 	cfg config.Config,
+	store *profile.Store,
 	pipeline *compose.Pipeline,
 	renderCache *cache.Cache,
 	logger *slog.Logger,
@@ -84,12 +92,15 @@ func StartCacheWarmSchedule(
 	// through the admin API applies from the next warm run.
 	ttls := newTTLStore(cfg.ProviderTTLs)
 	ttls.setSurfaces(cfg.SurfaceTTLs)
+	resolve := func(surface string) (warmTarget, error) {
+		return resolveWarmTarget(store, cfg.DefaultProfile, cw.Profile, surface)
+	}
 
 	go func() {
 		logger.InfoContext(ctx, "Cache warming is on",
 			"surfaces", len(cw.Surfaces()), "max_items", cw.MaxItems,
-			"interval_hours", cw.Interval.Hours())
-		warmCatalogues(ctx, cw, client, pipeline, renderCache, ttls, logger)
+			"interval_hours", cw.Interval.Hours(), "profile", cw.Profile)
+		warmCatalogues(ctx, cw, client, pipeline, renderCache, ttls, logger, resolve)
 
 		ticker := time.NewTicker(cw.Interval)
 		defer ticker.Stop()
@@ -98,7 +109,7 @@ func StartCacheWarmSchedule(
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				warmCatalogues(ctx, cw, client, pipeline, renderCache, ttls, logger)
+				warmCatalogues(ctx, cw, client, pipeline, renderCache, ttls, logger, resolve)
 			}
 		}
 	}()
