@@ -1386,6 +1386,16 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		occ.reserve(nonTransparentBounds(composed))
 	}
 
+	// A bottom-centre clean label owns the poster's foot, so it is drawn first
+	// and everything bottom-anchored stacks above it.
+	cleanBand := 0
+	if cleanBandActive(req.MediaType, req.Config, len(meta.Genres) > 0 || req.Config.GenrePlaceholder) {
+		cleanBand = drawCleanGenreBand(composed, meta.Genres, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime, statedContentKind(req)))
+		if l := req.Config.RatingsLayout; l == "" || l == imageconfig.LayoutBottom {
+			req.Config.RatingBadgeOffsetY -= cleanBand
+		}
+	}
+
 	var ratingsH int
 	// The presentation mode decides how ratings appear. "none" hides them;
 	// "editorial" replaces the badge strip with a genre label above a large
@@ -1498,7 +1508,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.RatingRing {
 		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)
 	}
-	if req.Config.Genre && (len(meta.Genres) > 0 || req.Config.GenrePlaceholder) {
+	if cleanBand == 0 && req.Config.Genre && (len(meta.Genres) > 0 || req.Config.GenrePlaceholder) {
 		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime, statedContentKind(req)))
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {

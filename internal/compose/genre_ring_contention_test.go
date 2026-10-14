@@ -98,6 +98,7 @@ var inelasticOverlays = []string{
 	"drawStingerBadge",
 	"drawTopRatedBadge",
 	"drawTrendingRankTab",
+	"drawCleanGenreBand",
 }
 
 var elasticOverlays = []string{
