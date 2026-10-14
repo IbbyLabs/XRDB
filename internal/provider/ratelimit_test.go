@@ -533,3 +533,51 @@ func TestPacerYieldIsBounded(t *testing.T) {
 		t.Errorf("reservation recorded %d yields, want %d", victim.yields, maxSlotYields)
 	}
 }
+
+// A sweep waits out a header delay that an interactive caller gives up on.
+func TestBulkHeaderTimeoutOutlastsInteractive(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(250 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	policy := RateLimit{HeaderTimeout: 100 * time.Millisecond, BulkHeaderTimeout: time.Second}
+	base := http.DefaultTransport.(*http.Transport).Clone()
+	base.ResponseHeaderTimeout = policy.HeaderTimeout
+	bulk := base.Clone()
+	bulk.ResponseHeaderTimeout = policy.BulkHeaderTimeout
+	c := &http.Client{Transport: &throttledTransport{
+		base: base, bulkBase: bulk, source: "mdblist", policy: policy,
+		pacer: &pacer{interval: policy.MinInterval},
+	}}
+
+	do := func(class CallerClass) error {
+		req, _ := http.NewRequestWithContext(WithCallerClass(t.Context(), class), http.MethodGet, srv.URL, nil)
+		resp, err := c.Do(req)
+		if err == nil {
+			resp.Body.Close()
+		}
+		return err
+	}
+	if err := do(CallerBulk); err != nil {
+		t.Errorf("bulk caller: %v, want an answer within the bulk bound", err)
+	}
+	if err := do(CallerUnknown); err != nil {
+		t.Errorf("unknown caller: %v, want the bulk bound", err)
+	}
+	if err := do(CallerInteractive); err == nil {
+		t.Error("interactive caller waited past its header bound")
+	}
+}
+
+func TestMDBListSweepsGetTheLongerHeaderBound(t *testing.T) {
+	tt := newHTTPClient("mdblist", 10*time.Second).Transport.(*throttledTransport)
+	b, ok := tt.bulkBase.(*http.Transport)
+	if !ok || b.ResponseHeaderTimeout != mdblistBulkHeaderTimeout {
+		t.Fatalf("mdblist bulk header bound not set: %v", tt.bulkBase)
+	}
+	if tt.base.(*http.Transport).ResponseHeaderTimeout != time.Second {
+		t.Error("mdblist interactive header bound changed")
+	}
+}

@@ -171,6 +171,9 @@ type RateLimit struct {
 	// HeaderTimeout bounds the wait for response headers on one attempt, after
 	// the connection is up and excluding our own queue. Zero leaves it unbound.
 	HeaderTimeout time.Duration
+	// BulkHeaderTimeout replaces HeaderTimeout for sweep callers. Zero keeps
+	// HeaderTimeout for everyone.
+	BulkHeaderTimeout time.Duration
 }
 
 // queueWait is the ceiling a render queues against for this source.
@@ -213,7 +216,7 @@ const slowSourceQueueWait = 4 * time.Second
 var rateLimits = map[string]RateLimit{
 	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget, MaxQueueWait: slowSourceQueueWait},
 	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget, MaxQueueWait: slowSourceQueueWait},
-	"mdblist": {MaxRetries: 3, MaxRetryWait: renderRetryBudget, HeaderTimeout: time.Second},
+	"mdblist": {MaxRetries: 3, MaxRetryWait: renderRetryBudget, HeaderTimeout: time.Second, BulkHeaderTimeout: mdblistBulkHeaderTimeout},
 	"trakt":   {MinInterval: time.Second, MaxRetries: 3, MaxRetryWait: renderRetryBudget, MaxQueueWait: 5 * time.Second},
 	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
@@ -233,6 +236,10 @@ var rateLimits = map[string]RateLimit{
 		HeaderTimeout: wikidataHeaderTimeout},
 	"allocine": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 }
+
+// mdblistBulkHeaderTimeout is the sweep bound. MDBList's time-to-headers rises
+// past a second during the 04:00Z sweep while it is still answering.
+const mdblistBulkHeaderTimeout = 2500 * time.Millisecond
 
 // minIntervalSuffix names the per-source pacing override,
 // XRDB_<SOURCE>_MIN_INTERVAL_SECONDS.
@@ -546,10 +553,12 @@ func (p *pacer) logYield(ctx context.Context, class CallerClass) {
 // throttledTransport paces requests to one source and retries the responses
 // that mean "slow down" rather than "no".
 type throttledTransport struct {
-	base   http.RoundTripper
-	source string
-	policy RateLimit
-	pacer  *pacer
+	base http.RoundTripper
+	// bulkBase serves sweep callers when the policy sets BulkHeaderTimeout.
+	bulkBase http.RoundTripper
+	source   string
+	policy   RateLimit
+	pacer    *pacer
 	// governor is set for sources that meter by the day and report what is
 	// left of the allowance on every response.
 	governor *budgetGovernor
@@ -613,6 +622,9 @@ func (t *throttledTransport) ownHeaderTimeout(req *http.Request, err error) bool
 
 func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	base := t.base
+	if t.bulkBase != nil && TreatedAsBulk(CallerClassFrom(req.Context())) {
+		base = t.bulkBase
+	}
 	if base == nil {
 		base = http.DefaultTransport
 	}
@@ -968,6 +980,11 @@ func newHTTPClient(source string, timeout time.Duration) *http.Client {
 		}
 		base.ResponseHeaderTimeout = policy.HeaderTimeout
 		transport.base = base
+		if policy.BulkHeaderTimeout > 0 {
+			bulk := base.Clone()
+			bulk.ResponseHeaderTimeout = policy.BulkHeaderTimeout
+			transport.bulkBase = bulk
+		}
 	}
 	return &http.Client{Timeout: timeout, Transport: transport}
 }
