@@ -589,6 +589,7 @@ export interface ConfigState {
   aggregateAccentWidth: number; // px; 0 = default
   ratingBadgeDensity: number; // percent of default padding; 0 = 100
   ratingBadgeGap: number; // percent of the default gap between badges; 0 = 100
+  ratingIconGap: number; // percent of the default gap between a badge's logo and score; 0 = 100
   ratingValueColor: string; // '' = aggregate value colour, then the style's own
   ratingBadgeBorderSourceTint: boolean;
   ratingBadgeBorderGlow: boolean;
@@ -815,6 +816,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateAccentWidth: 0,
   ratingBadgeDensity: 0,
   ratingBadgeGap: 0,
+  ratingIconGap: 0,
   ratingValueColor: '',
   ratingBadgeBorderSourceTint: false,
   ratingBadgeBorderGlow: false,

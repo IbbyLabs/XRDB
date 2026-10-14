@@ -267,6 +267,8 @@ type Config struct {
 	RatingBadgeDensity   int `json:"ratingBadgeDensity,omitempty"`
 	// RatingBadgeGap scales the space between rating badges and between their rows, as a percent; 0 = 100.
 	RatingBadgeGap int `json:"ratingBadgeGap,omitempty"`
+	// RatingIconGap scales the space between a badge's logo and its score, as a percent; 0 = 100.
+	RatingIconGap int `json:"ratingIconGap,omitempty"`
 	// Border traced around the rating badge capsule itself.
 	RatingBadgeBorderColor   string `json:"ratingBadgeBorderColor,omitempty"`   // "#RRGGBB"; "" = per style
 	RatingValueColor         string `json:"ratingValueColor,omitempty"`         // "#RRGGBB" score text; "" = aggregate value colour, then per style
@@ -846,6 +848,7 @@ type raw struct {
 	AggregateAccentWidth          *int      `json:"aggregateAccentWidth"`
 	RatingBadgeDensity            *int      `json:"ratingBadgeDensity"`
 	RatingBadgeGap                *int      `json:"ratingBadgeGap"`
+	RatingIconGap                 *int      `json:"ratingIconGap"`
 	RatingBadgeBorderSourceTint   *bool     `json:"ratingBadgeBorderSourceTint"`
 	RatingBadgeBorderGlow         *bool     `json:"ratingBadgeBorderGlow"`
 	RatingBadgeBorderGlowStrength *int      `json:"ratingBadgeBorderGlowStrength"`
@@ -1371,6 +1374,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.RatingBadgeGap != nil && *r.RatingBadgeGap != 0 {
 		cfg.RatingBadgeGap = clampInt(*r.RatingBadgeGap, 20, 300)
+	}
+	if r.RatingIconGap != nil && *r.RatingIconGap != 0 {
+		cfg.RatingIconGap = clampInt(*r.RatingIconGap, 1, 300)
 	}
 	if r.RatingBadgeBorderGlow != nil {
 		cfg.RatingBadgeBorderGlow = *r.RatingBadgeBorderGlow
@@ -2582,6 +2588,7 @@ func CacheKey(cfg Config) string {
 		AggregateAccentWidth          int            `json:"aggregateAccentWidth"`
 		RatingBadgeDensity            int            `json:"ratingBadgeDensity"`
 		RatingBadgeGap                int            `json:"ratingBadgeGap,omitempty"`
+		RatingIconGap                 int            `json:"ratingIconGap,omitempty"`
 		RatingBadgeBorderColor        string         `json:"ratingBadgeBorderColor"`
 		RatingValueColor              string         `json:"ratingValueColor,omitempty"`
 		RatingBadgeBorderOpacity      int            `json:"ratingBadgeBorderOpacity"`
@@ -2705,6 +2712,7 @@ func CacheKey(cfg Config) string {
 		AggregateAccentWidth:          cfg.AggregateAccentWidth,
 		RatingBadgeDensity:            cfg.RatingBadgeDensity,
 		RatingBadgeGap:                cfg.RatingBadgeGap,
+		RatingIconGap:                 cfg.RatingIconGap,
 		RatingBadgeBorderColor:        cfg.RatingBadgeBorderColor,
 		RatingValueColor:              cfg.RatingValueColor,
 		RatingBadgeBorderOpacity:      cfg.RatingBadgeBorderOpacity,

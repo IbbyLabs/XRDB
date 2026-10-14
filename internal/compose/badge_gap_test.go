@@ -39,3 +39,22 @@ func TestRatingValueColorOverridesTheStyle(t *testing.T) {
 		t.Errorf("value colour = %v, want #102030", got)
 	}
 }
+
+// FR-230: the space between a badge's logo and its score is configurable.
+func TestIconGapWidensEachBadge(t *testing.T) {
+	ensureFaces()
+	ensureIcons()
+	three := []provider.Rating{{Source: "imdb", Label: "8.8"}, {Source: "tmdb", Label: "8.4"}, {Source: "rt", Label: "87%"}}
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"imdb", "tmdb", "rt"}
+
+	base := singleRowWidthAt(1, three, cfg, titleFacts{})
+	cfg.RatingIconGap = 300
+	if d := ratingStripDimsFor(1, cfg); d.iconGap != 24 {
+		t.Fatalf("icon gap at 300%% = %d, want 24", d.iconGap)
+	}
+	wide := singleRowWidthAt(1, three, cfg, titleFacts{})
+	if want := base + 3*16; wide != want {
+		t.Errorf("row at 300%% icon gap is %dpx, want %dpx (default %dpx plus 16px per badge)", wide, want, base)
+	}
+}

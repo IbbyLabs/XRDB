@@ -1128,12 +1128,16 @@ func ratingStripDimsFor(scale float64, cfg imageconfig.Config) ratingStripDims {
 		gap *= float64(cfg.RatingBadgeGap) / 100
 	}
 	g := func(v float64) int { return int(v*gap + 0.5) }
+	icon := dens
+	if cfg.RatingIconGap != 0 {
+		icon *= float64(cfg.RatingIconGap) / 100
+	}
 	return ratingStripDims{
 		accentW:  s(4),
 		padX:     d(14),
 		padY:     d(10),
 		iconSize: s(34),
-		iconGap:  d(8),
+		iconGap:  int(8*icon + 0.5),
 		badgeGap: g(11),
 		rowGap:   g(11),
 		edgeX:    s(16),
