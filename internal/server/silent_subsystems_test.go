@@ -49,7 +49,7 @@ func TestCacheWarmingThatIsOffSaysSo(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			line := offLine(t, func(ctx context.Context, l *slog.Logger) {
-				StartCacheWarmSchedule(ctx, config.Config{CacheWarm: tc.cfg}, nil, nil, nil, l)
+				StartCacheWarmSchedule(ctx, config.Config{CacheWarm: tc.cfg}, nil, nil, nil, nil, l)
 			})
 			if !strings.Contains(line, "Cache warming is off") {
 				t.Errorf("returned in silence: %q", line)
@@ -76,7 +76,7 @@ func TestCacheWarmingThatIsOnSaysSo(t *testing.T) {
 	cfg := config.Config{CacheWarm: config.CacheWarm{
 		Enabled: true, PostersURL: "http://example.invalid/catalog", Interval: time.Hour,
 	}}
-	StartCacheWarmSchedule(context.Background(), cfg, nil, pipeline, rc, logger)
+	StartCacheWarmSchedule(context.Background(), cfg, nil, nil, pipeline, rc, logger)
 	waitFor(t, buf, "Cache warming is on")
 	if strings.Contains(buf.String(), "Cache warming is off") {
 		t.Errorf("a configured warmer reported itself off: %s", buf.String())

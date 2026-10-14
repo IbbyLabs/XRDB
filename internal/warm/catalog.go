@@ -25,9 +25,28 @@ type manifest struct {
 }
 
 type catalogPage struct {
-	Metas []struct {
-		ID string `json:"id"`
-	} `json:"metas"`
+	Metas []Title `json:"metas"`
+}
+
+// Title is one catalogue entry and the artwork URLs the addon gives for it.
+type Title struct {
+	ID         string `json:"id"`
+	Poster     string `json:"poster"`
+	Background string `json:"background"`
+	Logo       string `json:"logo"`
+}
+
+// Art is the artwork URL the addon gives for surface: poster, backdrop or logo.
+func (t Title) Art(surface string) string {
+	switch surface {
+	case "poster":
+		return t.Poster
+	case "backdrop":
+		return t.Background
+	case "logo":
+		return t.Logo
+	}
+	return ""
 }
 
 // Client reads catalogues from a Stremio addon.
@@ -61,10 +80,24 @@ func (c *Client) get(ctx context.Context, url string, into any) error {
 }
 
 // IDs returns the media ids every catalogue of the addon lists, in the order
-// the addon gives them, deduplicated and capped at limit. A catalogue that
-// fails is skipped rather than failing the batch: one broken catalogue should
-// not cost the warm run every other title.
+// the addon gives them, deduplicated and capped at limit.
 func (c *Client) IDs(ctx context.Context, manifestURL string, limit int) ([]string, error) {
+	titles, err := c.Titles(ctx, manifestURL, limit)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, len(titles))
+	for i, t := range titles {
+		ids[i] = t.ID
+	}
+	return ids, nil
+}
+
+// Titles returns the entries every catalogue of the addon lists, in the order
+// the addon gives them, deduplicated by id and capped at limit. A catalogue
+// that fails is skipped rather than failing the batch: one broken catalogue
+// should not cost the warm run every other title.
+func (c *Client) Titles(ctx context.Context, manifestURL string, limit int) ([]Title, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
@@ -79,7 +112,7 @@ func (c *Client) IDs(ctx context.Context, manifestURL string, limit int) ([]stri
 	}
 
 	seen := make(map[string]bool, limit)
-	out := make([]string, 0, limit)
+	out := make([]Title, 0, limit)
 	for _, cat := range mf.Catalogs {
 		if len(out) >= limit {
 			break
@@ -97,7 +130,7 @@ func (c *Client) IDs(ctx context.Context, manifestURL string, limit int) ([]stri
 				continue
 			}
 			seen[m.ID] = true
-			out = append(out, m.ID)
+			out = append(out, m)
 			if len(out) >= limit {
 				break
 			}

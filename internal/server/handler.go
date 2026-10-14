@@ -78,6 +78,12 @@ func sharedAliasSet(cfg config.Config) map[string]bool {
 // frontend (SPA) at the root; nil disables static file serving.
 func NewHandler(version string, store *profile.Store, settingsStore *settings.Store, pipeline *compose.Pipeline, renderCache *cache.Cache, cfg config.Config, staticFS ...fs.FS) http.Handler {
 	ms := metrics.New()
+	// record leaves cache-warm requests out of the request metrics.
+	record := func(r *http.Request, route string, status int, latencyMs float64) {
+		if !isWarmRequest(r.Context()) {
+			ms.Record(route, status, latencyMs)
+		}
+	}
 	logger := slog.Default()
 	mux := http.NewServeMux()
 	// The budget is in weight units and a normal poster costs weightUnit of
@@ -146,7 +152,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// for it, so the same path serves both.
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			ms.Record(r.URL.Path, http.StatusMethodNotAllowed, latMs(start))
+			record(r, r.URL.Path, http.StatusMethodNotAllowed, latMs(start))
 			return
 		}
 		// Extract the first path segment as media type (e.g. "poster" from "/poster/tt123").
@@ -171,7 +177,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// configurator's own preview <img> is exempt — see sameOriginRender.
 		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) && !keyParamMatches(raw, cfg.APIKey) && !sameOriginRender(r) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			ms.Record(r.URL.Path, http.StatusUnauthorized, latMs(start))
+			record(r, r.URL.Path, http.StatusUnauthorized, latMs(start))
 			return
 		}
 
@@ -375,7 +381,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					}
 				case <-r.Context().Done():
 					markAbandoned(w)
-					ms.Record("/"+mediaType, 499, latMs(start))
+					record(r, "/"+mediaType, 499, latMs(start))
 					return
 				}
 			}
@@ -417,7 +423,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				// service did. A refusal absent from it reads as a quiet minute, and
 				// a shed counted only where the queue is measured names the wrong
 				// cause.
-				ms.Record("/"+mediaType, http.StatusTooManyRequests, latMs(start))
+				record(r, "/"+mediaType, http.StatusTooManyRequests, latMs(start))
 				return
 			}
 			// A render costs the budget in proportion to what it draws, so a
@@ -459,7 +465,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 						"media_type", mediaType, "media_id", id, "waited_ms", waitedMs,
 						"queue_tier", queueTier)
 					markAbandoned(w)
-					ms.Record("/"+mediaType, 499, latMs(start))
+					record(r, "/"+mediaType, 499, latMs(start))
 					return
 				}
 				logger.WarnContext(r.Context(), "Shed a render because the queue was full",
@@ -482,7 +488,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				w.Header().Set("Retry-After", "5")
 				w.Header().Set("Cache-Control", "no-store")
 				http.Error(w, "busy: too many renders queued", http.StatusServiceUnavailable)
-				ms.Record("/"+mediaType, http.StatusServiceUnavailable, latMs(start))
+				record(r, "/"+mediaType, http.StatusServiceUnavailable, latMs(start))
 				return
 			}
 			queueWaitMs = time.Since(queueStart).Milliseconds()
@@ -542,8 +548,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				ttl := effectiveTTL(renderResult, ttls, mediaType)
 				if renderCache != nil {
 					// A recognised sweep's renders are not stored: they are not
-					// re-read. An unknown caller's are, large ones shed first.
+					// re-read. An unknown caller's are, large ones shed first. A
+					// warm render is stored to be read.
 					switch class := provider.CallerClassFrom(r.Context()); {
+					case isWarmRequest(r.Context()):
+						_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
 					case class == provider.CallerBulk:
 					case provider.TreatedAsBulk(class):
 						_ = renderCache.SetFromBulk(cacheKey, pngBytes, ttl)
@@ -608,7 +617,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				if match := r.Header.Get("If-None-Match"); match != "" && etagMatches(match, etag) {
 					w.Header().Set("X-Cache", "HIT")
 					w.WriteHeader(http.StatusNotModified)
-					ms.Record("/"+mediaType, http.StatusNotModified, latMs(start))
+					record(r, "/"+mediaType, http.StatusNotModified, latMs(start))
 					return
 				}
 			}
@@ -635,7 +644,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			renderAttrs = append(renderAttrs, "queue_wait_ms", queueWaitMs)
 		}
 		logger.DebugContext(r.Context(), "Served an artwork render", renderAttrs...)
-		ms.Record("/"+mediaType, status, latMs(start))
+		record(r, "/"+mediaType, status, latMs(start))
 	}
 	for _, mt := range imageconfig.Surfaces {
 		mux.HandleFunc("/"+mt+"/{id}", renderHandler)
@@ -797,7 +806,11 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 		start := time.Now()
 		reqID := logging.NewRequestID()
 		ctx := logging.WithRequestID(r.Context(), reqID)
-		ctx = provider.WithCallerClass(ctx, provider.ClassifyUserAgent(r.UserAgent()))
+		class := provider.ClassifyUserAgent(r.UserAgent())
+		if isWarmRequest(ctx) {
+			class = provider.CallerBulk
+		}
+		ctx = provider.WithCallerClass(ctx, class)
 		ctx = provider.WithCallerAgent(ctx, truncateUA(r.UserAgent()))
 		w.Header().Set("X-Request-Id", reqID)
 		rec := &statusRecorder{ResponseWriter: w}
@@ -838,6 +851,9 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 		// as a render that found a slot immediately.
 		if rec.queued {
 			attrs = append(attrs, slog.Int64("queue_wait_ms", rec.queueWaitMs))
+		}
+		if isWarmRequest(ctx) {
+			attrs = append(attrs, slog.Bool("warm", true))
 		}
 		logger.LogAttrs(r.Context(), slog.LevelInfo, "Handled an HTTP request", attrs...)
 	})
