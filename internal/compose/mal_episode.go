@@ -1,10 +1,6 @@
 package compose
 
-import (
-	"strings"
-
-	"xrdb_rewrite/internal/provider"
-)
+import "xrdb_rewrite/internal/provider"
 
 // episodeMALSource is the source key the per-episode MAL score arrives under.
 // It is drawn as the MAL rating, so it is wanted whenever MAL is selected.
@@ -57,14 +53,4 @@ func withMALContributor(contributors []string) []string {
 		}
 	}
 	return append(contributors, "mal")
-}
-
-// tmdbNameForMatching returns the TMDB episode name when it can be compared with
-// MAL's English titles, and empty when the render asked TMDB for another language.
-func tmdbNameForMatching(name, language string) string {
-	lang := strings.ToLower(strings.TrimSpace(language))
-	if lang != "" && !strings.HasPrefix(lang, "en") {
-		return ""
-	}
-	return name
 }

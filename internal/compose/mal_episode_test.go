@@ -322,11 +322,3 @@ func TestTMDBEpisodeNameChecksTheMappedMALEpisode(t *testing.T) {
 		})
 	}
 }
-
-func TestTMDBNameIsOnlyComparedInEnglish(t *testing.T) {
-	for lang, want := range map[string]string{"": "N", "en": "N", "en-US": "N", "fr": "", "ja": ""} {
-		if got := tmdbNameForMatching("N", lang); got != want {
-			t.Errorf("language %q: %q, want %q", lang, got, want)
-		}
-	}
-}

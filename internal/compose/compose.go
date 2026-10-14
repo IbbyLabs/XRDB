@@ -1347,7 +1347,8 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 	ratingReq.artworkFrom = artworkFrom
 	if meta != nil {
-		ratingReq.episodeName = tmdbNameForMatching(meta.EpisodeName, req.Config.Language)
+		// FetchEpisode sends no language, so the name is always TMDB's en-US one.
+		ratingReq.episodeName = meta.EpisodeName
 	}
 	// A TMDB id only becomes an IMDb one here, so this is the earliest the addon
 	// can be asked about it. Either way the call overlaps the rating fan-out and
