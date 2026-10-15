@@ -1987,6 +1987,8 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 	for i := 0; i < 6; i++ {
 		d := ratingStripDimsFor(scale, cfg)
 		availW := frameW - (d.edgeX+posterEdgeInsetAt(scale, cfg))*2
+		// The share cap is per badge; a single row is measured against the full width.
+		rowRoom := availW
 		if share := int(float64(frameW)*widthShare + 0.5); share < availW {
 			availW = share
 		}
@@ -1998,21 +2000,28 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 			availH = share
 		}
 		widest := widestBadgeAt(scale, ratings, cfg, facts)
+		row := 0
 		if cfg.BottomRatingsRow {
-			widest = singleRowWidthAt(scale, ratings, cfg, facts)
+			row = singleRowWidthAt(scale, ratings, cfg, facts)
 		}
 		tallest := badgeHeightAt(scale, cfg)
 		if availW <= 0 || availH <= 0 {
 			return scale
 		}
 		overW := widest > availW
+		overRow := row > rowRoom
 		overH := tallest > availH
-		if !overW && !overH {
+		if !overW && !overRow && !overH {
 			return scale
 		}
 		ratio := 1.0
 		if overW && widest > 0 {
 			ratio = float64(availW) / float64(widest)
+		}
+		if overRow {
+			if r := float64(rowRoom) / float64(row); r < ratio {
+				ratio = r
+			}
 		}
 		if overH && tallest > 0 {
 			if r := float64(availH) / float64(tallest); r < ratio {

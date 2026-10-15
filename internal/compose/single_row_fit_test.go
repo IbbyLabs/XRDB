@@ -32,3 +32,21 @@ func TestSingleRowStripFitsThePoster(t *testing.T) {
 		}
 	}
 }
+
+// A single row of a few badges spans the poster at full size rather than
+// squeezing into the per-badge width share.
+func TestShortSingleRowKeepsFullSize(t *testing.T) {
+	ensureFaces()
+	ensureIcons()
+	three := []provider.Rating{
+		{Source: "imdb", Label: "8.6"}, {Source: "tmdb", Label: "8.3"}, {Source: "rt", Label: "91%"},
+	}
+	cfg := imageconfig.Default()
+	wrapped, single := cfg, cfg
+	single.BottomRatingsRow = true
+	_, want := fitBadgesToFrame("poster", wrapped, 780, 1170, three, titleFacts{})
+	shown, got := fitBadgesToFrame("poster", single, 780, 1170, three, titleFacts{})
+	if len(shown) != 3 || got != want {
+		t.Fatalf("single row drew %d badges at %.3f, wrapped strip draws at %.3f", len(shown), got, want)
+	}
+}
