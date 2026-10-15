@@ -501,10 +501,11 @@ function ProviderIcons({ uid, config, onUpdate }: GroupProps) {
     setBusy(true);
     setStatus(null);
     try {
-      const { icons: found, skipped } = await fetchIconPack(packUrl.trim());
+      const { icons: all, skipped } = await fetchIconPack(packUrl.trim());
+      const found = Object.fromEntries(Object.entries(all).filter(([id]) => config.ratings.includes(id)));
       const count = Object.keys(found).length;
       if (count === 0) {
-        setStatus({ ok: false, text: 'No icons in that pack matched a rating source.' });
+        setStatus({ ok: false, text: 'No icons in that pack matched a selected rating source.' });
         return;
       }
       onUpdate('ratingProviderIconUrl', { ...icons, ...found });
