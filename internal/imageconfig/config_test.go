@@ -426,3 +426,14 @@ func TestRatingProviderIconURLKeepsOnlyHTTPURLs(t *testing.T) {
 		t.Fatal("customIconKeepRtMarks not parsed or not in the cache key")
 	}
 }
+
+func TestReleaseStatusHideDigitalParsesAndKeys(t *testing.T) {
+	off := Parse([]byte(`{"releaseStatus":true}`))
+	on := Parse([]byte(`{"releaseStatus":true,"releaseStatusHideDigital":true}`))
+	if off.ReleaseStatusHideDigital || !on.ReleaseStatusHideDigital {
+		t.Fatal("releaseStatusHideDigital not parsed")
+	}
+	if CacheKey(off) == CacheKey(on) {
+		t.Fatal("releaseStatusHideDigital does not reach the cache key")
+	}
+}

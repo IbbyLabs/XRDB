@@ -420,6 +420,7 @@ export interface ConfigState {
   releaseStatus: boolean;
   releaseStatusPos: string;
   releaseStatusScale: number;
+  releaseStatusHideDigital: boolean; // draw nothing for a title already out on digital
   releaseStatusOffsetX: number;
   releaseStatusOffsetY: number;
   topRated: boolean;
@@ -674,6 +675,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   releaseStatusTileColor: '',
   releaseStatusPos: 'inherit',
   releaseStatusScale: 0,
+  releaseStatusHideDigital: false,
   releaseStatusOffsetX: 0,
   releaseStatusOffsetY: 0,
   ageRatingPos: 'inherit',

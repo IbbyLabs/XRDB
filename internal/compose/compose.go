@@ -1576,7 +1576,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// still ahead answers when it reaches home rather than repeating where
 		// it is now.
 		label, accent, ok := upcomingReleaseLabel(meta.UpcomingRelease)
-		if !ok {
+		if !ok && (!req.Config.ReleaseStatusHideDigital || meta.ReleaseStatus != "digital") {
 			label, accent, ok = releaseStatusLabel(meta.ReleaseStatus, req.Config.Language)
 		}
 		if ok {

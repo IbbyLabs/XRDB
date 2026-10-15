@@ -1612,6 +1612,10 @@ export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
           onChange={v => onUpdate('releaseStatusTileColor', v)}
           fallback="#38bdf8" resetLabel="Auto" />
       )}
+      <ToggleField id={`${uid}-release-hide-digital`} label="Hide Digital Release"
+        checked={config.releaseStatusHideDigital}
+        onChange={v => onUpdate('releaseStatusHideDigital', v)}
+        hint="Show only In Cinemas and upcoming release dates. A title already out on digital gets no badge." />
       <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
         scaleKey="releaseStatusScale" offXKey="releaseStatusOffsetX" offYKey="releaseStatusOffsetY" />
     </FineGroup>
