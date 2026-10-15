@@ -89,7 +89,8 @@ func richMeta() provider.MediaMeta {
 		Ratings: []provider.Rating{
 			{Source: "imdb", Value: 8.6, Votes: 1500000, Label: "8.6"},
 			{Source: "tmdb", Value: 8.3, Votes: 32000, Label: "8.3"},
-			{Source: "rt", Value: 7.2, Votes: 0, Label: "72%"},
+			// Rotten, so a key that swaps RT's state mark has a state to swap.
+			{Source: "rt", Value: 4.8, Votes: 0, Label: "48%"},
 			{Source: "metacritic", Value: 7.4, Votes: 0, Label: "74"},
 			{Source: "letterboxd", Value: 4.1, Votes: 0, Label: "4.1"},
 			// Four votes: the shape FR-178 exists to hide, and the only rating
@@ -678,6 +679,10 @@ func keyMutations() map[string]keyOverride {
 		"ratingProviderIconUrl": {mut: func(c *imageconfig.Config) {
 			c.RatingProviderIconURL = map[string]string{c.Ratings[0]: seededMarkURL}
 		}},
+		"customIconKeepRtMarks": {
+			pre: func(c *imageconfig.Config) { c.RatingProviderIconURL = map[string]string{"rt": seededMarkURL} },
+			mut: func(c *imageconfig.Config) { c.CustomIconKeepRTMarks = true },
+		},
 	}
 }
 
