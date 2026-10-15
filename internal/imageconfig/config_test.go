@@ -450,3 +450,17 @@ func TestReleaseStatusPillControlsParseAndKey(t *testing.T) {
 		t.Fatal("release pill controls do not reach the cache key")
 	}
 }
+
+func TestTrendingRankPosAndOpacityParseAndKey(t *testing.T) {
+	base := Parse([]byte(`{"trendingRank":true}`))
+	cfg := Parse([]byte(`{"trendingRank":true,"trendingRankPos":"TR","trendingRankBackgroundOpacity":50,"trendingTagStyle":"pill"}`))
+	if cfg.TrendingRankPos != "tr" || cfg.TrendingRankBackgroundOpacity != 50 || cfg.TrendingTagStyle != "pill" {
+		t.Fatalf("pos=%q op=%d style=%q", cfg.TrendingRankPos, cfg.TrendingRankBackgroundOpacity, cfg.TrendingTagStyle)
+	}
+	if bad := Parse([]byte(`{"trendingRankPos":"bl"}`)); bad.TrendingRankPos != "" {
+		t.Fatalf("unsupported position kept: %q", bad.TrendingRankPos)
+	}
+	if CacheKey(base) == CacheKey(cfg) {
+		t.Fatal("rank tab controls do not reach the cache key")
+	}
+}

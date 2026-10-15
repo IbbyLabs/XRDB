@@ -3164,23 +3164,47 @@ func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imagec
 	}
 	padY := capH * 6 / 10
 	tabH := capH + padY*2
+	pill := cfg.TrendingTagStyle == "pill"
 	tabW := maxInt(int(float64(w)*0.5*size+0.5), textWidth(face, label)+capH*2)
-	if tabW > w {
-		tabW = w
+	margin := 0
+	if pill {
+		tabW = textWidth(face, label) + capH*2
+		margin = capH
 	}
-	r := image.Rect(bounds.Min.X+(w-tabW)/2, bounds.Min.Y, bounds.Min.X+(w-tabW)/2+tabW, bounds.Min.Y+tabH)
+	if tabW > w-2*margin {
+		tabW = w - 2*margin
+	}
+	x := bounds.Min.X + (w-tabW)/2
+	switch cfg.TrendingRankPos {
+	case "tl":
+		x = bounds.Min.X + margin
+	case "tr":
+		x = bounds.Max.X - margin - tabW
+	}
+	r := image.Rect(x, bounds.Min.Y+margin, x+tabW, bounds.Min.Y+margin+tabH)
 	if occ != nil {
 		occ.reserve(r)
 	}
 
+	tile := trendingTile(cfg.TrendingTileColor)
+	if cfg.TrendingRankBackgroundOpacity > 0 {
+		tile.A = uint8(cfg.TrendingRankBackgroundOpacity * 255 / 100)
+	}
 	radius := capH * 7 / 10
 	switch cfg.TrendingTagStyle {
+	case "pill":
+		border := color.NRGBA{R: 255, G: 150, B: 92, A: 150}
+		if c, err := parseHexColor(cfg.TrendingAccentColor); cfg.TrendingAccentColor != "" && err == nil {
+			border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 220}
+		}
+		drawSoftTile(base, r, tabH/2, tileChrome{fill: tile, border: border,
+			shadow: color.NRGBA{A: 80}, noShadow: !cfg.BadgeShadow, frost: cfg.BadgeFrost})
 	case "square":
 		radius = maxInt(1, capH/5)
 		fallthrough
 	case "", "glass":
 		frostRoundedRect(base, r, radius, squareTop, cfg.BadgeFrost)
-		blendRoundedRectSquared(base, r, radius, squareTop, trendingTile(cfg.TrendingTileColor))
+		blendRoundedRectSquared(base, r, radius, squareTop, tile)
 		border := color.NRGBA{R: 255, G: 150, B: 92, A: 66}
 		if c, err := parseHexColor(cfg.TrendingAccentColor); cfg.TrendingAccentColor != "" && err == nil {
 			border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 220}

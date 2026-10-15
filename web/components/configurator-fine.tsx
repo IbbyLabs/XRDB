@@ -1770,19 +1770,21 @@ export function AgeFine({ uid, config, onUpdate }: GroupProps) {
   );
 }
 
-export function TrendingFine({ uid, config, onUpdate }: GroupProps) {
+export function TrendingFine({ uid, config, onUpdate, rankOnly = false }: GroupProps & { rankOnly?: boolean }) {
   return (
-    <FineGroup label="Trending badge">
+    <FineGroup label={rankOnly ? 'Trending rank' : 'Trending badge'}>
       <StyleGrid
         id={`${uid}-trending-tag-style-label`}
         label="Surface"
         options={TREND_TAG_STYLE_OPTIONS}
         value={config.trendingTagStyle}
         onChange={v => onUpdate('trendingTagStyle', v)}
-        hint="Glass keeps the warm capsule; plain drops the surface behind the tag."
+        hint="Glass keeps the warm capsule; plain drops the surface behind the tag. Pill draws the rank as a capsule like the genre pill."
       />
-      <PosSelect id={`${uid}-trending-pos`} label="Position" value={config.trendingPos}
-        onChange={v => onUpdate('trendingPos', v)} />
+      {!rankOnly && (
+        <PosSelect id={`${uid}-trending-pos`} label="Position" value={config.trendingPos}
+          onChange={v => onUpdate('trendingPos', v)} />
+      )}
       <ColorField id={`${uid}-trending-color`} label="Text color" value={config.trendingTextColor}
         onChange={v => onUpdate('trendingTextColor', v)} fallback="#fff4ee" resetLabel="Default" />
       {config.trendingTagStyle !== 'plain' && (
@@ -1793,8 +1795,14 @@ export function TrendingFine({ uid, config, onUpdate }: GroupProps) {
         <ColorField id={`${uid}-trending-tile`} label="Tile color" value={config.trendingTileColor}
           onChange={v => onUpdate('trendingTileColor', v)} fallback="#12141a" resetLabel="Dark" />
       )}
-      <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
-        scaleKey="trendingScale" offXKey="trendingOffsetX" offYKey="trendingOffsetY" />
+      {config.trendingRank && config.trendingTagStyle !== 'plain' && (
+        <NumField id={`${uid}-trending-rank-op`} label="Rank background opacity (%)" value={config.trendingRankBackgroundOpacity}
+          onChange={v => onUpdate('trendingRankBackgroundOpacity', v)} min={5} max={100} step={5} />
+      )}
+      {!rankOnly && (
+        <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
+          scaleKey="trendingScale" offXKey="trendingOffsetX" offYKey="trendingOffsetY" />
+      )}
     </FineGroup>
   );
 }

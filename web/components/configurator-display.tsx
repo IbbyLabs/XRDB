@@ -4,7 +4,7 @@ import { Check, AlertCircle } from 'lucide-react';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS, ORIGINAL_LANGUAGE,
-  AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
+  AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS, TRENDING_RANK_POS_OPTIONS,
   OUTPUT_FORMAT_OPTIONS, TOP_RATED_STYLE_OPTIONS,
   suppressedQualityBadges,
 } from './configurator-types';
@@ -815,14 +815,22 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
         />
         <ToggleRow
           label="Trending rank"
-          hint="A tab at the top centre with the title's place in today's trending list, like #9 Today. Films not yet out on digital are skipped. No tab when the title is not on the list."
+          hint="A tab at the top of the artwork with the title's place in today's trending list, like #9 Today. Films not yet out on digital are skipped. No tab when the title is not on the list."
           checked={config.trendingRank}
           onChange={() => onUpdate('trendingRank', !config.trendingRank)}
         />
-        {config.trendingRank && !config.trending && fine && <TrendingFine uid={uid} config={config} onUpdate={onUpdate} />}
+        {config.trendingRank && !config.trending && fine && <TrendingFine uid={uid} config={config} onUpdate={onUpdate} rankOnly />}
+        {config.trendingRank && (
+          <Field label="Trending rank position" htmlFor={`${uid}-trending-rank-pos`}>
+            <select id={`${uid}-trending-rank-pos`} className="select" value={config.trendingRankPos}
+              onChange={e => onUpdate('trendingRankPos', e.target.value)}>
+              {TRENDING_RANK_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
+        )}
         {config.trendingRank && (
           <Field label="Trending rank size (%)" htmlFor={`${uid}-trending-rank-scale`}
-            hint="50–200. At 100 the tab is half the artwork wide. Blank keeps the default.">
+            hint="50–200. At 100 the tab is half the artwork wide; the pill fits its text. Blank keeps the default.">
             <input id={`${uid}-trending-rank-scale`} className="input" type="number" inputMode="numeric"
               min={50} max={200} step={5} value={config.trendingRankScale || ''} placeholder="default"
               style={{ maxWidth: '7rem' }}

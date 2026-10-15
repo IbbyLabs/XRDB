@@ -306,8 +306,12 @@ type Config struct {
 	// as a tab centred at the top.
 	TrendingRank bool `json:"trendingRank,omitempty"`
 	// TrendingRankScale sizes that tab as a percent, 50-200; 0 = 100.
-	TrendingRankScale int  `json:"trendingRankScale,omitempty"`
-	BackdropAsPoster  bool `json:"backdropAsPoster,omitempty"`
+	TrendingRankScale int `json:"trendingRankScale,omitempty"`
+	// TrendingRankPos places that tab: tc, tl or tr; "" = tc.
+	TrendingRankPos string `json:"trendingRankPos,omitempty"`
+	// TrendingRankBackgroundOpacity is the tab's fill opacity, 0-100; 0 = the style's own.
+	TrendingRankBackgroundOpacity int  `json:"trendingRankBackgroundOpacity,omitempty"`
+	BackdropAsPoster              bool `json:"backdropAsPoster,omitempty"`
 	// HideCinemetaRating strips the IMDb rating from the Stremio meta XRDB serves
 	// (both the imdbRating field and the "imdb" link), so Cinemeta's own rating
 	// does not sit beside XRDB's overlaid one. It affects the meta response, not
@@ -897,6 +901,8 @@ type raw struct {
 	Trending                      *bool     `json:"trending"`
 	TrendingRank                  *bool     `json:"trendingRank"`
 	TrendingRankScale             *int      `json:"trendingRankScale"`
+	TrendingRankPos               *string   `json:"trendingRankPos"`
+	TrendingRankBackgroundOpacity *int      `json:"trendingRankBackgroundOpacity"`
 	TrendingStyle                 *string   `json:"trendingStyle"`
 	BackdropAsPoster              *bool     `json:"backdropAsPoster"`
 	HideCinemetaRating            *bool     `json:"hideCinemetaRating"`
@@ -1481,6 +1487,15 @@ func Parse(data json.RawMessage) Config {
 	if r.TrendingRankScale != nil && *r.TrendingRankScale != 0 {
 		cfg.TrendingRankScale = clampInt(*r.TrendingRankScale, 50, 200)
 	}
+	if r.TrendingRankPos != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.TrendingRankPos)); v {
+		case "tl", "tr":
+			cfg.TrendingRankPos = v
+		}
+	}
+	if r.TrendingRankBackgroundOpacity != nil && *r.TrendingRankBackgroundOpacity != 0 {
+		cfg.TrendingRankBackgroundOpacity = clampInt(*r.TrendingRankBackgroundOpacity, 1, 100)
+	}
 	if r.TrendingStyle != nil {
 		if v := normalizeTrendingStyle(*r.TrendingStyle); v != "" {
 			cfg.TrendingStyle = v
@@ -1885,7 +1900,7 @@ func parseTrending(cfg *Config, r *raw) {
 	}
 	if r.TrendingTagStyle != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.TrendingTagStyle)); v {
-		case "glass", "square", "plain":
+		case "glass", "square", "plain", "pill":
 			cfg.TrendingTagStyle = v
 		}
 	}
@@ -2703,6 +2718,8 @@ func CacheKey(cfg Config) string {
 		Trending                      bool           `json:"trending"`
 		TrendingRank                  bool           `json:"trendingRank,omitempty"`
 		TrendingRankScale             int            `json:"trendingRankScale,omitempty"`
+		TrendingRankPos               string         `json:"trendingRankPos,omitempty"`
+		TrendingRankBackgroundOpacity int            `json:"trendingRankBackgroundOpacity,omitempty"`
 		// The rank changes daily, so a render showing one is keyed to its day.
 		TrendingRankDay   string        `json:"trendingRankDay,omitempty"`
 		TrendingStyle     TrendingStyle `json:"trendingStyle"`
@@ -2830,6 +2847,8 @@ func CacheKey(cfg Config) string {
 		Trending:                      cfg.Trending,
 		TrendingRank:                  cfg.TrendingRank,
 		TrendingRankScale:             cfg.TrendingRankScale,
+		TrendingRankPos:               cfg.TrendingRankPos,
+		TrendingRankBackgroundOpacity: cfg.TrendingRankBackgroundOpacity,
 		TrendingStyle:                 cfg.TrendingStyle,
 		BackdropAsPoster:              cfg.BackdropAsPoster,
 		BackdropLogo:                  cfg.BackdropLogo,

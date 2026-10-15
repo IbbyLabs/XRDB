@@ -690,14 +690,16 @@ func keyMutations() map[string]keyOverride {
 		// Title-logo shadow. The style and colour need a known-valid alternate;
 		// the offsets take the generic 0 -> 200 flip, which carries the shadow
 		// clear of where it started.
-		"logoShadowStyle":         {mut: func(c *imageconfig.Config) { c.LogoShadowStyle = "extrude" }},
-		"logoShadowColor":         str(setColor(func(c *imageconfig.Config, v string) { c.LogoShadowColor = v })),
-		"logoFrost":               {mut: func(c *imageconfig.Config) { c.LogoFrost = true }},
-		"badgeFrost":              {mut: func(c *imageconfig.Config) { c.BadgeFrost = 60 }},
-		"releaseStatusLabelColor": str(setColor(func(c *imageconfig.Config, v string) { c.ReleaseStatusLabelColor = v })),
-		"releaseStatusCase":       {mut: func(c *imageconfig.Config) { c.ReleaseStatusCase = "normal" }},
-		"releaseStatusFont":       {mut: func(c *imageconfig.Config) { c.ReleaseStatusFont = "serif" }},
-		"releaseStatusDateFormat": {upcoming: true, mut: func(c *imageconfig.Config) { c.ReleaseStatusDateFormat = "month-day" }},
+		"logoShadowStyle":               {mut: func(c *imageconfig.Config) { c.LogoShadowStyle = "extrude" }},
+		"logoShadowColor":               str(setColor(func(c *imageconfig.Config, v string) { c.LogoShadowColor = v })),
+		"logoFrost":                     {mut: func(c *imageconfig.Config) { c.LogoFrost = true }},
+		"badgeFrost":                    {mut: func(c *imageconfig.Config) { c.BadgeFrost = 60 }},
+		"trendingRankPos":               {pre: func(c *imageconfig.Config) { c.TrendingRank = true }, mut: func(c *imageconfig.Config) { c.TrendingRankPos = "tr" }},
+		"trendingRankBackgroundOpacity": {pre: func(c *imageconfig.Config) { c.TrendingRank = true }, mut: func(c *imageconfig.Config) { c.TrendingRankBackgroundOpacity = 30 }},
+		"releaseStatusLabelColor":       str(setColor(func(c *imageconfig.Config, v string) { c.ReleaseStatusLabelColor = v })),
+		"releaseStatusCase":             {mut: func(c *imageconfig.Config) { c.ReleaseStatusCase = "normal" }},
+		"releaseStatusFont":             {mut: func(c *imageconfig.Config) { c.ReleaseStatusFont = "serif" }},
+		"releaseStatusDateFormat":       {upcoming: true, mut: func(c *imageconfig.Config) { c.ReleaseStatusDateFormat = "month-day" }},
 		"ratingProviderIconUrl": {mut: func(c *imageconfig.Config) {
 			c.RatingProviderIconURL = map[string]string{c.Ratings[0]: seededMarkURL}
 		}},

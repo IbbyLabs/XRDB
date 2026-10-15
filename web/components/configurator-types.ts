@@ -336,6 +336,13 @@ export const TREND_TAG_STYLE_OPTIONS = [
   { id: '',       label: 'Glass'  },
   { id: 'square', label: 'Square' },
   { id: 'plain',  label: 'Plain'  },
+  { id: 'pill',   label: 'Pill'   },
+] as const;
+
+export const TRENDING_RANK_POS_OPTIONS = [
+  { id: '',   label: 'Top centre' },
+  { id: 'tl', label: 'Top left' },
+  { id: 'tr', label: 'Top right' },
 ] as const;
 
 export const AGGREGATE_ACCENT_MODE_OPTIONS = [
@@ -484,6 +491,8 @@ export interface ConfigState {
   trending: boolean;
   trendingRank: boolean; // "#9 Today" tab from today's trending list
   trendingRankScale: number; // percent, 50-200; 0 = 100
+  trendingRankPos: string; // tc | tl | tr; "" = top centre
+  trendingRankBackgroundOpacity: number; // 0 = the style's own
   trendingStyle: string;
   backdropAsPoster: boolean;
   logoWidth: number;
@@ -725,6 +734,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   trending: false,
   trendingRank: false,
   trendingRankScale: 0,
+  trendingRankPos: '',
+  trendingRankBackgroundOpacity: 0,
   trendingStyle: 'arrow-word',
   backdropAsPoster: false,
   logoWidth: 0,
