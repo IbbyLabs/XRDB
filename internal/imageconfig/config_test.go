@@ -2,6 +2,7 @@ package imageconfig
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -395,5 +396,29 @@ func TestParseReadsPerProviderIconScale(t *testing.T) {
 	}
 	if cfg.RatingProviderIconScale["rt"] != 150 {
 		t.Errorf("rt scale = %d, want it clamped to 150", cfg.RatingProviderIconScale["rt"])
+	}
+}
+
+func TestRatingProviderIconURLKeepsOnlyHTTPURLs(t *testing.T) {
+	cfg := Parse([]byte(`{"ratingProviderIconUrl":{
+		" IMDb ":"https://example.com/i.png",
+		"tmdb":"http://example.com/t.png",
+		"rt":"javascript:alert(1)",
+		"mal":"file:///etc/passwd",
+		"trakt":"https://user:pw@example.com/t.png",
+		"anilist":"/relative.png",
+		"kitsu":""}}`))
+	got := cfg.RatingProviderIconURL
+	if len(got) != 2 || got["imdb"] != "https://example.com/i.png" || got["tmdb"] != "http://example.com/t.png" {
+		t.Fatalf("got %v", got)
+	}
+	long := `{"ratingProviderIconUrl":{"imdb":"https://example.com/` + strings.Repeat("a", 1100) + `"}}`
+	if n := len(Parse([]byte(long)).RatingProviderIconURL); n != 0 {
+		t.Fatalf("over-long URL kept")
+	}
+	a := Parse([]byte(`{"ratingProviderIconUrl":{"imdb":"https://example.com/a.png"}}`))
+	b := Parse([]byte(`{"ratingProviderIconUrl":{"imdb":"https://example.com/b.png"}}`))
+	if CacheKey(a) == CacheKey(b) {
+		t.Fatal("icon URL does not reach the cache key")
 	}
 }

@@ -118,6 +118,9 @@ type Pipeline struct {
 	ratingSourceNames atomic.Value
 	fetcher           imageFetcher
 	logger            *slog.Logger
+	// marks holds the custom rating marks profiles supply. Optional: nil
+	// draws the bundled marks only.
+	marks *customMarkStore
 	// anime resolves whether a title is a known anime, so the genre badge can
 	// tell anime apart from animation generally. Optional: nil disables it.
 	anime animeResolver
@@ -1068,6 +1071,7 @@ func New(reg *provider.Registry) *Pipeline {
 		}},
 		logger:  slog.Default(),
 		ratings: newRatingsCache(DefaultRatingsCacheTTL, slog.Default()),
+		marks:   newCustomMarkStore(slog.Default(), publicDial),
 	}
 	p.wireRatingsHealth()
 	return p
@@ -1356,12 +1360,16 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if resolveQuality == nil {
 		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, ratingReq.MediaID)
 	}
+	// Custom marks load alongside the rating fan-out.
+	marksDone := make(chan map[string]customMark, 1)
+	go func() { marksDone <- p.marks.resolve(ctx, selectedMarkURLs(req.Config)) }()
 	ratingsCtx, faults := withFaultRetry(ctx)
 	allRatings, ratingProviders, degraded, sourceFault, queueHeld, _ := p.collectRatingsWithProviders(ratingsCtx, ratingReq, meta)
 	timings.mark("ratings")
 	// Resolved here, where the title's identity is, so the draw path receives an
 	// answer rather than an id and never needs to know a bundled list exists.
 	facts := titleFactsFor(meta, req.MediaID)
+	facts.customMarks = <-marksDone
 	// The ranking finishes building after the process starts, so a meta cached
 	// before then carries rank 0 and keeps it for the ratings cache TTL. Read
 	// the live table instead of trusting what the cache handed back.

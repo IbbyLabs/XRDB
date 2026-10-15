@@ -516,6 +516,7 @@ export interface ConfigState {
   ratingProviderOverrides: Record<string, string>; // source id → hex accent; empty = none
   genreFamilyColors: Record<string, string>; // family id → hex accent; absent = built-in default
   ratingProviderIconScale: Record<string, number>; // source id → icon scale percent 50-150; no entry = 100
+  ratingProviderIconUrl: Record<string, string>; // source id → http(s) image URL drawn instead of the bundled mark
   ratingProviderWeights: Record<string, number>; // source id → weight; no entry = 1, 0 = ignore
   genreBadgeScale: number;
   genreBadgeOffsetX: number;
@@ -748,6 +749,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingProviderOverrides: {},
   genreFamilyColors: {},
   ratingProviderIconScale: {},
+  ratingProviderIconUrl: {},
   ratingProviderWeights: {},
   genreBadgeScale: 0,
   genreBadgeOffsetX: 0,
@@ -961,6 +963,7 @@ function coerceConfig(raw: unknown): ConfigState {
   ratingMinVotesBySource: coerceNumberMap(input.ratingMinVotesBySource),
     ratingProviderWeights: coerceNumberMap(input.ratingProviderWeights),
     ratingProviderIconScale: coerceNumberMap(input.ratingProviderIconScale),
+    ratingProviderIconUrl: coerceStringMap(input.ratingProviderIconUrl),
     ringCriticsPriority: coerceStringArray(input.ringCriticsPriority, []),
     ringAudiencePriority: coerceStringArray(input.ringAudiencePriority, []),
     providersAllow: coerceStringArray(input.providersAllow, []),

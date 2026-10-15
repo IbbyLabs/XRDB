@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"math"
+	"net/url"
 	"reflect"
 	"regexp"
 	"sort"
@@ -558,6 +559,9 @@ type RatingBadgeConfig struct {
 	// be grown and a busy one shrunk. The mark scales inside the shared badge
 	// box, so the row height stays even.
 	RatingProviderIconScale map[string]int `json:"ratingProviderIconScale,omitempty"`
+	// RatingProviderIconURL maps a provider source to an http(s) image URL
+	// drawn in place of its bundled mark.
+	RatingProviderIconURL map[string]string `json:"ratingProviderIconUrl,omitempty"`
 	// RatingProviderWeights maps a provider source to its percent share of any
 	// score built from several sources: the rating ring, the aggregate bar, and
 	// the averaged presentations. Shares add up to 100 across the selected
@@ -1031,6 +1035,7 @@ type rawRating struct {
 	RatingsMaxPerSide       *int               `json:"ratingsMaxPerSide"`
 	RatingProviderOverrides map[string]string  `json:"ratingProviderOverrides"`
 	RatingProviderIconScale map[string]int     `json:"ratingProviderIconScale"`
+	RatingProviderIconURL   map[string]string  `json:"ratingProviderIconUrl"`
 	RatingProviderWeights   map[string]float64 `json:"ratingProviderWeights"`
 }
 
@@ -2019,6 +2024,9 @@ func parseRating(cfg *Config, r *raw) {
 		}
 		cfg.RatingProviderIconScale = m
 	}
+	if len(r.RatingProviderIconURL) > 0 {
+		cfg.RatingProviderIconURL = parseIconURLs(r.RatingProviderIconURL)
+	}
 	if len(r.RatingProviderWeights) > 0 {
 		var m map[string]float64
 		for k, v := range r.RatingProviderWeights {
@@ -2965,4 +2973,31 @@ func dedupeStrings(in []string) []string {
 		out = append(out, s)
 	}
 	return out
+}
+
+// maxIconURLs bounds how many sources one profile can point at custom marks.
+const (
+	maxIconURLs   = 32
+	maxIconURLLen = 1024
+)
+
+// parseIconURLs keeps the entries whose value is an absolute http(s) URL.
+func parseIconURLs(in map[string]string) map[string]string {
+	var m map[string]string
+	for k, v := range in {
+		k = strings.ToLower(strings.TrimSpace(k))
+		v = strings.TrimSpace(v)
+		if k == "" || v == "" || len(v) > maxIconURLLen || len(m) >= maxIconURLs {
+			continue
+		}
+		u, err := url.Parse(v)
+		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil {
+			continue
+		}
+		if m == nil {
+			m = make(map[string]string, len(in))
+		}
+		m[k] = v
+	}
+	return m
 }

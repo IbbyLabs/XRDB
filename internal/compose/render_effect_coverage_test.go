@@ -9,6 +9,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"net/netip"
 	"reflect"
 	"sort"
 	"strings"
@@ -257,7 +258,7 @@ func effectPipeline() *Pipeline {
 	for _, name := range []string{"tmdb", "fanart", "cinemeta", "omdb"} {
 		reg.Register(&effectProvider{name: name})
 	}
-	p := &Pipeline{providers: reg, fetcher: &distinctFetcher{}}
+	p := &Pipeline{providers: reg, fetcher: &distinctFetcher{}, marks: seededMarkStore()}
 	p.SetAnimeResolver(alwaysAnime{})
 	p.SetTrendingResolver(alwaysTrending{})
 	p.SetTrendingRankResolver(alwaysRanked{})
@@ -674,6 +675,9 @@ func keyMutations() map[string]keyOverride {
 		"logoShadowColor": str(setColor(func(c *imageconfig.Config, v string) { c.LogoShadowColor = v })),
 		"logoFrost":       {mut: func(c *imageconfig.Config) { c.LogoFrost = true }},
 		"badgeFrost":      {mut: func(c *imageconfig.Config) { c.BadgeFrost = 60 }},
+		"ratingProviderIconUrl": {mut: func(c *imageconfig.Config) {
+			c.RatingProviderIconURL = map[string]string{c.Ratings[0]: seededMarkURL}
+		}},
 	}
 }
 
@@ -893,3 +897,17 @@ func TestOverlayMetadataSurvivesEveryArtworkSource(t *testing.T) {
 type alwaysRanked struct{}
 
 func (alwaysRanked) Rank(context.Context, string, ...string) (int, bool) { return 9, true }
+
+const seededMarkURL = "https://marks.example/seeded.png"
+
+// seededMarkStore holds one custom mark already loaded, so a render can draw it
+// without a network fetch.
+func seededMarkStore() *customMarkStore {
+	s := newCustomMarkStore(nil, func(netip.AddrPort) bool { return false })
+	img := image.NewNRGBA(image.Rect(0, 0, 64, 64))
+	for i := 0; i < len(img.Pix); i += 4 {
+		img.Pix[i], img.Pix[i+3] = 0xff, 0xff
+	}
+	s.put(seededMarkURL, customMarkEntry{mark: customMark{img: img, colored: true}, expires: time.Now().Add(time.Hour)})
+	return s
+}

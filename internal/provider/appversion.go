@@ -26,3 +26,6 @@ func version() string {
 	}
 	return "0"
 }
+
+// ContactUserAgent names XRDB and a contact, as Wikimedia's hosts require.
+func ContactUserAgent() string { return wikidataUserAgent() }

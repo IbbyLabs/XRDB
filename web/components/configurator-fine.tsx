@@ -15,6 +15,7 @@ import {
 } from './configurator-types';
 import { resolveShares, rebalance } from '@/lib/shares';
 import { fetchGenreFamilies, type GenreFamily } from '@/lib/api';
+import { fetchIconPack, isIconUrl } from './icon-pack';
 
 // The sources a vote minimum can act on. The rest either report no count or
 // count reviewing publications, where a minimum means nothing.
@@ -448,6 +449,128 @@ function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
   );
 }
 
+/** One source's custom mark URL, committed on blur or Enter. Keyed on the value, so a pack import resets the draft. */
+function IconUrlField({ id, label, value, onCommit }: {
+  id: string; label: string; value: string; onCommit: (url: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const trimmed = draft.trim();
+  const invalid = trimmed !== '' && !isIconUrl(trimmed);
+  const commit = () => {
+    if (!invalid && trimmed !== value) onCommit(trimmed);
+  };
+  return (
+    <div className="field">
+      <label className="label" htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        type="url"
+        className="input"
+        value={draft}
+        placeholder="Bundled icon"
+        spellCheck={false}
+        aria-invalid={invalid}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); }}
+      />
+      {invalid && <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>Use an http(s) link to a PNG, JPEG, WebP or GIF.</span>}
+    </div>
+  );
+}
+
+/**
+ * ProviderIcons swaps a source's bundled mark for an image the user links to,
+ * one at a time or from a Fusion-format icon pack.
+ */
+function ProviderIcons({ uid, config, onUpdate }: GroupProps) {
+  const [packUrl, setPackUrl] = useState('');
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const selected = RATING_OPTIONS.filter(r => config.ratings.includes(r.id));
+  if (selected.length === 0) return null;
+
+  const icons = config.ratingProviderIconUrl;
+  const setIcon = (id: string, url: string) => {
+    const next = { ...icons };
+    if (url) next[id] = url;
+    else delete next[id];
+    onUpdate('ratingProviderIconUrl', next);
+  };
+  const importPack = async () => {
+    setBusy(true);
+    setStatus(null);
+    try {
+      const { icons: found, skipped } = await fetchIconPack(packUrl.trim());
+      const count = Object.keys(found).length;
+      if (count === 0) {
+        setStatus({ ok: false, text: 'No icons in that pack matched a rating source.' });
+        return;
+      }
+      onUpdate('ratingProviderIconUrl', { ...icons, ...found });
+      const extra = skipped > 0 ? ` ${skipped} entr${skipped === 1 ? 'y was' : 'ies were'} not recognised.` : '';
+      setStatus({ ok: true, text: `Imported ${count} icon${count === 1 ? '' : 's'}.${extra}` });
+    } catch (e) {
+      setStatus({ ok: false, text: e instanceof Error ? e.message : 'The pack could not be imported.' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const customCount = Object.keys(icons).length;
+
+  return (
+    <details className="adv-details">
+      <summary>
+        Custom icons
+      </summary>
+      <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Link an image to use instead of a source&apos;s bundled icon. PNG, JPEG, WebP or GIF, up to 1 MB. A link that fails to load falls back to the bundled icon.
+        </p>
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-iconpack`}>Import an icon pack</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+            <input
+              id={`${uid}-iconpack`}
+              type="url"
+              className="input"
+              style={{ flex: 1 }}
+              value={packUrl}
+              placeholder="https://…/icon-pack.json"
+              spellCheck={false}
+              onChange={e => setPackUrl(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && packUrl.trim()) void importPack(); }}
+            />
+            <button type="button" className="opt-btn" onClick={() => void importPack()} disabled={busy || !packUrl.trim()}>
+              {busy ? 'Importing…' : 'Import'}
+            </button>
+          </div>
+          <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
+            Fusion-format packs work: a JSON list of names and links, such as &quot;IMDb (IM)&quot;.
+          </span>
+          {status && (
+            <span className="hint" role="status" style={{ marginTop: 'var(--sp-1)' }}>{status.text}</span>
+          )}
+        </div>
+        {selected.map(r => (
+          <IconUrlField
+            key={`${r.id}:${icons[r.id] ?? ''}`}
+            id={`${uid}-provicon-${r.id}`}
+            label={`${r.label} icon`}
+            value={icons[r.id] ?? ''}
+            onCommit={url => setIcon(r.id, url)}
+          />
+        ))}
+        {customCount > 0 && (
+          <button type="button" className="opt-btn" onClick={() => { onUpdate('ratingProviderIconUrl', {}); setStatus(null); }}>
+            Use bundled icons for every source
+          </button>
+        )}
+      </div>
+    </details>
+  );
+}
+
 /**
  * ProviderWeights splits 100% between the selected sources, deciding how much
  * each one counts wherever XRDB combines several into one number: the rating
@@ -796,6 +919,7 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('ratingBadgeBackgroundOpacity', v)} min={5} max={100} step={5} placeholder="per style"
         hint="How much artwork shows through the badge body. Blank keeps what the style and theme picked." />
       <ProviderOverrides uid={uid} config={config} onUpdate={onUpdate} />
+      <ProviderIcons uid={uid} config={config} onUpdate={onUpdate} />
       <ProviderWeights uid={uid} config={config} onUpdate={onUpdate} />
     </FineGroup>
   );
