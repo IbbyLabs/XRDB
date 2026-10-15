@@ -909,6 +909,29 @@ func (b pillBorder) apply(ch tileChrome, scale float64) tileChrome {
 	return ch
 }
 
+// drawTrendingRankPill draws the rank at the release pill's size and inset, so
+// either badge lands in the same spot of a shared corner.
+func drawTrendingRankPill(base *image.NRGBA, occ *occupancy, rank int, cfg imageconfig.Config, scale float64) {
+	accent := color.NRGBA{R: 255, G: 150, B: 92, A: 255}
+	if c, err := parseHexColor(cfg.TrendingAccentColor); cfg.TrendingAccentColor != "" && err == nil {
+		accent = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 255}
+	}
+	text := cfg.TrendingTextColor
+	if text == "" {
+		text = "#fff4ee"
+	}
+	pos := cfg.TrendingRankPos
+	if pos == "" {
+		pos = "tc"
+	}
+	label := fmt.Sprintf("#%d %s", rank, UIString("trending_today", cfg.Language, "Today"))
+	drawReleaseBadge(base, label, accent, pos, scale, occ, releaseStatusOpts{
+		style: "pill", scalePercent: cfg.TrendingRankScale, labelColor: text, fillColor: cfg.TrendingTileColor,
+		bgOpacity: cfg.TrendingRankBackgroundOpacity, noShadow: !cfg.BadgeShadow, frost: cfg.BadgeFrost, lang: cfg.Language,
+		border: pillBorder{width: cfg.TrendingRankBorderWidth, color: cfg.TrendingRankBorderColor, opacity: cfg.TrendingRankBorderOpacity},
+	})
+}
+
 // releaseStatusOpts carries the release-status badge styling. Zero value keeps
 // the accent-bordered plate the badge has always drawn.
 type releaseStatusOpts struct {
@@ -921,6 +944,7 @@ type releaseStatusOpts struct {
 	labelColor   string // "#RRGGBB"; "" = the state's accent
 	bgOpacity    int    // 0-100; 0 = the style's own
 	font         string
+	fillColor    string // "#RRGGBB" plate fill; "" = the style's own
 	border       pillBorder
 	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
 	outlineWidth int    // px outline width for the plain style; 0 = 1
@@ -1029,6 +1053,9 @@ func drawReleaseBadge(base *image.NRGBA, label string, accent color.NRGBA, pos s
 		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
 			chrome.border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: chrome.border.A}
 		}
+	}
+	if c, err := parseHexColor(opts.fillColor); opts.fillColor != "" && err == nil {
+		chrome.fill = color.NRGBA{R: c.R, G: c.G, B: c.B, A: chrome.fill.A}
 	}
 	if opts.bgOpacity > 0 {
 		chrome.fill.A = uint8(opts.bgOpacity * 255 / 100)
@@ -3192,7 +3219,11 @@ func trendingTile(hex string) color.NRGBA {
 
 // drawTrendingRankTab draws "#9 Today" as a tab hanging from the top edge,
 // half the artwork wide, in the trending tag's surface and colours.
-func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imageconfig.Config) {
+func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imageconfig.Config, scale float64) {
+	if cfg.TrendingTagStyle == "pill" {
+		drawTrendingRankPill(base, occ, rank, cfg, scale)
+		return
+	}
 	ensureFaces()
 	bounds := base.Bounds()
 	w, h := bounds.Dx(), bounds.Dy()
@@ -3209,8 +3240,7 @@ func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imagec
 	if cap1 <= 0 {
 		cap1 = probe.Metrics().Ascent.Ceil() * 7 / 10
 	}
-	rankScale := 0.04 * float64(h) * size / float64(maxInt(1, cap1))
-	face := valueFaceFor(rankScale)
+	face := valueFaceFor(0.04 * float64(h) * size / float64(maxInt(1, cap1)))
 	if face == nil {
 		return
 	}
@@ -3222,24 +3252,18 @@ func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imagec
 	}
 	padY := capH * 6 / 10
 	tabH := capH + padY*2
-	pill := cfg.TrendingTagStyle == "pill"
 	tabW := maxInt(int(float64(w)*0.5*size+0.5), textWidth(face, label)+capH*2)
-	margin := 0
-	if pill {
-		tabW = textWidth(face, label) + capH*2
-		margin = capH
-	}
-	if tabW > w-2*margin {
-		tabW = w - 2*margin
+	if tabW > w {
+		tabW = w
 	}
 	x := bounds.Min.X + (w-tabW)/2
 	switch cfg.TrendingRankPos {
 	case "tl":
-		x = bounds.Min.X + margin
+		x = bounds.Min.X
 	case "tr":
-		x = bounds.Max.X - margin - tabW
+		x = bounds.Max.X - tabW
 	}
-	r := image.Rect(x, bounds.Min.Y+margin, x+tabW, bounds.Min.Y+margin+tabH)
+	r := image.Rect(x, bounds.Min.Y, x+tabW, bounds.Min.Y+tabH)
 	if occ != nil {
 		occ.reserve(r)
 	}
@@ -3250,15 +3274,6 @@ func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imagec
 	}
 	radius := capH * 7 / 10
 	switch cfg.TrendingTagStyle {
-	case "pill":
-		border := color.NRGBA{R: 255, G: 150, B: 92, A: 150}
-		if c, err := parseHexColor(cfg.TrendingAccentColor); cfg.TrendingAccentColor != "" && err == nil {
-			border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 220}
-		}
-		chrome := tileChrome{fill: tile, border: border,
-			shadow: color.NRGBA{A: 80}, noShadow: !cfg.BadgeShadow, frost: cfg.BadgeFrost}
-		pb := pillBorder{width: cfg.TrendingRankBorderWidth, color: cfg.TrendingRankBorderColor, opacity: cfg.TrendingRankBorderOpacity}
-		drawSoftTile(base, r, tabH/2, pb.apply(chrome, rankScale))
 	case "square":
 		radius = maxInt(1, capH/5)
 		fallthrough

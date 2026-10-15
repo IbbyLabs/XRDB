@@ -1596,7 +1596,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 	if req.Config.TrendingRank {
 		if rank, ok := p.trendingRankOf(ctx, req, meta); ok {
-			drawTrendingRankTab(composed, occ, rank, req.Config)
+			drawTrendingRankTab(composed, occ, rank, req.Config, scale)
 		}
 	}
 	// The ring claims its corner before the strips do. It is a fixed circle that
