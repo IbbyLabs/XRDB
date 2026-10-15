@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
@@ -803,6 +804,15 @@ func releaseStatusLabel(status, lang string) (string, color.NRGBA, bool) {
 // upcomingReleaseLabel names a release still ahead of a title. It takes the
 // same accents as the landed states, so one badge reads as one thing.
 func upcomingReleaseLabel(u provider.UpcomingRelease) (string, color.NRGBA, bool) {
+	return upcomingReleaseLabelAs(u, "", false)
+}
+
+// releaseDateLayouts maps releaseStatusDateFormat to a time layout.
+var releaseDateLayouts = map[string]string{"": "2 Jan 2006", "day-month": "2 Jan", "month-day": "Jan 2"}
+
+// upcomingReleaseLabelAs is upcomingReleaseLabel in a date format, in normal
+// case when normal is set.
+func upcomingReleaseLabelAs(u provider.UpcomingRelease, dateFormat string, normal bool) (string, color.NRGBA, bool) {
 	if u.Kind == "" || u.Date.IsZero() {
 		return "", color.NRGBA{}, false
 	}
@@ -810,11 +820,39 @@ func upcomingReleaseLabel(u provider.UpcomingRelease) (string, color.NRGBA, bool
 	if !ok {
 		return "", color.NRGBA{}, false
 	}
-	word := "CINEMAS"
-	if u.Kind == "digital" {
-		word = "DIGITAL"
+	layout, ok := releaseDateLayouts[dateFormat]
+	if !ok {
+		layout = releaseDateLayouts[""]
 	}
-	return word + " " + strings.ToUpper(u.Date.Format("2 Jan 2006")), accent, true
+	word := "Cinemas"
+	if u.Kind == "digital" {
+		word = "Digital"
+	}
+	label := word + " " + u.Date.Format(layout)
+	if !normal {
+		label = strings.ToUpper(label)
+	}
+	return label, accent, true
+}
+
+// releaseLabelNormalCase turns an upper-case state label into sentence case.
+func releaseLabelNormalCase(label string) string {
+	lower := []rune(strings.ToLower(label))
+	if len(lower) > 0 {
+		lower[0] = unicode.ToUpper(lower[0])
+	}
+	return string(lower)
+}
+
+// releaseNormalCase reports whether the release badge draws in normal case.
+func releaseNormalCase(cfg imageconfig.Config) bool {
+	switch cfg.ReleaseStatusCase {
+	case "normal":
+		return true
+	case "upper":
+		return false
+	}
+	return cfg.ReleaseStatusBadgeStyle == "pill"
 }
 
 // releaseStatusOpts carries the release-status badge styling. Zero value keeps
@@ -824,8 +862,11 @@ type releaseStatusOpts struct {
 	scalePercent int
 	offsetX      int
 	offsetY      int
-	style        string // "" | glass | square | plain | tile | silver
+	style        string // "" | glass | square | plain | tile | silver | pill
 	tileColor    string // "#RRGGBB"; fills the tile style, tints the border on glass/square/silver
+	labelColor   string // "#RRGGBB"; "" = the state's accent
+	bgOpacity    int    // 0-100; 0 = the style's own
+	font         string
 	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
 	outlineWidth int    // px outline width for the plain style; 0 = 1
 	outlineGlow  bool   // fade the outline outward instead of a hard edge
@@ -836,6 +877,7 @@ type releaseStatusOpts struct {
 func releaseStatusOptsFromConfig(cfg imageconfig.Config) releaseStatusOpts {
 	return releaseStatusOpts{scalePercent: cfg.ReleaseStatusScale, offsetX: cfg.ReleaseStatusOffsetX, offsetY: cfg.ReleaseStatusOffsetY,
 		style: cfg.ReleaseStatusBadgeStyle, tileColor: cfg.ReleaseStatusTileColor,
+		labelColor: cfg.ReleaseStatusLabelColor, bgOpacity: cfg.ReleaseStatusBackgroundOpacity, font: cfg.ReleaseStatusFont,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow, noShadow: !cfg.BadgeShadow, frost: cfg.BadgeFrost, lang: cfg.Language}
 }
@@ -858,13 +900,20 @@ func drawReleaseBadge(base *image.NRGBA, label string, accent color.NRGBA, pos s
 		scale *= float64(opts.scalePercent) / 100
 	}
 	ensureFaces()
-	face := labelFaceFor(scale)
+	face := labelFaceIn(opts.font, scale)
 	if face == nil {
 		return
+	}
+	labelCol := accent
+	if c, err := parseHexColor(opts.labelColor); opts.labelColor != "" && err == nil {
+		labelCol = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 255}
 	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	padX, padY := s(9), s(5)
+	if opts.style == "pill" {
+		padX = s(12)
+	}
 
 	fm := face.Metrics()
 	ascent, descent := fm.Ascent.Ceil(), fm.Descent.Ceil()
@@ -887,11 +936,11 @@ func drawReleaseBadge(base *image.NRGBA, label string, accent color.NRGBA, pos s
 			if w <= 0 {
 				w = 1
 			}
-			drawLabelOutlined(base, face, tx, ty, accent, c, maxInt(1, s(float64(w))), opts.outlineGlow, label)
+			drawLabelOutlined(base, face, tx, ty, labelCol, c, maxInt(1, s(float64(w))), opts.outlineGlow, label)
 			return
 		}
 		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, label)
-		drawText(base, face, tx, ty, accent, label)
+		drawText(base, face, tx, ty, labelCol, label)
 		return
 	}
 
@@ -904,7 +953,7 @@ func drawReleaseBadge(base *image.NRGBA, label string, accent color.NRGBA, pos s
 		border:   border,
 		shadow:   color.NRGBA{R: 0, G: 0, B: 0, A: 80},
 	}
-	textCol := accent
+	textCol := labelCol
 	switch opts.style {
 	case "silver":
 		chrome.fill = color.NRGBA{R: 20, G: 22, B: 28, A: 45}
@@ -925,9 +974,18 @@ func drawReleaseBadge(base *image.NRGBA, label string, accent color.NRGBA, pos s
 			chrome.border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: chrome.border.A}
 		}
 	}
+	if opts.bgOpacity > 0 {
+		chrome.fill.A = uint8(opts.bgOpacity * 255 / 100)
+	}
+	if opts.labelColor != "" {
+		textCol = labelCol
+	}
 	radius := s(5)
-	if opts.style == "square" {
+	switch opts.style {
+	case "square":
 		radius = 0
+	case "pill":
+		radius = r.Dy() / 2
 	}
 	drawSoftTile(base, r, radius, chrome)
 	drawText(base, face, tx, ty, textCol, label)

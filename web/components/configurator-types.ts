@@ -227,6 +227,19 @@ export const RELEASE_STATUS_STYLE_OPTIONS = [
   { id: 'plain',  label: 'Plain'   },
   { id: 'silver', label: 'Silver'  },
   { id: 'tile',   label: 'Tile'    },
+  { id: 'pill',   label: 'Pill'    },
+] as const;
+
+export const RELEASE_CASE_OPTIONS = [
+  { id: 'default', label: 'Auto',     desc: 'Normal case on the pill, capitals on the other styles' },
+  { id: 'upper',   label: 'Capitals', desc: 'IN CINEMAS' },
+  { id: 'normal',  label: 'Normal',   desc: 'In cinemas' },
+] as const;
+
+export const RELEASE_DATE_FORMAT_OPTIONS = [
+  { id: 'default',   label: '23 Oct 2026' },
+  { id: 'day-month', label: '23 Oct' },
+  { id: 'month-day', label: 'Oct 23' },
 ] as const;
 
 export const LOGO_SHADOW_STYLE_OPTIONS = [
@@ -421,6 +434,11 @@ export interface ConfigState {
   releaseStatusPos: string;
   releaseStatusScale: number;
   releaseStatusHideDigital: boolean; // draw nothing for a title already out on digital
+  releaseStatusLabelColor: string; // "#RRGGBB"; "" = the state's accent
+  releaseStatusBackgroundOpacity: number; // 0 = the style's own
+  releaseStatusCase: string; // upper | normal; "" = normal on pill, upper otherwise
+  releaseStatusFont: string; // sans | serif | mono | display; "" = default
+  releaseStatusDateFormat: string; // day-month | month-day; "" = 23 Oct 2026
   releaseStatusOffsetX: number;
   releaseStatusOffsetY: number;
   topRated: boolean;
@@ -676,6 +694,11 @@ export const DEFAULT_CONFIG: ConfigState = {
   releaseStatusPos: 'inherit',
   releaseStatusScale: 0,
   releaseStatusHideDigital: false,
+  releaseStatusLabelColor: '',
+  releaseStatusBackgroundOpacity: 0,
+  releaseStatusCase: '',
+  releaseStatusFont: '',
+  releaseStatusDateFormat: '',
   releaseStatusOffsetX: 0,
   releaseStatusOffsetY: 0,
   ageRatingPos: 'inherit',

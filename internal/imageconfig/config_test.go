@@ -437,3 +437,16 @@ func TestReleaseStatusHideDigitalParsesAndKeys(t *testing.T) {
 		t.Fatal("releaseStatusHideDigital does not reach the cache key")
 	}
 }
+
+func TestReleaseStatusPillControlsParseAndKey(t *testing.T) {
+	base := Parse([]byte(`{"releaseStatus":true}`))
+	cfg := Parse([]byte(`{"releaseStatus":true,"releaseStatusBadgeStyle":"pill","releaseStatusLabelColor":"#ffffff",
+		"releaseStatusBackgroundOpacity":140,"releaseStatusCase":"NORMAL","releaseStatusFont":"serif","releaseStatusDateFormat":"month-day"}`))
+	if cfg.ReleaseStatusBadgeStyle != "pill" || cfg.ReleaseStatusLabelColor != "#ffffff" || cfg.ReleaseStatusBackgroundOpacity != 100 ||
+		cfg.ReleaseStatusCase != "normal" || cfg.ReleaseStatusFont != "serif" || cfg.ReleaseStatusDateFormat != "month-day" {
+		t.Fatalf("got %+v", cfg.AgeRatingConfig)
+	}
+	if CacheKey(base) == CacheKey(cfg) {
+		t.Fatal("release pill controls do not reach the cache key")
+	}
+}

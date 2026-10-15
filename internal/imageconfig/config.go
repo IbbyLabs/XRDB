@@ -702,10 +702,15 @@ type AgeRatingConfig struct {
 	AgeRatingLabelColor        string  `json:"ageRatingLabelColor,omitempty"`        // "#RRGGBB"; "" = the style's own
 	// The release-status badge takes the same treatments as the age badge, so
 	// the two corner plates can be styled to match.
-	TopRatedBadgeStyle      string `json:"topRatedBadgeStyle,omitempty"`      // glass|square|plain|tile|silver
-	TopRatedTileColor       string `json:"topRatedTileColor,omitempty"`       // "#RRGGBB" for the tile style
-	ReleaseStatusBadgeStyle string `json:"releaseStatusBadgeStyle,omitempty"` // glass | plain | tile | square | silver
-	ReleaseStatusTileColor  string `json:"releaseStatusTileColor,omitempty"`  // "#RRGGBB" for the tile style
+	TopRatedBadgeStyle             string `json:"topRatedBadgeStyle,omitempty"`             // glass|square|plain|tile|silver
+	TopRatedTileColor              string `json:"topRatedTileColor,omitempty"`              // "#RRGGBB" for the tile style
+	ReleaseStatusBadgeStyle        string `json:"releaseStatusBadgeStyle,omitempty"`        // glass | plain | tile | square | silver | pill
+	ReleaseStatusTileColor         string `json:"releaseStatusTileColor,omitempty"`         // "#RRGGBB" for the tile style
+	ReleaseStatusLabelColor        string `json:"releaseStatusLabelColor,omitempty"`        // "#RRGGBB"; "" = the state's accent
+	ReleaseStatusBackgroundOpacity int    `json:"releaseStatusBackgroundOpacity,omitempty"` // 0-100; 0 = the style's own
+	ReleaseStatusCase              string `json:"releaseStatusCase,omitempty"`              // upper | normal; "" = normal on pill, upper otherwise
+	ReleaseStatusFont              string `json:"releaseStatusFont,omitempty"`              // sans | serif | mono | display; "" = default
+	ReleaseStatusDateFormat        string `json:"releaseStatusDateFormat,omitempty"`        // day-month | month-day; "" = day month year
 }
 
 // TrendingConfig groups the trending-tag styling not already covered by the
@@ -982,17 +987,22 @@ type rawTrending struct {
 }
 
 type rawAge struct {
-	TopRatedBadgeStyle         *string  `json:"topRatedBadgeStyle"`
-	TopRatedTileColor          *string  `json:"topRatedTileColor"`
-	ReleaseStatusBadgeStyle    *string  `json:"releaseStatusBadgeStyle"`
-	ReleaseStatusTileColor     *string  `json:"releaseStatusTileColor"`
-	AgeRatingBadgeStyle        *string  `json:"ageRatingBadgeStyle"`
-	AgeRatingTileColor         *string  `json:"ageRatingTileColor"`
-	AgeRatingBackgroundOpacity *int     `json:"ageRatingBackgroundOpacity"`
-	AgeRatingBorderWidth       *float64 `json:"ageRatingBorderWidth"`
-	AgeRatingBorderColor       *string  `json:"ageRatingBorderColor"`
-	AgeRatingBorderOpacity     *int     `json:"ageRatingBorderOpacity"`
-	AgeRatingLabelColor        *string  `json:"ageRatingLabelColor"`
+	TopRatedBadgeStyle             *string  `json:"topRatedBadgeStyle"`
+	TopRatedTileColor              *string  `json:"topRatedTileColor"`
+	ReleaseStatusBadgeStyle        *string  `json:"releaseStatusBadgeStyle"`
+	ReleaseStatusLabelColor        *string  `json:"releaseStatusLabelColor"`
+	ReleaseStatusBackgroundOpacity *int     `json:"releaseStatusBackgroundOpacity"`
+	ReleaseStatusCase              *string  `json:"releaseStatusCase"`
+	ReleaseStatusFont              *string  `json:"releaseStatusFont"`
+	ReleaseStatusDateFormat        *string  `json:"releaseStatusDateFormat"`
+	ReleaseStatusTileColor         *string  `json:"releaseStatusTileColor"`
+	AgeRatingBadgeStyle            *string  `json:"ageRatingBadgeStyle"`
+	AgeRatingTileColor             *string  `json:"ageRatingTileColor"`
+	AgeRatingBackgroundOpacity     *int     `json:"ageRatingBackgroundOpacity"`
+	AgeRatingBorderWidth           *float64 `json:"ageRatingBorderWidth"`
+	AgeRatingBorderColor           *string  `json:"ageRatingBorderColor"`
+	AgeRatingBorderOpacity         *int     `json:"ageRatingBorderOpacity"`
+	AgeRatingLabelColor            *string  `json:"ageRatingLabelColor"`
 }
 
 type rawSurface struct {
@@ -2217,8 +2227,29 @@ func parseAge(cfg *Config, r *raw) {
 	}
 	if r.ReleaseStatusBadgeStyle != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.ReleaseStatusBadgeStyle)); v {
-		case "glass", "square", "plain", "tile", "silver":
+		case "glass", "square", "plain", "tile", "silver", "pill":
 			cfg.ReleaseStatusBadgeStyle = v
+		}
+	}
+	if r.ReleaseStatusLabelColor != nil && isHexColor(*r.ReleaseStatusLabelColor) {
+		cfg.ReleaseStatusLabelColor = strings.TrimSpace(*r.ReleaseStatusLabelColor)
+	}
+	if r.ReleaseStatusBackgroundOpacity != nil && *r.ReleaseStatusBackgroundOpacity != 0 {
+		cfg.ReleaseStatusBackgroundOpacity = clampInt(*r.ReleaseStatusBackgroundOpacity, 1, 100)
+	}
+	if r.ReleaseStatusCase != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.ReleaseStatusCase)); v {
+		case "upper", "normal":
+			cfg.ReleaseStatusCase = v
+		}
+	}
+	if r.ReleaseStatusFont != nil {
+		cfg.ReleaseStatusFont = normalizeBadgeFont(*r.ReleaseStatusFont)
+	}
+	if r.ReleaseStatusDateFormat != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.ReleaseStatusDateFormat)); v {
+		case "day-month", "month-day":
+			cfg.ReleaseStatusDateFormat = v
 		}
 	}
 	if r.ReleaseStatusTileColor != nil && isHexColor(*r.ReleaseStatusTileColor) {

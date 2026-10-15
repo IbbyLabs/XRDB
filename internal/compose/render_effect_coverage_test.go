@@ -159,6 +159,8 @@ type effectProvider struct {
 	// bare empties the fields a placeholder fills, so a key whose only effect
 	// is on an empty title has a fixture that shows it.
 	bare bool
+	// upcoming gives the title a dated release still ahead.
+	upcoming bool
 }
 
 func (e *effectProvider) Name() string { return e.name }
@@ -172,6 +174,9 @@ func (e *effectProvider) Fetch(_ context.Context, _, _ string) (*provider.MediaM
 // strip empties what a placeholder stands in for: genres, the certificate and
 // every rating.
 func (e *effectProvider) strip(m *provider.MediaMeta) {
+	if e.upcoming {
+		m.UpcomingRelease = provider.UpcomingRelease{Kind: "cinemas", Date: time.Date(2026, 10, 23, 0, 0, 0, 0, time.UTC)}
+	}
 	if !e.bare {
 		return
 	}
@@ -239,6 +244,17 @@ func (alwaysAnime) Resolve(_ context.Context, _, _ string) (animemap.IDs, bool) 
 type alwaysTrending struct{}
 
 func (alwaysTrending) IsTrending(_ context.Context, _ string, _ ...string) bool { return true }
+
+// upcomingEffectPipeline renders a title whose next release is still ahead.
+func upcomingEffectPipeline() *Pipeline {
+	p := effectPipeline()
+	reg := provider.NewRegistry()
+	for _, name := range []string{"tmdb", "fanart", "cinemeta", "omdb", "mal"} {
+		reg.Register(&effectProvider{name: name, upcoming: true})
+	}
+	p.providers = reg
+	return p
+}
 
 // bareEffectPipeline renders a title with nothing for the placeholder badges to
 // replace, which is the only state in which they draw.
@@ -361,6 +377,8 @@ type keyOverride struct {
 	// ratings. A placeholder draws only there, so the rich fixture cannot show
 	// its effect.
 	bare bool
+	// upcoming renders a title with a dated release still ahead.
+	upcoming bool
 }
 
 func setColor(set func(*imageconfig.Config, string)) func(*imageconfig.Config) {
@@ -672,10 +690,14 @@ func keyMutations() map[string]keyOverride {
 		// Title-logo shadow. The style and colour need a known-valid alternate;
 		// the offsets take the generic 0 -> 200 flip, which carries the shadow
 		// clear of where it started.
-		"logoShadowStyle": {mut: func(c *imageconfig.Config) { c.LogoShadowStyle = "extrude" }},
-		"logoShadowColor": str(setColor(func(c *imageconfig.Config, v string) { c.LogoShadowColor = v })),
-		"logoFrost":       {mut: func(c *imageconfig.Config) { c.LogoFrost = true }},
-		"badgeFrost":      {mut: func(c *imageconfig.Config) { c.BadgeFrost = 60 }},
+		"logoShadowStyle":         {mut: func(c *imageconfig.Config) { c.LogoShadowStyle = "extrude" }},
+		"logoShadowColor":         str(setColor(func(c *imageconfig.Config, v string) { c.LogoShadowColor = v })),
+		"logoFrost":               {mut: func(c *imageconfig.Config) { c.LogoFrost = true }},
+		"badgeFrost":              {mut: func(c *imageconfig.Config) { c.BadgeFrost = 60 }},
+		"releaseStatusLabelColor": str(setColor(func(c *imageconfig.Config, v string) { c.ReleaseStatusLabelColor = v })),
+		"releaseStatusCase":       {mut: func(c *imageconfig.Config) { c.ReleaseStatusCase = "normal" }},
+		"releaseStatusFont":       {mut: func(c *imageconfig.Config) { c.ReleaseStatusFont = "serif" }},
+		"releaseStatusDateFormat": {upcoming: true, mut: func(c *imageconfig.Config) { c.ReleaseStatusDateFormat = "month-day" }},
 		"ratingProviderIconUrl": {mut: func(c *imageconfig.Config) {
 			c.RatingProviderIconURL = map[string]string{c.Ratings[0]: seededMarkURL}
 		}},
@@ -732,6 +754,7 @@ func TestEveryRenderFieldAffectsTheImage(t *testing.T) {
 	}
 	p := effectPipeline()
 	barePipe := bareEffectPipeline()
+	upcomingPipe := upcomingEffectPipeline()
 
 	// The whole test is meaningless unless a render is deterministic for a fixed
 	// config: nondeterminism would make every mutation look like it "had an
@@ -783,10 +806,13 @@ func TestEveryRenderFieldAffectsTheImage(t *testing.T) {
 		if ct == "" {
 			ct = "movie"
 		}
-		shareBase := ov.pre == nil && ct == "movie" && !ov.bare
+		shareBase := ov.pre == nil && ct == "movie" && !ov.bare && !ov.upcoming
 		pipe := p
 		if ov.bare {
 			pipe = barePipe
+		}
+		if ov.upcoming {
+			pipe = upcomingPipe
 		}
 
 		// Lazily render each surface, stopping at the first that differs. Base

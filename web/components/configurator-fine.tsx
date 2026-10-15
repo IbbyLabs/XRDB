@@ -9,6 +9,7 @@ import {
   GENRE_CASE_OPTIONS, GENRE_COUNT_OPTIONS, RING_CENTER_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   BADGE_FONT_OPTIONS, RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
+  RELEASE_CASE_OPTIONS, RELEASE_DATE_FORMAT_OPTIONS,
   ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS, ACCENT_SHAPE_OPTIONS,
   LOGO_SHADOW_STYLE_OPTIONS,
   DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
@@ -1611,6 +1612,33 @@ export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
           value={config.releaseStatusTileColor}
           onChange={v => onUpdate('releaseStatusTileColor', v)}
           fallback="#38bdf8" resetLabel="Auto" />
+      )}
+      <FontSelect id={`${uid}-release-font`} label="Font"
+        value={config.releaseStatusFont}
+        onChange={v => onUpdate('releaseStatusFont', v)} />
+      <StyleGrid
+        id={`${uid}-release-case-label`}
+        label="Case"
+        options={RELEASE_CASE_OPTIONS}
+        value={config.releaseStatusCase || 'default'}
+        onChange={v => onUpdate('releaseStatusCase', v === 'default' ? '' : v)}
+        hint={RELEASE_CASE_OPTIONS.find(o => o.id === (config.releaseStatusCase || 'default'))?.desc}
+      />
+      <StyleGrid
+        id={`${uid}-release-date-label`}
+        label="Date format"
+        options={RELEASE_DATE_FORMAT_OPTIONS}
+        value={config.releaseStatusDateFormat || 'default'}
+        onChange={v => onUpdate('releaseStatusDateFormat', v === 'default' ? '' : v)}
+        hint="How an upcoming release date reads."
+      />
+      <ColorField id={`${uid}-release-label-color`} label="Label colour"
+        value={config.releaseStatusLabelColor}
+        onChange={v => onUpdate('releaseStatusLabelColor', v)}
+        fallback="#38bdf8" resetLabel="By status" />
+      {config.releaseStatusBadgeStyle !== 'plain' && (
+        <NumField id={`${uid}-release-op`} label="Background opacity (%)" value={config.releaseStatusBackgroundOpacity}
+          onChange={v => onUpdate('releaseStatusBackgroundOpacity', v)} min={5} max={100} step={5} />
       )}
       <ToggleField id={`${uid}-release-hide-digital`} label="Hide Digital Release"
         checked={config.releaseStatusHideDigital}
