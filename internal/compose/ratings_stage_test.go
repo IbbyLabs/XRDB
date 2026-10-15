@@ -128,3 +128,18 @@ func TestNoQueueWindowLeavesTheStageUnbounded(t *testing.T) {
 		t.Error("an unbounded stage rewrote the caller's context")
 	}
 }
+
+func TestOurOwnStageCutIsCountedAsACut(t *testing.T) {
+	stub := &provider.StubProvider{ProviderName: "wikidata", Err: context.DeadlineExceeded}
+	p := &Pipeline{providers: testRegistry(stub), health: provider.NewHealthTracker(10, time.Hour)}
+	ctx, cancel := withRatingsStage(context.Background(), time.Nanosecond)
+	defer cancel()
+	<-ctx.Done()
+	if _, _, err := p.fetchRatingsResilient(ctx, stub, Request{MediaType: "movie", MediaID: "tt1"}, nil); err == nil {
+		t.Fatal("expected the stub's error")
+	}
+	s := p.health.Snapshot()
+	if len(s) != 1 || s[0].StageCuts != 1 || s[0].Failures != 0 {
+		t.Fatalf("got %+v", s)
+	}
+}

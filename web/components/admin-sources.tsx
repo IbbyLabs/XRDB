@@ -5,6 +5,7 @@ interface SourceCounts {
   rate: number | null;
   timeouts: number;
   other: number;
+  cuts: number;
 }
 
 /** Success rate counts unclassified answers as not successes. */
@@ -16,6 +17,7 @@ export function sourceCounts(s: SourceHealthRow): SourceCounts {
     rate: requests > 0 ? s.successes / requests : null,
     timeouts,
     other: Math.max(0, s.failures - timeouts),
+    cuts: s.stageCuts ?? 0,
   };
 }
 
@@ -78,6 +80,7 @@ export function SourcesPanel({ data }: { data: SourcesResponse }) {
                 <th scope="col">Timeouts</th>
                 <th scope="col">Other failures</th>
                 <th scope="col">Unclassified</th>
+                <th scope="col">Cut off</th>
                 <th scope="col">Status</th>
               </tr>
             </thead>
@@ -92,6 +95,7 @@ export function SourcesPanel({ data }: { data: SourcesResponse }) {
                     <td>{c.timeouts.toLocaleString()}</td>
                     <td>{c.other.toLocaleString()}</td>
                     <td>{s.uncounted.toLocaleString()}</td>
+                    <td>{c.cuts.toLocaleString()}</td>
                     <td title={(s.consecutiveUncounted > 0 ? s.lastUncountedError : s.lastError) || undefined}>
                       <span style={{ color: st.tone, fontWeight: 600 }}>{st.text}</span>
                     </td>
@@ -107,7 +111,9 @@ export function SourcesPanel({ data }: { data: SourcesResponse }) {
         Counts run from when this process started. Success is answers the source gave, empty ones included, out of
         every request counting unclassified answers, so a source refusing with a status nothing recognises
         reads low rather than perfect. Timeouts are split out of failures; other failures are errors, 5xx
-        and rate limits. Hover a status for the last error.
+        and rate limits. Cut off is fetches our own ratings deadline stopped waiting
+        for; it lands on every source still in flight, so the slow one stands out by count, and it is not in
+        the success rate. Hover a status for the last error.
       </p>
     </div>
   );

@@ -262,6 +262,8 @@ export interface SourceHealthRow {
   failures: number;
   /** The part of failures that timed out. Absent before the field existed. */
   timeouts?: number;
+  /** Fetches our ratings stage bound cut off; every source in flight gets one. */
+  stageCuts?: number;
   /** Answers carrying a status nothing classifies; in neither successes nor failures. */
   uncounted: number;
   consecutiveUncounted: number;

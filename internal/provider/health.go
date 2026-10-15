@@ -45,6 +45,9 @@ type sourceState struct {
 	failures        int64
 	// timeouts is the share of failures that were timeouts.
 	timeouts int64
+	// stageCuts counts fetches our ratings stage bound cut off. They are in
+	// neither successes nor failures.
+	stageCuts int64
 	// uncounted is answers with an HTTP status nothing classifies; see
 	// UncountedStatus. consecutiveUncounted resets on any answer that proves
 	// the source is working again.
@@ -119,6 +122,9 @@ type SourceHealth struct {
 	Failures  int64 `json:"failures"`
 	// Timeouts is the part of Failures that timed out rather than answered.
 	Timeouts int64 `json:"timeouts"`
+	// StageCuts counts fetches the ratings stage bound cut off while the source
+	// was still in flight. They count against nothing else.
+	StageCuts int64 `json:"stageCuts"`
 	// Uncounted counts answers carrying an HTTP status nothing classifies, so
 	// they moved neither Failures nor Healthy. A source refusing every call
 	// with 403 reads successes 0, failures 0 and a rising Uncounted.
@@ -628,6 +634,16 @@ func copyCounts(m map[string]int64) map[string]int64 {
 // with an empty badge is a person looking at a poster with no rating, so it is
 // real damage and belongs in the total. It is kept in its own tally because only
 // the shared count answers "did our own pacing get better".
+// NoteStageCut records a fetch the ratings stage bound cut off.
+func (h *HealthTracker) NoteStageCut(source string) {
+	if h == nil {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.stateLocked(source).stageCuts++
+}
+
 func (h *HealthTracker) NoteHeldOutEmpty(source, gate string, ownerKeyed bool) {
 	if h == nil || gate == "" {
 		return
@@ -666,6 +682,7 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 			Successes:            st.successes,
 			Failures:             st.failures,
 			Timeouts:             st.timeouts,
+			StageCuts:            st.stageCuts,
 			Uncounted:            st.uncounted,
 			ConsecutiveUncounted: st.consecutiveUncounted,
 			LastUncountedError:   st.lastUncountedError,

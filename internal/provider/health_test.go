@@ -364,3 +364,13 @@ func TestTimeoutsAreSplitFromOtherFailures(t *testing.T) {
 		t.Fatalf("failures=%d timeouts=%d, want 2 and 1", s.Failures, s.Timeouts)
 	}
 }
+
+func TestStageCutsCountAgainstNothingElse(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.NoteStageCut("wikidata")
+	h.NoteStageCut("wikidata")
+	s := h.Snapshot()[0]
+	if s.StageCuts != 2 || s.Failures != 0 || s.Successes != 0 || !s.Healthy {
+		t.Fatalf("got %+v", s)
+	}
+}

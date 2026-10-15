@@ -950,6 +950,9 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		}
 		return meta, false, nil
 	}
+	if err != nil && !ownerKeyed && fetched && errors.Is(err, errRatingsStageDeadline) {
+		p.health.NoteStageCut(prov.Name())
+	}
 	if err != nil && !ownerKeyed && fetched {
 		// An owner key failing says nothing about the shared source's health: it
 		// is a different credential with its own allowance. Recording it would let
