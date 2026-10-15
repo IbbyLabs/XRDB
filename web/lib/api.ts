@@ -251,6 +251,35 @@ export async function fetchCacheStats(): Promise<CacheStats> {
   return res.json() as Promise<CacheStats>;
 }
 
+// ── Sources ────────────────────────────────────────────────────────────────
+
+export interface SourceHealthRow {
+  source: string;
+  healthy: boolean;
+  failing: boolean;
+  coolingOff: boolean;
+  successes: number;
+  failures: number;
+  /** The part of failures that timed out. Absent before the field existed. */
+  timeouts?: number;
+  /** Answers carrying a status nothing classifies; in neither successes nor failures. */
+  uncounted: number;
+  consecutiveUncounted: number;
+  lastError?: string;
+  lastUncountedError?: string;
+}
+
+export interface SourcesResponse {
+  sources: SourceHealthRow[];
+  degraded: number;
+}
+
+export async function fetchSources(): Promise<SourcesResponse> {
+  const res = await fetch(`${base()}/api/admin/sources`, { headers: adminAuthHeaders() });
+  if (!res.ok) throw new Error(`sources failed: ${res.status}`);
+  return res.json() as Promise<SourcesResponse>;
+}
+
 // ── Log level ──────────────────────────────────────────────────────────────
 
 export interface LogLevelState {

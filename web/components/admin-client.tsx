@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Activity, HardDrive, RefreshCw, AlertCircle, Check, Flame, ScrollText, SlidersHorizontal, Plug } from 'lucide-react';
+import { Activity, HardDrive, RefreshCw, AlertCircle, Check, Flame, ScrollText, SlidersHorizontal, Plug, Gauge } from 'lucide-react';
 import {
-  fetchMetrics, fetchCacheStats, adminAuthHeaders,
+  fetchMetrics, fetchCacheStats, fetchSources, adminAuthHeaders,
   fetchLogLevel, setLogLevel, clearLogLevel,
   fetchMemoryLimit, setMemoryLimit, clearMemoryLimit,
   fetchTTLs, setTTL, clearTTL,
-  type MetricsSnapshot, type CacheStats, type LogLevelState,
+  type MetricsSnapshot, type CacheStats, type SourcesResponse, type LogLevelState,
   type MemoryLimitState, type TTLEntry,
 } from '@/lib/api';
 import { tablistKeyNav } from './tablist';
 import { IntegrationsClient } from './integrations-client';
+import { SourcesPanel } from './admin-sources';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
 
@@ -527,10 +528,11 @@ function WarmPanel() {
   );
 }
 
-type Tab = 'metrics' | 'cache' | 'logs' | 'runtime' | 'warm' | 'keys';
+type Tab = 'metrics' | 'sources' | 'cache' | 'logs' | 'runtime' | 'warm' | 'keys';
 
 const TABS: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'metrics', label: 'Metrics', icon: Activity },
+  { id: 'sources', label: 'Sources', icon: Gauge },
   { id: 'cache',   label: 'Cache',   icon: HardDrive },
   { id: 'logs',    label: 'Logs',    icon: ScrollText },
   { id: 'runtime', label: 'Runtime', icon: SlidersHorizontal },
@@ -542,6 +544,7 @@ export function AdminClient() {
   const [tab, setTab]         = useState<Tab>('metrics');
   const [metrics, setMetrics] = useState<MetricsSnapshot | null>(null);
   const [cache, setCache]     = useState<CacheStats | null>(null);
+  const [sources, setSources] = useState<SourcesResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
@@ -550,8 +553,9 @@ export function AdminClient() {
     setLoading(true);
     setError(null);
     try {
-      if (t === 'metrics') setMetrics(await fetchMetrics());
-      else                  setCache(await fetchCacheStats());
+      if (t === 'metrics')      setMetrics(await fetchMetrics());
+      else if (t === 'sources') setSources(await fetchSources());
+      else                      setCache(await fetchCacheStats());
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -566,7 +570,7 @@ export function AdminClient() {
   const switchTab = (t: Tab) => {
     setTab(t);
     if (t === 'warm' || t === 'logs' || t === 'runtime' || t === 'keys') return;
-    if ((t === 'metrics' && !metrics) || (t === 'cache' && !cache)) {
+    if ((t === 'metrics' && !metrics) || (t === 'sources' && !sources) || (t === 'cache' && !cache)) {
       void load(t);
     }
   };
@@ -576,14 +580,14 @@ export function AdminClient() {
       <div className="admin-header">
         <div>
           <h1 className="page-title">Admin</h1>
-          <p className="page-sub">Runtime metrics, cache diagnostics, and log verbosity.</p>
+          <p className="page-sub">Runtime metrics, source health, cache diagnostics, and log verbosity.</p>
         </div>
         <button
           className="btn btn-ghost"
           onClick={() => void load(tab)}
-          disabled={loading || (tab !== 'metrics' && tab !== 'cache')}
+          disabled={loading || (tab !== 'metrics' && tab !== 'sources' && tab !== 'cache')}
           aria-label="Refresh data"
-          title={tab === 'metrics' || tab === 'cache' ? 'Refresh this panel' : 'This panel loads on its own'}
+          title={tab === 'metrics' || tab === 'sources' || tab === 'cache' ? 'Refresh this panel' : 'This panel loads on its own'}
         >
           <RefreshCw size={13} aria-hidden="true" className={loading ? 'spin' : ''} />
           Refresh
@@ -632,6 +636,7 @@ export function AdminClient() {
             </div>
           )}
           {!loading && id === 'metrics' && metrics && <MetricsPanel data={metrics} />}
+          {!loading && id === 'sources' && sources && <SourcesPanel data={sources} />}
           {!loading && id === 'cache'   && cache   && <CachePanel   data={cache}   />}
           {id === 'logs' && tab === 'logs' && <LogLevelPanel />}
           {id === 'runtime' && tab === 'runtime' && <RuntimePanel />}

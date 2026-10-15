@@ -354,3 +354,13 @@ func TestAnAniListRefusalReachesTheSnapshotAsUncounted(t *testing.T) {
 		t.Errorf("got %+v", s)
 	}
 }
+
+func TestTimeoutsAreSplitFromOtherFailures(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.Failure("trakt", fmt.Errorf("trakt: %w", &timeoutErr{}), CallerInteractive)
+	h.Failure("trakt", HTTPFault("trakt", 503), CallerInteractive)
+	s := h.Snapshot()[0]
+	if s.Failures != 2 || s.Timeouts != 1 {
+		t.Fatalf("failures=%d timeouts=%d, want 2 and 1", s.Failures, s.Timeouts)
+	}
+}

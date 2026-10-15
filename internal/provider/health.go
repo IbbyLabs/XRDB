@@ -2,8 +2,10 @@ package provider
 
 import (
 	"container/list"
+	"context"
 	"errors"
 	"log/slog"
+	"net"
 	"strings"
 	"sync"
 	"time"
@@ -41,6 +43,8 @@ type sourceState struct {
 	lastRatedByType map[string]time.Time
 	successes       int64
 	failures        int64
+	// timeouts is the share of failures that were timeouts.
+	timeouts int64
 	// uncounted is answers with an HTTP status nothing classifies; see
 	// UncountedStatus. consecutiveUncounted resets on any answer that proves
 	// the source is working again.
@@ -113,6 +117,8 @@ type SourceHealth struct {
 	Failing   bool  `json:"failing"`
 	Successes int64 `json:"successes"`
 	Failures  int64 `json:"failures"`
+	// Timeouts is the part of Failures that timed out rather than answered.
+	Timeouts int64 `json:"timeouts"`
 	// Uncounted counts answers carrying an HTTP status nothing classifies, so
 	// they moved neither Failures nor Healthy. A source refusing every call
 	// with 403 reads successes 0, failures 0 and a rising Uncounted.
@@ -407,6 +413,9 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	st.lastFailure = time.Now()
 	st.consecutiveFail++
 	st.failures++
+	if isTimeout(err) {
+		st.timeouts++
+	}
 	if err != nil {
 		st.lastError = truncateError(err.Error())
 	}
@@ -656,6 +665,7 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 			ConsecutiveFail:      st.consecutiveFail,
 			Successes:            st.successes,
 			Failures:             st.failures,
+			Timeouts:             st.timeouts,
 			Uncounted:            st.uncounted,
 			ConsecutiveUncounted: st.consecutiveUncounted,
 			LastUncountedError:   st.lastUncountedError,
@@ -683,6 +693,14 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 	}
 	sortSourceHealth(out)
 	return out
+}
+
+func isTimeout(err error) bool {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var ne net.Error
+	return errors.As(err, &ne) && ne.Timeout()
 }
 
 // RememberedResults reports how many last-known-good entries are held, so the
