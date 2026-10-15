@@ -68,8 +68,8 @@ func TestPublicAddress(t *testing.T) {
 func TestCustomMarkRefusesLoopback(t *testing.T) {
 	srv, calls := markServer(t, makeTestPNG(32, 32, color.NRGBA{200, 0, 0, 255}), 200)
 	s := newCustomMarkStore(nil, publicDial)
-	if got := s.resolve(context.Background(), map[string]string{"imdb": srv.URL + "/i.png"}); len(got) != 0 {
-		t.Fatalf("loopback mark loaded: %v", got)
+	if got, failed := s.resolve(context.Background(), map[string]string{"imdb": srv.URL + "/i.png"}); len(got) != 0 || !failed {
+		t.Fatalf("loopback mark loaded or not reported: %v %v", got, failed)
 	}
 	if calls.Load() != 0 {
 		t.Fatalf("loopback server was reached %d times", calls.Load())
@@ -84,7 +84,7 @@ func TestCustomMarkRefusesRedirectInward(t *testing.T) {
 	t.Cleanup(front.Close)
 	frontAddr := serverAddr(t, front)
 	s := newCustomMarkStore(nil, func(ap netip.AddrPort) bool { return ap == frontAddr })
-	if got := s.resolve(context.Background(), map[string]string{"imdb": front.URL}); len(got) != 0 {
+	if got, _ := s.resolve(context.Background(), map[string]string{"imdb": front.URL}); len(got) != 0 {
 		t.Fatal("redirected mark loaded")
 	}
 	if calls.Load() != 0 {
@@ -96,8 +96,9 @@ func TestCustomMarkLoadsCachesAndShrinks(t *testing.T) {
 	srv, calls := markServer(t, makeTestPNG(900, 300, color.NRGBA{200, 30, 30, 255}), 200)
 	s := newCustomMarkStore(nil, allowAll)
 	for i := 0; i < 3; i++ {
-		m, ok := s.resolve(context.Background(), map[string]string{"imdb": srv.URL + "/i.png"})["imdb"]
-		if !ok {
+		got, failed := s.resolve(context.Background(), map[string]string{"imdb": srv.URL + "/i.png"})
+		m, ok := got["imdb"]
+		if !ok || failed {
 			t.Fatalf("round %d: mark missing", i)
 		}
 		if b := m.img.Bounds(); b.Dx() != customMarkMaxSide || b.Dy() != 85 {
@@ -129,7 +130,7 @@ func TestCustomMarkRejectsBadBodies(t *testing.T) {
 		srv, calls := markServer(t, tc.body, tc.status)
 		s := newCustomMarkStore(nil, allowAll)
 		for i := 0; i < 2; i++ {
-			if got := s.resolve(context.Background(), map[string]string{"tmdb": srv.URL}); len(got) != 0 {
+			if got, _ := s.resolve(context.Background(), map[string]string{"tmdb": srv.URL}); len(got) != 0 {
 				t.Errorf("%s: mark loaded", name)
 			}
 		}
@@ -174,5 +175,38 @@ func TestRatingMarkPrefersCustomMark(t *testing.T) {
 	}
 	if ratingMark(provider.Rating{Source: "imdb", Value: 7}, facts) != ratingIcons["imdb"] {
 		t.Fatal("a source without a custom mark lost its bundled one")
+	}
+}
+
+func TestAFailedCustomMarkMarksTheRenderDegraded(t *testing.T) {
+	stub := &provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta: &provider.MediaMeta{
+			PosterURL: "http://fake/poster.jpg",
+			Ratings:   []provider.Rating{{Source: "tmdb", Value: 7.5}},
+		},
+	}
+	art := makeTestPNG(300, 450, color.NRGBA{50, 50, 80, 255})
+	p := &Pipeline{providers: testRegistry(stub), fetcher: &recordingFetcher{data: art}, marks: seededMarkStore()}
+	render := func(url string) *Result {
+		cfg := imageconfig.Default()
+		cfg.Ratings = []string{"tmdb"}
+		if url != "" {
+			cfg.RatingProviderIconURL = map[string]string{"tmdb": url}
+		}
+		res, err := p.Render(context.Background(), Request{MediaType: "poster", MediaID: "tt1", Config: cfg})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return res
+	}
+	if res := render(""); res.Degraded {
+		t.Fatal("baseline render is degraded; the fixture cannot show the effect")
+	}
+	if res := render(seededMarkURL); res.Degraded {
+		t.Fatal("a render whose custom mark loaded was marked degraded")
+	}
+	if res := render("https://marks.example/missing.png"); !res.Degraded || res.DegradedByUs {
+		t.Fatalf("failed custom mark: degraded=%v byUs=%v", res.Degraded, res.DegradedByUs)
 	}
 }

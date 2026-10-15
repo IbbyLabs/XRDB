@@ -1361,15 +1361,23 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, ratingReq.MediaID)
 	}
 	// Custom marks load alongside the rating fan-out.
-	marksDone := make(chan map[string]customMark, 1)
-	go func() { marksDone <- p.marks.resolve(ctx, selectedMarkURLs(req.Config)) }()
+	type marksResult struct {
+		marks  map[string]customMark
+		failed bool
+	}
+	marksDone := make(chan marksResult, 1)
+	go func() {
+		m, failed := p.marks.resolve(ctx, selectedMarkURLs(req.Config))
+		marksDone <- marksResult{m, failed}
+	}()
 	ratingsCtx, faults := withFaultRetry(ctx)
 	allRatings, ratingProviders, degraded, sourceFault, queueHeld, _ := p.collectRatingsWithProviders(ratingsCtx, ratingReq, meta)
 	timings.mark("ratings")
 	// Resolved here, where the title's identity is, so the draw path receives an
 	// answer rather than an id and never needs to know a bundled list exists.
 	facts := titleFactsFor(meta, req.MediaID)
-	facts.customMarks = <-marksDone
+	marks := <-marksDone
+	facts.customMarks = marks.marks
 	// The ranking finishes building after the process starts, so a meta cached
 	// before then carries rank 0 and keeps it for the ratings cache TTL. Read
 	// the live table instead of trusting what the cache handed back.
@@ -1380,6 +1388,14 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	result.DegradedByQueue = result.DegradedByUs && queueHeld
 	if degraded && sourceFault {
 		result.FaultRetryIn = faults.after()
+	}
+	// A custom icon that failed draws the bundled one; caching that for the
+	// full TTL would keep it long after the icon's host recovers.
+	if marks.failed {
+		result.Degraded = true
+		result.DegradedByUs = false
+		result.DegradedByQueue = false
+		result.FaultRetryIn = 0
 	}
 	// A held-out source keeps its place in the strip so the gap is visible.
 	// Kept out of allRatings deliberately: that list feeds the average, the

@@ -130,10 +130,11 @@ func newCustomMarkStore(logger *slog.Logger, allow func(netip.AddrPort) bool) *c
 }
 
 // resolve fetches every mark in urls (source -> URL) in parallel and returns
-// the ones that loaded. A source whose mark failed is left out.
-func (s *customMarkStore) resolve(ctx context.Context, urls map[string]string) map[string]customMark {
+// the ones that loaded. A source whose mark failed is left out, and failed
+// reports that any did.
+func (s *customMarkStore) resolve(ctx context.Context, urls map[string]string) (marks map[string]customMark, failed bool) {
 	if s == nil || len(urls) == 0 {
-		return nil
+		return nil, false
 	}
 	var (
 		mu  sync.Mutex
@@ -154,7 +155,7 @@ func (s *customMarkStore) resolve(ctx context.Context, urls map[string]string) m
 		}(source, raw)
 	}
 	wg.Wait()
-	return out
+	return out, len(out) < len(urls)
 }
 
 func (s *customMarkStore) get(ctx context.Context, raw string) customMark {
