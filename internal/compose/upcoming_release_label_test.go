@@ -54,7 +54,13 @@ func TestUpcomingReleaseLabelFormatsAndCase(t *testing.T) {
 			t.Errorf("%q normal=%v: got %q, want %q", tc.format, tc.normal, got, tc.want)
 		}
 	}
-	if got := releaseLabelNormalCase("IN CINEMAS"); got != "In cinemas" {
+	if got := releaseLabelInCase("IN CINEMAS", "normal"); got != "In cinemas" {
 		t.Errorf("normal case = %q", got)
+	}
+	if got := releaseLabelInCase("IN CINEMAS", "title"); got != "In Cinemas" {
+		t.Errorf("title case = %q", got)
+	}
+	if got := releaseLabelInCase("IN CINEMAS", "upper"); got != "IN CINEMAS" {
+		t.Errorf("upper case = %q", got)
 	}
 }

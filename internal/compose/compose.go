@@ -1575,13 +1575,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// to the last thing that did. A film in cinemas with a digital date
 		// still ahead answers when it reaches home rather than repeating where
 		// it is now.
-		normal := releaseNormalCase(req.Config)
-		label, accent, ok := upcomingReleaseLabelAs(meta.UpcomingRelease, req.Config.ReleaseStatusDateFormat, normal)
+		mode := releaseCase(req.Config)
+		label, accent, ok := upcomingReleaseLabelAs(meta.UpcomingRelease, req.Config.ReleaseStatusDateFormat, mode != "upper")
 		if !ok && (!req.Config.ReleaseStatusHideDigital || meta.ReleaseStatus != "digital") {
 			label, accent, ok = releaseStatusLabel(meta.ReleaseStatus, req.Config.Language)
-			if normal {
-				label = releaseLabelNormalCase(label)
-			}
+			label = releaseLabelInCase(label, mode)
 		}
 		if ok {
 			drawReleaseBadge(composed, label, accent, req.Config.ReleaseStatusPos, scale, occ, releaseStatusOptsFromConfig(req.Config))

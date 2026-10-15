@@ -1640,6 +1640,29 @@ export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
         <NumField id={`${uid}-release-op`} label="Background opacity (%)" value={config.releaseStatusBackgroundOpacity}
           onChange={v => onUpdate('releaseStatusBackgroundOpacity', v)} min={5} max={100} step={5} />
       )}
+      {config.releaseStatusBadgeStyle !== 'plain' && (
+        <>
+      <StyleGrid
+            id={`${uid}-release-border-mode-label`}
+            label="Border"
+            options={GENRE_BORDER_OPTIONS}
+            value={genreBorderMode(config.releaseStatusBorderWidth)}
+            onChange={v => onUpdate('releaseStatusBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
+          />
+          {genreBorderMode(config.releaseStatusBorderWidth) === 'custom' && (
+            <NumField id={`${uid}-release-border`} label="Border width (px)" value={config.releaseStatusBorderWidth}
+              onChange={v => onUpdate('releaseStatusBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
+          )}
+          {config.releaseStatusBorderWidth >= 0 && (
+            <>
+              <ColorField id={`${uid}-release-border-color`} label="Border colour" value={config.releaseStatusBorderColor}
+                onChange={v => onUpdate('releaseStatusBorderColor', v)} fallback="#38bdf8" resetLabel="By status" />
+              <NumField id={`${uid}-release-border-op`} label="Border opacity (%)" value={config.releaseStatusBorderOpacity}
+                onChange={v => onUpdate('releaseStatusBorderOpacity', v)} min={5} max={100} step={5} />
+            </>
+          )}
+        </>
+      )}
       <ToggleField id={`${uid}-release-hide-digital`} label="Hide Digital Release"
         checked={config.releaseStatusHideDigital}
         onChange={v => onUpdate('releaseStatusHideDigital', v)}
@@ -1798,6 +1821,29 @@ export function TrendingFine({ uid, config, onUpdate, rankOnly = false }: GroupP
       {config.trendingRank && config.trendingTagStyle !== 'plain' && (
         <NumField id={`${uid}-trending-rank-op`} label="Rank background opacity (%)" value={config.trendingRankBackgroundOpacity}
           onChange={v => onUpdate('trendingRankBackgroundOpacity', v)} min={5} max={100} step={5} />
+      )}
+      {config.trendingRank && config.trendingTagStyle === 'pill' && (
+        <>
+      <StyleGrid
+            id={`${uid}-trending-rank-border-mode-label`}
+            label="Border"
+            options={GENRE_BORDER_OPTIONS}
+            value={genreBorderMode(config.trendingRankBorderWidth)}
+            onChange={v => onUpdate('trendingRankBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
+          />
+          {genreBorderMode(config.trendingRankBorderWidth) === 'custom' && (
+            <NumField id={`${uid}-trending-rank-border`} label="Border width (px)" value={config.trendingRankBorderWidth}
+              onChange={v => onUpdate('trendingRankBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
+          )}
+          {config.trendingRankBorderWidth >= 0 && (
+            <>
+              <ColorField id={`${uid}-trending-rank-border-color`} label="Border colour" value={config.trendingRankBorderColor}
+                onChange={v => onUpdate('trendingRankBorderColor', v)} fallback="#ff7e2a" resetLabel="Default" />
+              <NumField id={`${uid}-trending-rank-border-op`} label="Border opacity (%)" value={config.trendingRankBorderOpacity}
+                onChange={v => onUpdate('trendingRankBorderOpacity', v)} min={5} max={100} step={5} />
+            </>
+          )}
+        </>
       )}
       {!rankOnly && (
         <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}

@@ -844,15 +844,69 @@ func releaseLabelNormalCase(label string) string {
 	return string(lower)
 }
 
-// releaseNormalCase reports whether the release badge draws in normal case.
-func releaseNormalCase(cfg imageconfig.Config) bool {
-	switch cfg.ReleaseStatusCase {
-	case "normal":
-		return true
-	case "upper":
-		return false
+// releaseLabelTitleCase capitalises each word of an upper-case state label.
+func releaseLabelTitleCase(label string) string {
+	words := strings.Fields(strings.ToLower(label))
+	for i, w := range words {
+		r := []rune(w)
+		r[0] = unicode.ToUpper(r[0])
+		words[i] = string(r)
 	}
-	return cfg.ReleaseStatusBadgeStyle == "pill"
+	return strings.Join(words, " ")
+}
+
+// releaseCase is the case the release badge draws in: upper, normal or title.
+func releaseCase(cfg imageconfig.Config) string {
+	switch cfg.ReleaseStatusCase {
+	case "upper", "normal", "title":
+		return cfg.ReleaseStatusCase
+	}
+	if cfg.ReleaseStatusBadgeStyle == "pill" {
+		return "normal"
+	}
+	return "upper"
+}
+
+// releaseLabelInCase sets a landed state label in the chosen case.
+func releaseLabelInCase(label, mode string) string {
+	switch mode {
+	case "normal":
+		return releaseLabelNormalCase(label)
+	case "title":
+		return releaseLabelTitleCase(label)
+	}
+	return label
+}
+
+// pillBorder is the border width, colour and opacity controls the genre badge
+// offers, for the release and rank pills.
+type pillBorder struct {
+	width   float64 // px; 0 = the style's hairline, <0 = off
+	color   string  // "#RRGGBB"; "" = the style's own
+	opacity int     // 0-100; 0 = the style's own
+}
+
+func (b pillBorder) apply(ch tileChrome, scale float64) tileChrome {
+	if c, err := parseHexColor(b.color); b.color != "" && err == nil {
+		a := ch.border.A
+		if a == 0 {
+			a = 255
+		}
+		ch.border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: a}
+	}
+	if b.opacity > 0 {
+		ch.border.A = uint8(b.opacity * 255 / 100)
+	}
+	switch {
+	case b.width < 0:
+		ch.border = color.NRGBA{}
+	case b.width > 0:
+		ch.borderWidth = maxInt(1, int(b.width*scale+0.5))
+		if ch.border.A == 0 {
+			ch.border = color.NRGBA{R: 235, G: 235, B: 240, A: 150}
+		}
+	}
+	return ch
 }
 
 // releaseStatusOpts carries the release-status badge styling. Zero value keeps
@@ -867,6 +921,7 @@ type releaseStatusOpts struct {
 	labelColor   string // "#RRGGBB"; "" = the state's accent
 	bgOpacity    int    // 0-100; 0 = the style's own
 	font         string
+	border       pillBorder
 	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
 	outlineWidth int    // px outline width for the plain style; 0 = 1
 	outlineGlow  bool   // fade the outline outward instead of a hard edge
@@ -878,6 +933,7 @@ func releaseStatusOptsFromConfig(cfg imageconfig.Config) releaseStatusOpts {
 	return releaseStatusOpts{scalePercent: cfg.ReleaseStatusScale, offsetX: cfg.ReleaseStatusOffsetX, offsetY: cfg.ReleaseStatusOffsetY,
 		style: cfg.ReleaseStatusBadgeStyle, tileColor: cfg.ReleaseStatusTileColor,
 		labelColor: cfg.ReleaseStatusLabelColor, bgOpacity: cfg.ReleaseStatusBackgroundOpacity, font: cfg.ReleaseStatusFont,
+		border:       pillBorder{width: cfg.ReleaseStatusBorderWidth, color: cfg.ReleaseStatusBorderColor, opacity: cfg.ReleaseStatusBorderOpacity},
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow, noShadow: !cfg.BadgeShadow, frost: cfg.BadgeFrost, lang: cfg.Language}
 }
@@ -980,6 +1036,7 @@ func drawReleaseBadge(base *image.NRGBA, label string, accent color.NRGBA, pos s
 	if opts.labelColor != "" {
 		textCol = labelCol
 	}
+	chrome = opts.border.apply(chrome, scale)
 	radius := s(5)
 	switch opts.style {
 	case "square":
@@ -3152,7 +3209,8 @@ func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imagec
 	if cap1 <= 0 {
 		cap1 = probe.Metrics().Ascent.Ceil() * 7 / 10
 	}
-	face := valueFaceFor(0.04 * float64(h) * size / float64(maxInt(1, cap1)))
+	rankScale := 0.04 * float64(h) * size / float64(maxInt(1, cap1))
+	face := valueFaceFor(rankScale)
 	if face == nil {
 		return
 	}
@@ -3197,8 +3255,10 @@ func drawTrendingRankTab(base *image.NRGBA, occ *occupancy, rank int, cfg imagec
 		if c, err := parseHexColor(cfg.TrendingAccentColor); cfg.TrendingAccentColor != "" && err == nil {
 			border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 220}
 		}
-		drawSoftTile(base, r, tabH/2, tileChrome{fill: tile, border: border,
-			shadow: color.NRGBA{A: 80}, noShadow: !cfg.BadgeShadow, frost: cfg.BadgeFrost})
+		chrome := tileChrome{fill: tile, border: border,
+			shadow: color.NRGBA{A: 80}, noShadow: !cfg.BadgeShadow, frost: cfg.BadgeFrost}
+		pb := pillBorder{width: cfg.TrendingRankBorderWidth, color: cfg.TrendingRankBorderColor, opacity: cfg.TrendingRankBorderOpacity}
+		drawSoftTile(base, r, tabH/2, pb.apply(chrome, rankScale))
 	case "square":
 		radius = maxInt(1, capH/5)
 		fallthrough

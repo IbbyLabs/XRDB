@@ -234,6 +234,7 @@ export const RELEASE_CASE_OPTIONS = [
   { id: 'default', label: 'Auto',     desc: 'Normal case on the pill, capitals on the other styles' },
   { id: 'upper',   label: 'Capitals', desc: 'IN CINEMAS' },
   { id: 'normal',  label: 'Normal',   desc: 'In cinemas' },
+  { id: 'title',   label: 'Title',    desc: 'In Cinemas' },
 ] as const;
 
 export const RELEASE_DATE_FORMAT_OPTIONS = [
@@ -443,9 +444,12 @@ export interface ConfigState {
   releaseStatusHideDigital: boolean; // draw nothing for a title already out on digital
   releaseStatusLabelColor: string; // "#RRGGBB"; "" = the state's accent
   releaseStatusBackgroundOpacity: number; // 0 = the style's own
-  releaseStatusCase: string; // upper | normal; "" = normal on pill, upper otherwise
+  releaseStatusCase: string; // upper | normal | title; "" = normal on pill, upper otherwise
   releaseStatusFont: string; // sans | serif | mono | display; "" = default
   releaseStatusDateFormat: string; // day-month | month-day; "" = 23 Oct 2026
+  releaseStatusBorderWidth: number; // px; 0 = hairline, -1 = off
+  releaseStatusBorderColor: string; // "#RRGGBB"; "" = the status colour
+  releaseStatusBorderOpacity: number; // 0 = the style's own
   releaseStatusOffsetX: number;
   releaseStatusOffsetY: number;
   topRated: boolean;
@@ -493,6 +497,9 @@ export interface ConfigState {
   trendingRankScale: number; // percent, 50-200; 0 = 100
   trendingRankPos: string; // tc | tl | tr; "" = top centre
   trendingRankBackgroundOpacity: number; // 0 = the style's own
+  trendingRankBorderWidth: number; // px; 0 = hairline, -1 = off (pill)
+  trendingRankBorderColor: string; // "#RRGGBB"; "" = the border colour
+  trendingRankBorderOpacity: number; // 0 = the style's own
   trendingStyle: string;
   backdropAsPoster: boolean;
   logoWidth: number;
@@ -708,6 +715,9 @@ export const DEFAULT_CONFIG: ConfigState = {
   releaseStatusCase: '',
   releaseStatusFont: '',
   releaseStatusDateFormat: '',
+  releaseStatusBorderWidth: 0,
+  releaseStatusBorderColor: '',
+  releaseStatusBorderOpacity: 0,
   releaseStatusOffsetX: 0,
   releaseStatusOffsetY: 0,
   ageRatingPos: 'inherit',
@@ -736,6 +746,9 @@ export const DEFAULT_CONFIG: ConfigState = {
   trendingRankScale: 0,
   trendingRankPos: '',
   trendingRankBackgroundOpacity: 0,
+  trendingRankBorderWidth: 0,
+  trendingRankBorderColor: '',
+  trendingRankBorderOpacity: 0,
   trendingStyle: 'arrow-word',
   backdropAsPoster: false,
   logoWidth: 0,

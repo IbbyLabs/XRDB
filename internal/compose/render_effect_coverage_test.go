@@ -435,6 +435,7 @@ func splitSide(c *imageconfig.Config)    { c.RatingsLayout = imageconfig.LayoutS
 func genreTile(c *imageconfig.Config)    { c.GenreBadgeStyle = "tile" }
 func ageTile(c *imageconfig.Config)      { c.AgeRatingBadgeStyle = "tile" }
 func topTile(c *imageconfig.Config)      { c.TopRatedBadgeStyle = "tile" }
+func rankPill(c *imageconfig.Config)     { c.TrendingRank, c.TrendingTagStyle = true, "pill" }
 func releaseTile(c *imageconfig.Config)  { c.ReleaseStatusBadgeStyle = "tile" }
 func qualityTile(c *imageconfig.Config)  { c.QualityBadgesStyle = "tile" }
 func priorityCritics(c *imageconfig.Config) {
@@ -696,6 +697,12 @@ func keyMutations() map[string]keyOverride {
 		"badgeFrost":                    {mut: func(c *imageconfig.Config) { c.BadgeFrost = 60 }},
 		"trendingRankPos":               {pre: func(c *imageconfig.Config) { c.TrendingRank = true }, mut: func(c *imageconfig.Config) { c.TrendingRankPos = "tr" }},
 		"trendingRankBackgroundOpacity": {pre: func(c *imageconfig.Config) { c.TrendingRank = true }, mut: func(c *imageconfig.Config) { c.TrendingRankBackgroundOpacity = 30 }},
+		"releaseStatusBorderColor":      str(setColor(func(c *imageconfig.Config, v string) { c.ReleaseStatusBorderColor = v })),
+		"releaseStatusBorderOpacity":    {mut: func(c *imageconfig.Config) { c.ReleaseStatusBorderOpacity = 10 }},
+		"releaseStatusBorderWidth":      {mut: func(c *imageconfig.Config) { c.ReleaseStatusBorderWidth = -1 }},
+		"trendingRankBorderColor":       {pre: rankPill, mut: setColor(func(c *imageconfig.Config, v string) { c.TrendingRankBorderColor = v })},
+		"trendingRankBorderOpacity":     {pre: rankPill, mut: func(c *imageconfig.Config) { c.TrendingRankBorderOpacity = 10 }},
+		"trendingRankBorderWidth":       {pre: rankPill, mut: func(c *imageconfig.Config) { c.TrendingRankBorderWidth = -1 }},
 		"releaseStatusLabelColor":       str(setColor(func(c *imageconfig.Config, v string) { c.ReleaseStatusLabelColor = v })),
 		"releaseStatusCase":             {mut: func(c *imageconfig.Config) { c.ReleaseStatusCase = "normal" }},
 		"releaseStatusFont":             {mut: func(c *imageconfig.Config) { c.ReleaseStatusFont = "serif" }},

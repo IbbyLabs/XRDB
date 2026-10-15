@@ -464,3 +464,21 @@ func TestTrendingRankPosAndOpacityParseAndKey(t *testing.T) {
 		t.Fatal("rank tab controls do not reach the cache key")
 	}
 }
+
+func TestPillBorderControlsParseAndKey(t *testing.T) {
+	base := Parse([]byte(`{"releaseStatus":true,"trendingRank":true}`))
+	cfg := Parse([]byte(`{"releaseStatus":true,"trendingRank":true,
+		"releaseStatusBorderWidth":-3,"releaseStatusBorderColor":"#ffffff","releaseStatusBorderOpacity":10,
+		"trendingRankBorderWidth":20,"trendingRankBorderColor":"#ffffff","trendingRankBorderOpacity":10}`))
+	if cfg.ReleaseStatusBorderWidth != -1 || cfg.ReleaseStatusBorderColor != "#ffffff" || cfg.ReleaseStatusBorderOpacity != 10 {
+		t.Fatalf("release border: %v %q %d", cfg.ReleaseStatusBorderWidth, cfg.ReleaseStatusBorderColor, cfg.ReleaseStatusBorderOpacity)
+	}
+	if cfg.TrendingRankBorderWidth != 8 || cfg.TrendingRankBorderColor != "#ffffff" || cfg.TrendingRankBorderOpacity != 10 {
+		t.Fatalf("rank border: %v %q %d", cfg.TrendingRankBorderWidth, cfg.TrendingRankBorderColor, cfg.TrendingRankBorderOpacity)
+	}
+	for _, k := range []string{`"releaseStatusBorderColor":"#ffffff"`, `"trendingRankBorderOpacity":10`} {
+		if CacheKey(base) == CacheKey(Parse([]byte(`{"releaseStatus":true,"trendingRank":true,`+k+`}`))) {
+			t.Errorf("%s does not reach the cache key", k)
+		}
+	}
+}

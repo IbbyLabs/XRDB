@@ -310,8 +310,12 @@ type Config struct {
 	// TrendingRankPos places that tab: tc, tl or tr; "" = tc.
 	TrendingRankPos string `json:"trendingRankPos,omitempty"`
 	// TrendingRankBackgroundOpacity is the tab's fill opacity, 0-100; 0 = the style's own.
-	TrendingRankBackgroundOpacity int  `json:"trendingRankBackgroundOpacity,omitempty"`
-	BackdropAsPoster              bool `json:"backdropAsPoster,omitempty"`
+	TrendingRankBackgroundOpacity int `json:"trendingRankBackgroundOpacity,omitempty"`
+	// The rank pill's border: width in px (0 = hairline, <0 = off), colour and 0-100 opacity.
+	TrendingRankBorderWidth   float64 `json:"trendingRankBorderWidth,omitempty"`
+	TrendingRankBorderColor   string  `json:"trendingRankBorderColor,omitempty"`
+	TrendingRankBorderOpacity int     `json:"trendingRankBorderOpacity,omitempty"`
+	BackdropAsPoster          bool    `json:"backdropAsPoster,omitempty"`
 	// HideCinemetaRating strips the IMDb rating from the Stremio meta XRDB serves
 	// (both the imdbRating field and the "imdb" link), so Cinemeta's own rating
 	// does not sit beside XRDB's overlaid one. It affects the meta response, not
@@ -706,15 +710,18 @@ type AgeRatingConfig struct {
 	AgeRatingLabelColor        string  `json:"ageRatingLabelColor,omitempty"`        // "#RRGGBB"; "" = the style's own
 	// The release-status badge takes the same treatments as the age badge, so
 	// the two corner plates can be styled to match.
-	TopRatedBadgeStyle             string `json:"topRatedBadgeStyle,omitempty"`             // glass|square|plain|tile|silver
-	TopRatedTileColor              string `json:"topRatedTileColor,omitempty"`              // "#RRGGBB" for the tile style
-	ReleaseStatusBadgeStyle        string `json:"releaseStatusBadgeStyle,omitempty"`        // glass | plain | tile | square | silver | pill
-	ReleaseStatusTileColor         string `json:"releaseStatusTileColor,omitempty"`         // "#RRGGBB" for the tile style
-	ReleaseStatusLabelColor        string `json:"releaseStatusLabelColor,omitempty"`        // "#RRGGBB"; "" = the state's accent
-	ReleaseStatusBackgroundOpacity int    `json:"releaseStatusBackgroundOpacity,omitempty"` // 0-100; 0 = the style's own
-	ReleaseStatusCase              string `json:"releaseStatusCase,omitempty"`              // upper | normal; "" = normal on pill, upper otherwise
-	ReleaseStatusFont              string `json:"releaseStatusFont,omitempty"`              // sans | serif | mono | display; "" = default
-	ReleaseStatusDateFormat        string `json:"releaseStatusDateFormat,omitempty"`        // day-month | month-day; "" = day month year
+	TopRatedBadgeStyle             string  `json:"topRatedBadgeStyle,omitempty"`             // glass|square|plain|tile|silver
+	TopRatedTileColor              string  `json:"topRatedTileColor,omitempty"`              // "#RRGGBB" for the tile style
+	ReleaseStatusBadgeStyle        string  `json:"releaseStatusBadgeStyle,omitempty"`        // glass | plain | tile | square | silver | pill
+	ReleaseStatusTileColor         string  `json:"releaseStatusTileColor,omitempty"`         // "#RRGGBB" for the tile style
+	ReleaseStatusLabelColor        string  `json:"releaseStatusLabelColor,omitempty"`        // "#RRGGBB"; "" = the state's accent
+	ReleaseStatusBackgroundOpacity int     `json:"releaseStatusBackgroundOpacity,omitempty"` // 0-100; 0 = the style's own
+	ReleaseStatusCase              string  `json:"releaseStatusCase,omitempty"`              // upper | normal | title; "" = normal on pill, upper otherwise
+	ReleaseStatusFont              string  `json:"releaseStatusFont,omitempty"`              // sans | serif | mono | display; "" = default
+	ReleaseStatusDateFormat        string  `json:"releaseStatusDateFormat,omitempty"`        // day-month | month-day; "" = day month year
+	ReleaseStatusBorderWidth       float64 `json:"releaseStatusBorderWidth,omitempty"`       // px; 0 = hairline, <0 = off
+	ReleaseStatusBorderColor       string  `json:"releaseStatusBorderColor,omitempty"`       // "#RRGGBB"; "" = the status colour
+	ReleaseStatusBorderOpacity     int     `json:"releaseStatusBorderOpacity,omitempty"`     // 0-100; 0 = the style's own
 }
 
 // TrendingConfig groups the trending-tag styling not already covered by the
@@ -903,6 +910,9 @@ type raw struct {
 	TrendingRankScale             *int      `json:"trendingRankScale"`
 	TrendingRankPos               *string   `json:"trendingRankPos"`
 	TrendingRankBackgroundOpacity *int      `json:"trendingRankBackgroundOpacity"`
+	TrendingRankBorderWidth       *float64  `json:"trendingRankBorderWidth"`
+	TrendingRankBorderColor       *string   `json:"trendingRankBorderColor"`
+	TrendingRankBorderOpacity     *int      `json:"trendingRankBorderOpacity"`
 	TrendingStyle                 *string   `json:"trendingStyle"`
 	BackdropAsPoster              *bool     `json:"backdropAsPoster"`
 	HideCinemetaRating            *bool     `json:"hideCinemetaRating"`
@@ -1001,6 +1011,9 @@ type rawAge struct {
 	ReleaseStatusCase              *string  `json:"releaseStatusCase"`
 	ReleaseStatusFont              *string  `json:"releaseStatusFont"`
 	ReleaseStatusDateFormat        *string  `json:"releaseStatusDateFormat"`
+	ReleaseStatusBorderWidth       *float64 `json:"releaseStatusBorderWidth"`
+	ReleaseStatusBorderColor       *string  `json:"releaseStatusBorderColor"`
+	ReleaseStatusBorderOpacity     *int     `json:"releaseStatusBorderOpacity"`
 	ReleaseStatusTileColor         *string  `json:"releaseStatusTileColor"`
 	AgeRatingBadgeStyle            *string  `json:"ageRatingBadgeStyle"`
 	AgeRatingTileColor             *string  `json:"ageRatingTileColor"`
@@ -1495,6 +1508,13 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.TrendingRankBackgroundOpacity != nil && *r.TrendingRankBackgroundOpacity != 0 {
 		cfg.TrendingRankBackgroundOpacity = clampInt(*r.TrendingRankBackgroundOpacity, 1, 100)
+	}
+	cfg.TrendingRankBorderWidth = parseBorderWidth(r.TrendingRankBorderWidth)
+	if r.TrendingRankBorderColor != nil && isHexColor(*r.TrendingRankBorderColor) {
+		cfg.TrendingRankBorderColor = strings.TrimSpace(*r.TrendingRankBorderColor)
+	}
+	if r.TrendingRankBorderOpacity != nil && *r.TrendingRankBorderOpacity != 0 {
+		cfg.TrendingRankBorderOpacity = clampInt(*r.TrendingRankBorderOpacity, 1, 100)
 	}
 	if r.TrendingStyle != nil {
 		if v := normalizeTrendingStyle(*r.TrendingStyle); v != "" {
@@ -2254,7 +2274,7 @@ func parseAge(cfg *Config, r *raw) {
 	}
 	if r.ReleaseStatusCase != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.ReleaseStatusCase)); v {
-		case "upper", "normal":
+		case "upper", "normal", "title":
 			cfg.ReleaseStatusCase = v
 		}
 	}
@@ -2266,6 +2286,13 @@ func parseAge(cfg *Config, r *raw) {
 		case "day-month", "month-day":
 			cfg.ReleaseStatusDateFormat = v
 		}
+	}
+	cfg.ReleaseStatusBorderWidth = parseBorderWidth(r.ReleaseStatusBorderWidth)
+	if r.ReleaseStatusBorderColor != nil && isHexColor(*r.ReleaseStatusBorderColor) {
+		cfg.ReleaseStatusBorderColor = strings.TrimSpace(*r.ReleaseStatusBorderColor)
+	}
+	if r.ReleaseStatusBorderOpacity != nil && *r.ReleaseStatusBorderOpacity != 0 {
+		cfg.ReleaseStatusBorderOpacity = clampInt(*r.ReleaseStatusBorderOpacity, 1, 100)
 	}
 	if r.ReleaseStatusTileColor != nil && isHexColor(*r.ReleaseStatusTileColor) {
 		cfg.ReleaseStatusTileColor = strings.TrimSpace(*r.ReleaseStatusTileColor)
@@ -2611,6 +2638,20 @@ const renderVersion = "r23"
 // normalizeBadgeFont maps a badge font choice to its stored form: one of
 // sans, serif, mono or display, or "" for the built-in face. Anything else,
 // including "default", is the built-in face.
+// parseBorderWidth reads a border width: <0 is off (-1), 0 or nil the style's
+// hairline, anything else px capped at 8.
+func parseBorderWidth(v *float64) float64 {
+	switch {
+	case v == nil || *v == 0:
+		return 0
+	case *v < 0:
+		return -1
+	case *v > 8:
+		return 8
+	}
+	return *v
+}
+
 func normalizeBadgeFont(v string) string {
 	switch v = strings.ToLower(strings.TrimSpace(v)); v {
 	case "sans", "serif", "mono", "display":
@@ -2720,6 +2761,9 @@ func CacheKey(cfg Config) string {
 		TrendingRankScale             int            `json:"trendingRankScale,omitempty"`
 		TrendingRankPos               string         `json:"trendingRankPos,omitempty"`
 		TrendingRankBackgroundOpacity int            `json:"trendingRankBackgroundOpacity,omitempty"`
+		TrendingRankBorderWidth       float64        `json:"trendingRankBorderWidth,omitempty"`
+		TrendingRankBorderColor       string         `json:"trendingRankBorderColor,omitempty"`
+		TrendingRankBorderOpacity     int            `json:"trendingRankBorderOpacity,omitempty"`
 		// The rank changes daily, so a render showing one is keyed to its day.
 		TrendingRankDay   string        `json:"trendingRankDay,omitempty"`
 		TrendingStyle     TrendingStyle `json:"trendingStyle"`
@@ -2849,6 +2893,9 @@ func CacheKey(cfg Config) string {
 		TrendingRankScale:             cfg.TrendingRankScale,
 		TrendingRankPos:               cfg.TrendingRankPos,
 		TrendingRankBackgroundOpacity: cfg.TrendingRankBackgroundOpacity,
+		TrendingRankBorderWidth:       cfg.TrendingRankBorderWidth,
+		TrendingRankBorderColor:       cfg.TrendingRankBorderColor,
+		TrendingRankBorderOpacity:     cfg.TrendingRankBorderOpacity,
 		TrendingStyle:                 cfg.TrendingStyle,
 		BackdropAsPoster:              cfg.BackdropAsPoster,
 		BackdropLogo:                  cfg.BackdropLogo,
