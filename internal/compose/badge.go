@@ -222,6 +222,22 @@ type titleFacts struct {
 	// customMarks are the profile's own marks per source, drawn in place of
 	// every bundled mark for that source, score-dependent ones included.
 	customMarks map[string]customMark
+	// keepRTMarks leaves RT's Certified Fresh and Rotten marks bundled.
+	keepRTMarks bool
+}
+
+// customMarkFor returns the profile's mark for r, if one should be drawn.
+func customMarkFor(r provider.Rating, facts titleFacts) (customMark, bool) {
+	m, ok := facts.customMarks[r.Source]
+	if !ok {
+		return customMark{}, false
+	}
+	if r.Source == "rt" && facts.keepRTMarks {
+		if state := markStateFor(r, facts); state == "critics-certified-fresh" || state == "critics-rotten" {
+			return customMark{}, false
+		}
+	}
+	return m, true
 }
 
 func markStateFor(r provider.Rating, facts titleFacts) string {
@@ -279,7 +295,7 @@ func markStateFor(r provider.Rating, facts titleFacts) string {
 // ratingMark returns the mark to draw for a rating, resolving the score-dependent
 // state where one exists and falling back to the source's fixed mark otherwise.
 func ratingMark(r provider.Rating, facts titleFacts) image.Image {
-	if m, ok := facts.customMarks[r.Source]; ok {
+	if m, ok := customMarkFor(r, facts); ok {
 		return m.img
 	}
 	if name := markStateFor(r, facts); name != "" {
@@ -293,7 +309,7 @@ func ratingMark(r provider.Rating, facts titleFacts) image.Image {
 // ratingMarkColored reports whether ratingMark's chosen mark is drawn as-is
 // rather than tinted with the accent.
 func ratingMarkColored(r provider.Rating, facts titleFacts) bool {
-	if m, ok := facts.customMarks[r.Source]; ok {
+	if m, ok := customMarkFor(r, facts); ok {
 		return m.colored
 	}
 	if name := markStateFor(r, facts); name != "" {

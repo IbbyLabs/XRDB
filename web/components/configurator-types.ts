@@ -517,6 +517,7 @@ export interface ConfigState {
   genreFamilyColors: Record<string, string>; // family id → hex accent; absent = built-in default
   ratingProviderIconScale: Record<string, number>; // source id → icon scale percent 50-150; no entry = 100
   ratingProviderIconUrl: Record<string, string>; // source id → http(s) image URL drawn instead of the bundled mark
+  customIconKeepRtMarks: boolean; // with a custom RT icon, keep the bundled Certified Fresh and Rotten marks
   ratingProviderWeights: Record<string, number>; // source id → weight; no entry = 1, 0 = ignore
   genreBadgeScale: number;
   genreBadgeOffsetX: number;
@@ -750,6 +751,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   genreFamilyColors: {},
   ratingProviderIconScale: {},
   ratingProviderIconUrl: {},
+  customIconKeepRtMarks: false,
   ratingProviderWeights: {},
   genreBadgeScale: 0,
   genreBadgeOffsetX: 0,

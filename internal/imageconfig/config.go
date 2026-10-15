@@ -562,6 +562,9 @@ type RatingBadgeConfig struct {
 	// RatingProviderIconURL maps a provider source to an http(s) image URL
 	// drawn in place of its bundled mark.
 	RatingProviderIconURL map[string]string `json:"ratingProviderIconUrl,omitempty"`
+	// CustomIconKeepRTMarks keeps the bundled Certified Fresh and Rotten marks
+	// when RT has a custom icon, which then draws only for a plain Fresh score.
+	CustomIconKeepRTMarks bool `json:"customIconKeepRtMarks,omitempty"`
 	// RatingProviderWeights maps a provider source to its percent share of any
 	// score built from several sources: the rating ring, the aggregate bar, and
 	// the averaged presentations. Shares add up to 100 across the selected
@@ -1036,6 +1039,7 @@ type rawRating struct {
 	RatingProviderOverrides map[string]string  `json:"ratingProviderOverrides"`
 	RatingProviderIconScale map[string]int     `json:"ratingProviderIconScale"`
 	RatingProviderIconURL   map[string]string  `json:"ratingProviderIconUrl"`
+	CustomIconKeepRTMarks   *bool              `json:"customIconKeepRtMarks"`
 	RatingProviderWeights   map[string]float64 `json:"ratingProviderWeights"`
 }
 
@@ -2026,6 +2030,9 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if len(r.RatingProviderIconURL) > 0 {
 		cfg.RatingProviderIconURL = parseIconURLs(r.RatingProviderIconURL)
+	}
+	if r.CustomIconKeepRTMarks != nil {
+		cfg.CustomIconKeepRTMarks = *r.CustomIconKeepRTMarks
 	}
 	if len(r.RatingProviderWeights) > 0 {
 		var m map[string]float64

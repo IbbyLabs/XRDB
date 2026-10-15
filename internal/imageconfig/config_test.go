@@ -421,4 +421,8 @@ func TestRatingProviderIconURLKeepsOnlyHTTPURLs(t *testing.T) {
 	if CacheKey(a) == CacheKey(b) {
 		t.Fatal("icon URL does not reach the cache key")
 	}
+	keep := Parse([]byte(`{"ratingProviderIconUrl":{"imdb":"https://example.com/a.png"},"customIconKeepRtMarks":true}`))
+	if !keep.CustomIconKeepRTMarks || CacheKey(keep) == CacheKey(a) {
+		t.Fatal("customIconKeepRtMarks not parsed or not in the cache key")
+	}
 }

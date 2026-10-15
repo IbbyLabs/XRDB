@@ -178,6 +178,31 @@ func TestRatingMarkPrefersCustomMark(t *testing.T) {
 	}
 }
 
+func TestKeepRTMarksLeavesCertifiedAndRottenBundled(t *testing.T) {
+	ensureIcons()
+	custom := image.NewNRGBA(image.Rect(0, 0, 10, 10))
+	marks := map[string]customMark{"rt": {img: custom, colored: true}}
+	cases := []struct {
+		name  string
+		value float64
+		votes int
+		keep  bool
+		want  image.Image
+	}{
+		{"certified, replace all", 9.5, 200, false, custom},
+		{"certified, keep", 9.5, 200, true, ratingIcons["critics-certified-fresh"]},
+		{"rotten, keep", 4.0, 200, true, ratingIcons["critics-rotten"]},
+		{"fresh, keep", 6.5, 200, true, custom},
+	}
+	for _, tc := range cases {
+		facts := titleFacts{customMarks: marks, keepRTMarks: tc.keep}
+		r := provider.Rating{Source: "rt", Value: tc.value, Votes: tc.votes}
+		if got := ratingMark(r, facts); got != tc.want {
+			t.Errorf("%s: wrong mark", tc.name)
+		}
+	}
+}
+
 func TestAFailedCustomMarkMarksTheRenderDegraded(t *testing.T) {
 	stub := &provider.StubProvider{
 		ProviderName: "tmdb",

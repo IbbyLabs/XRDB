@@ -1378,6 +1378,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	facts := titleFactsFor(meta, req.MediaID)
 	marks := <-marksDone
 	facts.customMarks = marks.marks
+	facts.keepRTMarks = req.Config.CustomIconKeepRTMarks
 	// The ranking finishes building after the process starts, so a meta cached
 	// before then carries rank 0 and keeps it for the ratings cache TTL. Read
 	// the live table instead of trusting what the cache handed back.

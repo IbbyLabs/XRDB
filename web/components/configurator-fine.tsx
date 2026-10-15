@@ -561,6 +561,12 @@ function ProviderIcons({ uid, config, onUpdate }: GroupProps) {
             onCommit={url => setIcon(r.id, url)}
           />
         ))}
+        {icons.rt && selected.some(r => r.id === 'rt') && (
+          <ToggleField id={`${uid}-keep-rt-marks`} label="Keep RT's Certified Fresh and Rotten marks"
+            checked={config.customIconKeepRtMarks}
+            onChange={v => onUpdate('customIconKeepRtMarks', v)}
+            hint="Use your Rotten Tomatoes icon only for a plain Fresh score, and the bundled marks for Certified Fresh and Rotten." />
+        )}
         {customCount > 0 && (
           <button type="button" className="opt-btn" onClick={() => { onUpdate('ratingProviderIconUrl', {}); setStatus(null); }}>
             Use bundled icons for every source
