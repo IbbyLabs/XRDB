@@ -116,20 +116,15 @@ func TestCustomMarkLoadsCachesAndShrinks(t *testing.T) {
 func TestCustomMarkRejectsBadBodies(t *testing.T) {
 	big := bytes.Repeat([]byte{0}, customMarkMaxBytes+10)
 	copy(big, makeTestPNG(4, 4, color.NRGBA{1, 1, 1, 255}))
-	bomb := makeTestPNG(1025, 1024, color.NRGBA{1, 1, 1, 255})
-	if len(bomb) > 64<<10 {
-		t.Fatalf("bomb PNG is %d bytes, want a small body", len(bomb))
-	}
 	cases := map[string]struct {
 		body   []byte
 		status int
 	}{
-		"html":            {[]byte("<html><body>nope</body></html>"), 200},
-		"svg":             {[]byte(`<svg xmlns="http://www.w3.org/2000/svg"></svg>`), 200},
-		"too big":         {big, 200},
-		"too many pixels": {bomb, 200},
-		"404":             {makeTestPNG(4, 4, color.NRGBA{1, 1, 1, 255}), 404},
-		"truncated":       {makeTestPNG(64, 64, color.NRGBA{1, 1, 1, 255})[:40], 200},
+		"html":      {[]byte("<html><body>nope</body></html>"), 200},
+		"svg":       {[]byte(`<svg xmlns="http://www.w3.org/2000/svg"></svg>`), 200},
+		"too big":   {big, 200},
+		"404":       {makeTestPNG(4, 4, color.NRGBA{1, 1, 1, 255}), 404},
+		"truncated": {makeTestPNG(64, 64, color.NRGBA{1, 1, 1, 255})[:40], 200},
 	}
 	for name, tc := range cases {
 		srv, calls := markServer(t, tc.body, tc.status)

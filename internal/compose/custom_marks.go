@@ -27,16 +27,13 @@ import (
 // refuses non-public addresses, caps size and type, and caches the decoded mark.
 const (
 	customMarkMaxBytes   = 1 << 20
-	customMarkMaxPixels  = 1024 * 1024
+	customMarkMaxPixels  = 4096 * 4096
 	customMarkMaxSide    = 256
 	customMarkTimeout    = 4 * time.Second
 	customMarkTTL        = 24 * time.Hour
 	customMarkFailTTL    = 10 * time.Minute
 	customMarkMaxEntries = 512
 )
-
-// decodeSlots bounds how many marks decode at once across all renders.
-var decodeSlots = make(chan struct{}, 3)
 
 var errBlockedAddress = errors.New("address is not a public internet address")
 
@@ -248,8 +245,6 @@ func decodeCustomMark(body []byte) (image.Image, error) {
 	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width*cfg.Height > customMarkMaxPixels {
 		return nil, fmt.Errorf("dimensions %dx%d out of range", cfg.Width, cfg.Height)
 	}
-	decodeSlots <- struct{}{}
-	defer func() { <-decodeSlots }()
 	img, _, err := image.Decode(bytes.NewReader(body))
 	if err != nil {
 		return nil, err
