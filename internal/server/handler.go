@@ -1019,10 +1019,10 @@ func keyParamMatches(rawQuery, want string) bool {
 // preview loading in a browser, which the API-key gate exempts. XRDB_API_KEY
 // exists to gate programmatic and external use — AIOMetadata and Stremio fetch
 // server-side, hotlinks load cross-origin — and all of those still require the
-// key. Sec-Fetch-Site is set by the browser and cannot be forged from page
-// JavaScript; only a genuine same-origin request (the embedded <img>) is let
-// through. same-site is intentionally not accepted, so a neighbour on a shared
-// parent domain can't hotlink for free.
+// key. Page JavaScript cannot set Sec-Fetch-Site or Referer, but any
+// non-browser client can, so this exemption is not a security boundary.
+// same-site is not accepted, so a neighbour on a shared parent domain can't
+// hotlink for free.
 func sameOriginRender(r *http.Request) bool {
 	switch r.Header.Get("Sec-Fetch-Site") {
 	case "same-origin":
