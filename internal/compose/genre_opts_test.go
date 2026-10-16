@@ -478,3 +478,14 @@ func TestTileLabelTakesItsContrastFromTheFill(t *testing.T) {
 		t.Error("a white tile drew no dark pixels, so the label is white on white")
 	}
 }
+
+func TestRingClampsAnOutOfScaleSource(t *testing.T) {
+	cfg := imageconfig.Config{Ratings: []string{"letterboxd"}, RatingRing: true, RatingRingPos: "br"}
+	ten := genreTestImage()
+	drawAverageRatingRing(ten, []provider.Rating{{Source: "letterboxd", Value: 10, Label: "5.0"}}, cfg, 2.0, newOccupancy(ten.Bounds()))
+	over := genreTestImage()
+	drawAverageRatingRing(over, []provider.Rating{{Source: "letterboxd", Value: 17.2, Label: "8.6"}}, cfg, 2.0, newOccupancy(over.Bounds()))
+	if imagesDiffer(ten, over) {
+		t.Error("a ring fed 17.2 drew differently from one fed 10")
+	}
+}

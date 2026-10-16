@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"encoding/json"
 	"math"
 	"testing"
 )
@@ -64,6 +65,29 @@ func TestMDBListNormalizedValuesStayOnScale(t *testing.T) {
 		}
 		if zero, _ := mdblistNormalize(source, 0); zero != 0 {
 			t.Errorf("%q at 0 normalized to %.2f, want 0", source, zero)
+		}
+	}
+}
+
+// MDBList sends Letterboxd as 4.3 on a single lookup and 8.6 in a batch, with
+// score 86 on both.
+func TestLetterboxdReadsTheSameFromSingleAndBatchPayloads(t *testing.T) {
+	shapes := map[string]string{
+		"single":   `{"ratings":[{"source":"letterboxd","value":4.3,"score":86,"votes":4598425}]}`,
+		"batch":    `{"ratings":[{"source":"letterboxd","value":8.6,"score":86,"votes":4598425}]}`,
+		"no score": `{"ratings":[{"source":"letterboxd","value":4.3,"votes":10}]}`,
+	}
+	for name, raw := range shapes {
+		var p mdblistPayload
+		if err := json.Unmarshal([]byte(raw), &p); err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		got := parseMDBListRatings(p)
+		if len(got) != 1 {
+			t.Fatalf("%s: %d ratings", name, len(got))
+		}
+		if math.Abs(got[0].Value-8.6) > 0.001 || got[0].Label != "4.3" {
+			t.Errorf("%s: value %.2f label %q, want 8.60 and 4.3", name, got[0].Value, got[0].Label)
 		}
 	}
 }

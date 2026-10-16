@@ -3470,6 +3470,7 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	if v, ok := ratingRingSourceValue(ratings, cfg.RingProgressSource, cfg); ok {
 		progress = v
 	}
+	value, progress = math.Min(math.Max(value, 0), 10), math.Min(math.Max(progress, 0), 10)
 	placeholderFill, placeholderColoured := color.NRGBA{}, false
 	if empty {
 		// No arc and no number: the outline alone.

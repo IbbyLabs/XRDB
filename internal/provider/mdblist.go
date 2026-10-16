@@ -368,6 +368,11 @@ func parseMDBListRatings(p mdblistPayload) []Rating {
 		if v == 0 {
 			v = r.Score
 		}
+		// Letterboxd's value is out of 5 on single lookups and out of 10 in
+		// batches; score is 0-100 on both.
+		if source == "letterboxd" && r.Score > 0 {
+			v = r.Score / 20
+		}
 		if v == 0 {
 			continue
 		}
