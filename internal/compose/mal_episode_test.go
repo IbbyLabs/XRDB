@@ -322,3 +322,15 @@ func TestTMDBEpisodeNameChecksTheMappedMALEpisode(t *testing.T) {
 		})
 	}
 }
+
+func TestEpisodeScoreAppliesWhenTheRatingIDIsTheEpisodeTconst(t *testing.T) {
+	var requests atomic.Int32
+	p := episodePipeline(t, episodeMap{"tt2560140/3/13": {MALID: 38524, Episode: 1}}, &requests)
+	req := episodeRequest(0, 0)
+	req.MediaID, req.seriesID = "tt29277818", "tt2560140"
+	all, _, _, _, _, _ := p.collectRatingsWithProviders(interactiveCtx(), req, &provider.MediaMeta{})
+	got := malRatings(all)
+	if len(got) != 1 || got[0].Label != "4.35" {
+		t.Fatalf("MAL ratings = %+v, want the episode's 4.35", got)
+	}
+}

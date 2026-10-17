@@ -2637,6 +2637,15 @@ func askAbout(req Request, prov provider.Provider) Request {
 	return req
 }
 
+// applicabilityID is the id prov decides applicability on. A source that
+// answers per episode by numbers is asked about the numbers.
+func applicabilityID(req Request, prov provider.Provider) string {
+	if _, ok := prov.(provider.EpisodeRatingProvider); ok && req.episode != nil {
+		return fmt.Sprintf("%s:%d:%d", req.episode.series, req.episode.season, req.episode.number)
+	}
+	return req.MediaID
+}
+
 func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string, bool, bool, bool, []string) {
 	if artwork == nil {
 		artwork = &provider.MediaMeta{}
@@ -2704,7 +2713,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	for _, i := range freePreferredSuppliers(called, req.Config, req.ContentType) {
 		prov := called[i]
 		req := askAbout(req, prov)
-		if !provider.SourceApplies(ctx, prov, req.ContentType, req.MediaID) {
+		if !provider.SourceApplies(ctx, prov, req.ContentType, applicabilityID(req, prov)) {
 			continue
 		}
 		started := time.Now()
@@ -2759,7 +2768,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			// lookup can reach a live API for a title the local dataset misses,
 			// and in front of the fan-out that would serialise one network call
 			// per anime source before any source is called at all.
-			if !provider.SourceApplies(ctx, prov, req.ContentType, req.MediaID) {
+			if !provider.SourceApplies(ctx, prov, req.ContentType, applicabilityID(req, prov)) {
 				p.log().DebugContext(ctx, "A ratings source does not apply to this title",
 					"id", logging.RequestID(ctx), "source", prov.Name(),
 					"media_id", req.MediaID)
