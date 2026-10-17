@@ -5,7 +5,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS, ORIGINAL_LANGUAGE,
   AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS, TRENDING_RANK_POS_OPTIONS,
-  OUTPUT_FORMAT_OPTIONS, TOP_RATED_STYLE_OPTIONS,
+  OUTPUT_FORMAT_OPTIONS, TOP_RATED_STYLE_OPTIONS, QUALITY_MODE_OPTIONS, QUALITY_BEST_TIERS,
   suppressedQualityBadges,
 } from './configurator-types';
 import { QualityFine, GenreFine, OutlineFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine, ScaleOffsetFields, hasAnyRatingSource } from './configurator-fine';
@@ -724,7 +724,25 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               );
             })}
           </div>
+          <Field label="Show" htmlFor={`${uid}-quality-mode`}>
+            <select
+              id={`${uid}-quality-mode`}
+              className="select"
+              value={config.qualityBadgesMode}
+              onChange={e => {
+                const mode = e.target.value;
+                if (mode === 'best') {
+                  const missing = QUALITY_BEST_TIERS.filter(t => !config.badges.includes(t));
+                  if (missing.length > 0) onUpdate('badges', [...config.badges, ...missing]);
+                }
+                onUpdate('qualityBadgesMode', mode);
+              }}
+            >
+              {QUALITY_MODE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
           <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
+            {config.qualityBadgesMode === 'best' && 'Only the highest resolution available is drawn; HDR, Dolby Vision and audio badges still show if picked. CAM appears only when nothing better exists. '}
             {`Rendered ${qualityPosLabel(config.qualityBadgesPos)}. Corner positions stack into a column; the centre ones form a row.`}
             {supersededLabels.length > 0 &&
               ` ${supersededLabels.join(' and ')} ${supersededLabels.length > 1 ? 'are' : 'is'} already covered by a higher format you picked, so ${supersededLabels.length > 1 ? 'they are' : 'it is'} not drawn.`}

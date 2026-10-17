@@ -366,6 +366,8 @@ export const SCOREBAR_STYLE_OPTIONS = [
 export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
   { id: '4k',        label: '4K'           },
   { id: 'hd',        label: 'HD'           },
+  { id: '1080p',     label: '1080p'        },
+  { id: '720p',      label: '720p'         },
   { id: 'hdr',       label: 'HDR'          },
   { id: 'hdr10',     label: 'HDR10'        },
   { id: 'hdr10plus', label: 'HDR10+'       },
@@ -376,7 +378,16 @@ export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
   { id: 'bluray',    label: 'Blu-ray'      },
   { id: 'remux',     label: 'Remux'        },
   { id: 'bdremux',   label: 'BD Remux'     },
+  { id: 'cam',       label: 'CAM'          },
 ];
+
+export const QUALITY_MODE_OPTIONS = [
+  { id: '',     label: 'Every picked format' },
+  { id: 'best', label: 'Best resolution only' },
+] as const;
+
+// Best mode needs the finer tiers to choose between.
+export const QUALITY_BEST_TIERS = ['1080p', '720p', 'cam'] as const;
 
 // A higher-tier format already implies the ones below it, so the renderer draws
 // only the highest selected and drops the rest. Mirrored here so the
@@ -569,6 +580,7 @@ export interface ConfigState {
   qualityBadgeOffsetX: number;
   qualityBadgeOffsetY: number;
   qualityBadgesStyle: string; // 'default' | plain | tile
+  qualityBadgesMode: string; // '' | best
   qualityBadgesTileAccentColor: string;
   genreBadgeStyle: string; // 'default' | glass | pill | square | plain | clean | tile
   genreBadgeFont: string; // 'default' | sans | serif | mono | display
@@ -817,6 +829,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   qualityBadgeOffsetX: 0,
   qualityBadgeOffsetY: 0,
   qualityBadgesStyle: 'default',
+  qualityBadgesMode: '',
   qualityBadgesTileAccentColor: '',
   genreBadgeStyle: 'default',
   genreBadgeFont: 'default',

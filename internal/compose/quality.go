@@ -2,6 +2,7 @@ package compose
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -286,4 +287,33 @@ func (p *Pipeline) releaseWarmSlot() {
 	case <-p.streamWarm:
 	default:
 	}
+}
+
+// qualityTiers ranks the resolution badges, best first. hd is 1080p or 720p.
+var qualityTiers = []string{"4k", "1080p", "hd", "720p", "cam"}
+
+// applyQualityMode keeps the badges a mode draws. Best keeps the top
+// resolution tier and every other badge. A resolution row not checked against
+// the addon draws no tier in best mode, and never CAM.
+func applyQualityMode(badges []string, mode string, verified bool) []string {
+	best := ""
+	if mode == "best" && verified {
+		for _, tier := range qualityTiers {
+			if slices.ContainsFunc(badges, func(b string) bool { return strings.EqualFold(strings.TrimSpace(b), tier) }) {
+				best = tier
+				break
+			}
+		}
+	}
+	out := make([]string, 0, len(badges))
+	for _, b := range badges {
+		token := strings.ToLower(strings.TrimSpace(b))
+		switch {
+		case token == "cam" && !verified:
+		case mode == "best" && slices.Contains(qualityTiers, token) && token != best:
+		default:
+			out = append(out, b)
+		}
+	}
+	return out
 }

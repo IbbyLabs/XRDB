@@ -670,6 +670,9 @@ type QualityBadgeConfig struct {
 	// QualityBadgesHidden draws none of them while leaving the selection alone,
 	// so turning them back on does not mean picking every badge again.
 	QualityBadgesHidden bool `json:"qualityBadgesHidden,omitempty"`
+	// QualityBadgesMode is "" for every picked badge or "best" for one
+	// resolution tier.
+	QualityBadgesMode string `json:"qualityBadgesMode,omitempty"`
 }
 
 // RatingRingConfig groups the compact rating-ring options beyond the existing
@@ -989,6 +992,7 @@ type rawQuality struct {
 	QualityBadgesMax             *int    `json:"qualityBadgesMax"`
 	QualityBadgesTileAccentColor *string `json:"qualityBadgesTileAccentColor"`
 	QualityBadgesHidden          *bool   `json:"qualityBadgesHidden"`
+	QualityBadgesMode            *string `json:"qualityBadgesMode"`
 }
 
 type rawTrending struct {
@@ -1903,6 +1907,14 @@ func parseQuality(cfg *Config, r *raw) {
 	}
 	if r.QualityBadgesHidden != nil {
 		cfg.QualityBadgesHidden = *r.QualityBadgesHidden
+	}
+	if r.QualityBadgesMode != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.QualityBadgesMode)); v {
+		case "best":
+			cfg.QualityBadgesMode = v
+		case "", "all":
+			cfg.QualityBadgesMode = ""
+		}
 	}
 	if r.QualityBadgesTileAccentColor != nil && isHexColor(*r.QualityBadgesTileAccentColor) {
 		cfg.QualityBadgesTileAccentColor = strings.TrimSpace(*r.QualityBadgesTileAccentColor)

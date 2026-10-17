@@ -27,6 +27,7 @@ var qualityBadgeTokens = map[string]bool{
 	"4k": true, "hd": true, "hdr": true, "hdr10": true, "hdr10plus": true,
 	"dv": true, "dts": true, "atmos": true, "imax": true,
 	"bluray": true, "remux": true, "bdremux": true,
+	"1080p": true, "720p": true, "cam": true,
 }
 
 // badgeFeatureTokens map a v2 token onto the setting it stands for here, so a

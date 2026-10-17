@@ -1547,8 +1547,8 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 	if showQualityBadges(req.Config) {
 		badges := req.Config.Badges
+		verified := false
 		if resolveQuality != nil {
-			var verified bool
 			badges, verified = resolveQuality()
 			timings.mark("quality")
 			// An unverified row is the picked badges drawn on trust. Holding it
@@ -1560,6 +1560,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 				result.FaultRetryIn = 0
 			}
 		}
+		badges = applyQualityMode(badges, req.Config.QualityBadgesMode, verified)
 		if len(badges) > 0 {
 			drawQualityBadges(composed, badges, scale, occ, qualityOptsFromConfig(req.Config))
 		}

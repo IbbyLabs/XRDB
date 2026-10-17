@@ -572,6 +572,7 @@ func keyMutations() map[string]keyOverride {
 
 		// Quality badge family.
 		"qualityBadgesStyle":           {mut: func(c *imageconfig.Config) { c.QualityBadgesStyle = "plain" }},
+		"qualityBadgesMode":            {pre: func(c *imageconfig.Config) { c.Badges = []string{"4k", "hdr"} }, mut: func(c *imageconfig.Config) { c.QualityBadgesMode = "best" }},
 		"qualityBadgesTileAccentColor": {pre: qualityTile, mut: setColor(func(c *imageconfig.Config, v string) { c.QualityBadgesTileAccentColor = v })},
 
 		// Rating badge family.

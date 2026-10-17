@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -36,7 +37,16 @@ var qualityPatterns = map[string]*regexp.Regexp{
 	"imax":      regexp.MustCompile(`\bIMAX\b`),
 	"bluray":    regexp.MustCompile(`\bBLU[ ._-]?RAY\b|\bBD(?:RIP|MV|REMUX|25|50)\b|\bBRRIP\b`),
 	"remux":     regexp.MustCompile(`\bREMUX\b|\bBDREMUX\b`),
+	"1080p":     regexp.MustCompile(`\b1080P\b`),
+	"720p":      regexp.MustCompile(`\b720P\b`),
 }
+
+// camPattern marks a camcorder or telesync copy. TS and TC need a word after
+// them, since a trailing .ts is a file extension.
+var camPattern = regexp.MustCompile(`\b(?:CAM|CAMRIP|HDCAM|TELESYNC|TELECINE)\b|\b(?:HD)?(?:TS|TC)\b[ ._-]+\w`)
+
+// resolutionTokens are what a CAM copy claims without delivering.
+var resolutionTokens = []string{"4k", "hd", "1080p", "720p"}
 
 // DetectQuality reports which badge tokens the given release names carry.
 // Names arrive already split out of an addon's stream list.
@@ -47,16 +57,17 @@ func DetectQuality(names []string) map[string]bool {
 			continue
 		}
 		upper := strings.ToUpper(name)
+		cam := camPattern.MatchString(upper)
+		if cam {
+			found["cam"] = true
+		}
 		for token, pattern := range qualityPatterns {
-			if found[token] {
+			if found[token] || (cam && slices.Contains(resolutionTokens, token)) {
 				continue
 			}
 			if pattern.MatchString(upper) {
 				found[token] = true
 			}
-		}
-		if len(found) == len(qualityPatterns) {
-			break
 		}
 	}
 	applyQualityImplications(found)
@@ -76,6 +87,12 @@ func applyQualityImplications(found map[string]bool) {
 	// bdremux is the pair drawn as one tile, so it stands only where both halves do.
 	if found["bluray"] && found["remux"] {
 		found["bdremux"] = true
+	}
+	for _, token := range resolutionTokens {
+		if found[token] {
+			delete(found, "cam")
+			break
+		}
 	}
 }
 
@@ -168,12 +185,18 @@ func (s *StreamQuality) Detect(ctx context.Context, contentType, id string) (map
 		return nil, fmt.Errorf("streams: decode: %w", err)
 	}
 
-	names := make([]string, 0, len(payload.Streams)*3)
+	// One name per stream, so a CAM marker in one field covers the resolution
+	// another field claims.
+	names := make([]string, 0, len(payload.Streams))
 	for _, st := range payload.Streams {
+		var parts []string
 		for _, candidate := range []string{st.BehaviorHints.Filename, st.Title, st.Description, st.Name} {
 			if candidate = strings.TrimSpace(candidate); candidate != "" {
-				names = append(names, candidate)
+				parts = append(parts, candidate)
 			}
+		}
+		if len(parts) > 0 {
+			names = append(names, strings.Join(parts, "\n"))
 		}
 	}
 	if len(names) == 0 {

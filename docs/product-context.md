@@ -77,12 +77,14 @@ ignored, so this header text costs nothing.
 
 ## Quality badges
 
-- Quality badges are formats the user picks: 4K, HD, HDR, HDR10, HDR10+, Dolby Vision, DTS, Atmos, IMAX, Blu-ray, Remux and BD Remux.
+- Quality badges are formats the user picks: 4K, HD, 1080p, 720p, CAM, HDR, HDR10, HDR10+, Dolby Vision, DTS, Atmos, IMAX, Blu-ray, Remux and BD Remux. HD covers both 1080p and 720p. Any older answer saying there are no 1080p, 720p or CAM badges is out of date.
 - Each picked badge is drawn on a title only when that title is actually available in that format. There is no switch for this and it cannot be turned off per render: a badge that is not true of the title is decoration.
 - The check filters and never adds. The chips stay the user's pick, so it cannot introduce a badge nobody chose, and picking nothing still draws nothing.
 - Worked example: Oppenheimer keeps 4K, IMAX, DTS and Remux because it genuinely has all four; Citizen Kane drops IMAX and keeps the rest.
 - Checking means asking a stream addon. One is configured by default (a public Comet instance), so this holds without any setup; an operator can point `XRDB_STREAM_ADDON_URL` at their own or set it to `off`.
 - If the addon is unreachable the picks are drawn unchecked rather than blanked, and that render is cached only briefly so it corrects itself.
+- Quality badges have a Show setting (`qualityBadgesMode`). "Every picked format" is the default. "Best resolution only" (`best`) draws just the highest resolution the title has among the picks, ranked 4K, 1080p, HD, 720p, CAM, and still draws picked HDR, Dolby Vision and audio badges. Switching to it in the configurator also ticks 1080p, 720p and CAM.
+- CAM is drawn only when a title has nothing better: any real 1080p, 720p or 4K release removes it. A camcorder copy labelled 1080p counts as CAM, not 1080p. Unchecked badges never include CAM, and in best mode an unchecked row draws no resolution badge at all.
 - Detecting without picking would be useless: almost every popular title has some release in every format, so "show everything that exists" paints every badge on everything. The pick is what gives the row meaning.
 - Any older answer saying XRDB is handed a title and cannot know what quality exists is out of date, as is any answer describing an "Only show what's available" toggle.
 

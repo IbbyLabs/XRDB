@@ -322,6 +322,12 @@ func qualityBadgeLabel(token string) string {
 		return "IMAX"
 	case "hd":
 		return "HD"
+	case "1080p":
+		return "1080p"
+	case "720p":
+		return "720p"
+	case "cam":
+		return "CAM"
 	case "bluray":
 		return "BLU-RAY"
 	case "remux":
