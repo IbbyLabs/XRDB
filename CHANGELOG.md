@@ -2,6 +2,47 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.127.0](https://github.com/IbbyLabs/XRDB/compare/v3.126.0...v3.127.0) (2026-10-16)
+
+
+### Added
+
+* **admin:** count ratings stage cuts per source (FR-217) ([d36eb77](https://github.com/IbbyLabs/XRDB/commit/d36eb776409c3282ea42019b4c429aa0d1e8cfe9))
+* **admin:** Sources tab with success rate and timeouts (FR-217) ([1cca4e2](https://github.com/IbbyLabs/XRDB/commit/1cca4e218af68887a60d6993736104f652e96182))
+* **badges:** choose the genre and rating badge font (FR-216) ([ae6f45c](https://github.com/IbbyLabs/XRDB/commit/ae6f45c6e86842042eceacabc3640ee3dcea9b71))
+* **badges:** frosted-glass blur behind badges and the logo (FR-225) ([df3f08b](https://github.com/IbbyLabs/XRDB/commit/df3f08b8bf76802c1562562be99669ee725ec446))
+* **badges:** option to hide the digital release status (FR-231) ([5fcf15f](https://github.com/IbbyLabs/XRDB/commit/5fcf15fda3f82e29bc60329d6f42aeb8a0d228de))
+* **badges:** pill borders and title case for release and rank (FR-231) ([162f29f](https://github.com/IbbyLabs/XRDB/commit/162f29f5509e7d487458eb0bbdef14a275444d0b))
+* **badges:** pill style and date format for release status (FR-231) ([70f36a7](https://github.com/IbbyLabs/XRDB/commit/70f36a782a59f6955fc5c6717453d8c8edbcb895))
+* **badges:** trending rank position and pill style (FR-231, BUG-295) ([9150bf5](https://github.com/IbbyLabs/XRDB/commit/9150bf58222018716d55952e44f2b495195c5f53))
+* **compose:** log the caller class on an artwork stage cut ([cfe6d6b](https://github.com/IbbyLabs/XRDB/commit/cfe6d6b5d37e76a7920c1169aa20ae5553db0d67))
+* **compose:** opt-in disk cache for source artwork (FR-229) ([44d8f60](https://github.com/IbbyLabs/XRDB/commit/44d8f60087e5fb983e0c8ff094435a3b7db53fb1))
+* **configurator:** remember the instance key on a device (FR-215) ([3810524](https://github.com/IbbyLabs/XRDB/commit/3810524463e347d21b841390b348b3edb157443b))
+* **ratings:** adjustable gap between badge logo and score (FR-230) ([7d9147f](https://github.com/IbbyLabs/XRDB/commit/7d9147fa4840679977d3e6df26704d16f6a5bd65))
+* **ratings:** custom rating source icons and icon pack import (FR-227) ([fd42b17](https://github.com/IbbyLabs/XRDB/commit/fd42b17cd43bf645789f56f41f739d1b69b3911e))
+* **ratings:** option to keep RT certified and rotten marks (FR-227) ([1d02a0b](https://github.com/IbbyLabs/XRDB/commit/1d02a0b2edf211bda2a921d04d64e0226a00c32d))
+* **ratings:** per-episode MAL scores on anime episode artwork (FR-220) ([b11ad3f](https://github.com/IbbyLabs/XRDB/commit/b11ad3f3fb69dab8d6e767fc635619260924a51d))
+* **simkl:** link a SIMKL auth v2 account and send its token ([50d1f6b](https://github.com/IbbyLabs/XRDB/commit/50d1f6ba60ec515c644caca49ea7e1a246d1e4c6))
+* **warm:** warm a catalogue's own XRDB artwork URLs through the handler ([d73529c](https://github.com/IbbyLabs/XRDB/commit/d73529cd1b38abada6f8b72f966f9a4d2ec9c3dd))
+* **warm:** warm under the key a render URL uses, with a chosen profile ([83982f8](https://github.com/IbbyLabs/XRDB/commit/83982f8285bbe02889a3b9c2f6bd572ff84c96b2))
+
+
+### Fixed
+
+* **badges:** fit a single row to the full poster width (BUG-292) ([01db4b3](https://github.com/IbbyLabs/XRDB/commit/01db4b3b880ff4f575e04af15967023035cb3982))
+* **badges:** rank pill takes the release pill's size and inset (FR-231) ([3972231](https://github.com/IbbyLabs/XRDB/commit/39722315272260803e74931f1611981a3d6bcb84))
+* **configurator:** import pack icons for selected sources only (FR-227) ([e5d3a1f](https://github.com/IbbyLabs/XRDB/commit/e5d3a1fe3fb8c6c7fd17491e4c26a2c69055a7dd))
+* **genre:** bold, tight, shadowed label for the clean style (FR-213) ([c0a5fcb](https://github.com/IbbyLabs/XRDB/commit/c0a5fcba36f19fba23f071eb9868fff333a72c0c))
+* **genre:** give a bottom-centre clean label its own band (FR-213) ([132eb95](https://github.com/IbbyLabs/XRDB/commit/132eb959636c6982960181ac84391c4b9ddaecd3))
+* **genre:** size the clean label to the frame like v2 (FR-213) ([8810d53](https://github.com/IbbyLabs/XRDB/commit/8810d53fedfdc5d8c758870228fb7c69c0b4bc09))
+* **genre:** v2's grotesque grey label for the clean style (FR-213) ([fa2f10a](https://github.com/IbbyLabs/XRDB/commit/fa2f10af1ab2a0389334b23fec053c5ecf3580d2))
+* **mdblist:** give sweeps a 2.5s header bound, keep 1s for people ([7704ab0](https://github.com/IbbyLabs/XRDB/commit/7704ab08e6fc5f8129651345f8dcc556059eb011))
+* **ratings:** cache renders with a failed custom icon briefly (FR-227) ([1292e32](https://github.com/IbbyLabs/XRDB/commit/1292e322659b86764d77ea5593b5bede538904ba))
+* **ratings:** cap custom mark size and bound decodes (FR-227) ([aa3e17e](https://github.com/IbbyLabs/XRDB/commit/aa3e17e1a679e48ce071d3bc01167a1847878dbe))
+* **ratings:** match MAL episode titles for every profile language (FR-220) ([97d1904](https://github.com/IbbyLabs/XRDB/commit/97d1904405b8ea6f842d6044340ad7706169799e))
+* **ratings:** read batched Letterboxd from its score (BUG-297) ([418bf9e](https://github.com/IbbyLabs/XRDB/commit/418bf9e63cc6d85f9e6ada97b129789a03e651cd))
+* **simkl:** log only a bare OAuth error code ([3976b9d](https://github.com/IbbyLabs/XRDB/commit/3976b9d72bb4131bb345e88ec027ea9ef6c27736))
+
 ## [3.126.0](https://github.com/IbbyLabs/XRDB/compare/v3.125.0...v3.126.0) (2026-10-13)
 
 
