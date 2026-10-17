@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.128.1](https://github.com/IbbyLabs/XRDB/compare/v3.128.0...v3.128.1) (2026-10-17)
+
+
+### Fixed
+
+* **badges:** draw the hanging rank tab before the corner plates ([0f2724f](https://github.com/IbbyLabs/XRDB/commit/0f2724fc505438ab33a05a6bb82a440302b1fd2c))
+
 ## [3.128.0](https://github.com/IbbyLabs/XRDB/compare/v3.127.0...v3.128.0) (2026-10-17)
 
 
