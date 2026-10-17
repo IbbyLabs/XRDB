@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.128.0](https://github.com/IbbyLabs/XRDB/compare/v3.127.0...v3.128.0) (2026-10-17)
+
+
+### Added
+
+* **badges:** best-resolution quality mode, 1080p/720p/CAM (FR-232) ([ab7aefe](https://github.com/IbbyLabs/XRDB/commit/ab7aefeb99fa87841ea65e4d323222d81e668565))
+
+
+### Fixed
+
+* **badges:** recheck tierless quality answers, PreDVD is CAM (FR-232) ([b87a3ea](https://github.com/IbbyLabs/XRDB/commit/b87a3ea31211dd7e72009200ea679ba949862fcf))
+* **ratings:** judge MAL episode scores on the episode numbers (FR-220) ([49601ab](https://github.com/IbbyLabs/XRDB/commit/49601ab61c101c1fdfcb7aa8b12a13026b2dedc5))
+
 ## [3.127.0](https://github.com/IbbyLabs/XRDB/compare/v3.126.0...v3.127.0) (2026-10-16)
 
 
