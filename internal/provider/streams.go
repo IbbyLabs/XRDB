@@ -41,9 +41,9 @@ var qualityPatterns = map[string]*regexp.Regexp{
 	"720p":      regexp.MustCompile(`\b720P\b`),
 }
 
-// camPattern marks a camcorder or telesync copy. TS and TC need a word after
+// camPattern marks a camcorder, telesync or PreDVD copy. TS and TC need a word after
 // them, since a trailing .ts is a file extension.
-var camPattern = regexp.MustCompile(`\b(?:CAM|CAMRIP|HDCAM|TELESYNC|TELECINE)\b|\b(?:HD)?(?:TS|TC)\b[ ._-]+\w`)
+var camPattern = regexp.MustCompile(`\b(?:CAM|CAMRIP|HDCAM|TELESYNC|TELECINE|PREDVD)\b|\b(?:HD)?(?:TS|TC)\b[ ._-]+\w`)
 
 // resolutionTokens are what a CAM copy claims without delivering.
 var resolutionTokens = []string{"4k", "hd", "1080p", "720p"}

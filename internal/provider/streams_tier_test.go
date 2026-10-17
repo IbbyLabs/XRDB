@@ -33,6 +33,24 @@ func TestDetectQualityReadsResolutionAndCamTiers(t *testing.T) {
 			want:   []string{"cam"},
 		},
 		{
+			name:   "PreDVD is CAM",
+			inputs: []string{"Jailer 2 (2026) Tamil HQ PreDVD - 1080p - x264 - AAC - 2.9GB"},
+			want:   []string{"cam"},
+			absent: []string{"1080p"},
+		},
+		{
+			name:   "a screener keeps its resolution",
+			inputs: []string{"Jailer 2 (2026) 1080p Telugu DVDScr - x264 - AAC - 2.9GB"},
+			want:   []string{"1080p"},
+			absent: []string{"cam"},
+		},
+		{
+			name:   "a TS copy with its resolution after it is CAM",
+			inputs: []string{"Whalefall.2026.TS.1080p.Dragon.Money.Studio"},
+			want:   []string{"cam"},
+			absent: []string{"1080p"},
+		},
+		{
 			name:   "a trailing .ts extension is not telesync",
 			inputs: []string{"Broadcast.Recording.2026.ts"},
 			absent: []string{"cam"},

@@ -15,6 +15,10 @@ import (
 // asking again. What a title is available in moves over weeks, not minutes.
 const DefaultQualityCacheTTL = 24 * time.Hour
 
+// qualityTierlessTTL keeps an answer with no resolution tier. A new release
+// often reads that way until the addon has finished scraping it.
+const qualityTierlessTTL = 30 * time.Minute
+
 // qualityCacheMax bounds the number of remembered titles.
 const qualityCacheMax = 50_000
 
@@ -61,7 +65,8 @@ func newQualityCache(ttl time.Duration) *qualityCache {
 
 // do returns the remembered tokens for key, or runs fetch to produce them.
 // A failure is not remembered: caching it would hold an addon's outage past
-// its end. An empty answer is, because "nothing carries this" is a real answer.
+// its end. An answer with no resolution tier, empty included, is remembered
+// for qualityTierlessTTL.
 func (c *qualityCache) do(ctx context.Context, key string, fetch func() (map[string]bool, error)) (map[string]bool, error) {
 	if c == nil {
 		return fetch()
@@ -94,7 +99,11 @@ func (c *qualityCache) do(ctx context.Context, key string, fetch func() (map[str
 		if len(c.entries) >= qualityCacheMax {
 			c.entries = make(map[string]qualityEntry)
 		}
-		c.entries[key] = qualityEntry{tokens: call.tokens, expiresAt: time.Now().Add(c.ttl)}
+		ttl := c.ttl
+		if !hasQualityTier(call.tokens) {
+			ttl = min(ttl, qualityTierlessTTL)
+		}
+		c.entries[key] = qualityEntry{tokens: call.tokens, expiresAt: time.Now().Add(ttl)}
 	}
 	c.mu.Unlock()
 
@@ -316,4 +325,13 @@ func applyQualityMode(badges []string, mode string, verified bool) []string {
 		}
 	}
 	return out
+}
+
+func hasQualityTier(tokens map[string]bool) bool {
+	for _, tier := range qualityTiers {
+		if tokens[tier] {
+			return true
+		}
+	}
+	return false
 }

@@ -1,8 +1,10 @@
 package compose
 
 import (
+	"context"
 	"slices"
 	"testing"
+	"time"
 )
 
 func TestBestQualityTierKeepsOneResolutionAndTheRest(t *testing.T) {
@@ -35,6 +37,26 @@ func TestNewTierTokensHaveLabels(t *testing.T) {
 	for token, want := range map[string]string{"1080p": "1080p", "720p": "720p", "cam": "CAM"} {
 		if got := qualityBadgeLabel(token); got != want {
 			t.Errorf("qualityBadgeLabel(%q) = %q, want %q", token, got, want)
+		}
+	}
+}
+
+func TestATierlessQualityAnswerIsKeptBriefly(t *testing.T) {
+	c := newQualityCache(DefaultQualityCacheTTL)
+	answers := map[string]map[string]bool{
+		"thin": {"dts": true},
+		"none": {},
+		"full": {"1080p": true, "hd": true},
+	}
+	for key, tokens := range answers {
+		if _, err := c.do(context.Background(), key, func() (map[string]bool, error) { return tokens, nil }); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for key, want := range map[string]time.Duration{"thin": qualityTierlessTTL, "none": qualityTierlessTTL, "full": DefaultQualityCacheTTL} {
+		left := time.Until(c.entries[key].expiresAt)
+		if left > want || left < want-time.Minute {
+			t.Errorf("%s answer kept for %v, want about %v", key, left, want)
 		}
 	}
 }
