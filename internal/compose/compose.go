@@ -1545,6 +1545,15 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			occ.reserve(r)
 		}
 	}
+	// The hanging tab is pinned to the top edge and cannot shift, so it reserves
+	// before every corner plate. The pill style places like a plate and stays below.
+	trendRank, trendRanked := 0, false
+	if req.Config.TrendingRank {
+		trendRank, trendRanked = p.trendingRankOf(ctx, req, meta)
+	}
+	if trendRanked && req.Config.TrendingTagStyle != "pill" {
+		drawTrendingRankTab(composed, occ, trendRank, req.Config, scale)
+	}
 	if showQualityBadges(req.Config) {
 		badges := req.Config.Badges
 		verified := false
@@ -1595,10 +1604,8 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.Stinger && meta.Stinger.Has() {
 		drawStingerBadge(composed, meta.Stinger, req.Config.StingerPos, scale, occ, stingerOptsFromConfig(req.Config))
 	}
-	if req.Config.TrendingRank {
-		if rank, ok := p.trendingRankOf(ctx, req, meta); ok {
-			drawTrendingRankTab(composed, occ, rank, req.Config, scale)
-		}
+	if trendRanked && req.Config.TrendingTagStyle == "pill" {
+		drawTrendingRankTab(composed, occ, trendRank, req.Config, scale)
 	}
 	// The ring claims its corner before the strips do. It is a fixed circle that
 	// can neither narrow nor move, while a genre strip can drop a genre and a
