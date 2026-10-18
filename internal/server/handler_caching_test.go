@@ -8,8 +8,10 @@ import (
 	"image/png"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -280,5 +282,36 @@ func TestReRenderUnderTheSameKeyDoesNotRevalidate(t *testing.T) {
 	}
 	if rr.Header().Get("ETag") == oldETag {
 		t.Error("ETag unchanged across different bytes")
+	}
+}
+
+func TestInlinePreviewIsRevalidatedNotHeld(t *testing.T) {
+	h := renderingHandler(t)
+	inline := "/poster/tt0816692?config=" + url.QueryEscape(`{"ratings":["tmdb"]}`)
+	cases := []struct {
+		name, path, fetchSite, want string
+	}{
+		{"configurator img", inline, "same-origin", "private, no-cache"},
+		{"opened in a tab", inline, "none", "private, no-cache"},
+		{"app client with no fetch metadata", inline, "", "public, max-age="},
+		{"cross-site hotlink", inline, "cross-site", "public, max-age="},
+		{"same-origin saved config", "/poster/tt0816692", "same-origin", "public, max-age="},
+	}
+	for _, tc := range cases {
+		req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+		if tc.fetchSite != "" {
+			req.Header.Set("Sec-Fetch-Site", tc.fetchSite)
+		}
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("%s: expected 200, got %d", tc.name, rr.Code)
+		}
+		if cc := rr.Header().Get("Cache-Control"); !strings.HasPrefix(cc, tc.want) {
+			t.Errorf("%s: Cache-Control %q, want prefix %q", tc.name, cc, tc.want)
+		}
+		if rr.Header().Get("ETag") == "" {
+			t.Errorf("%s: no ETag to revalidate against", tc.name)
+		}
 	}
 }

@@ -611,7 +611,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				// The URL carries a profile-version token (see profileVersionToken),
 				// so an edited profile is a different URL and cannot be served stale
 				// from a downstream cache.
-				if maxAge := int(time.Until(expiresAt).Seconds()); maxAge > 0 {
+				// An inline-config URL carries no version token, so a browser
+				// preview of one is revalidated rather than held.
+				if inlinePreview(r, configParam) {
+					w.Header().Set("Cache-Control", "private, no-cache")
+				} else if maxAge := int(time.Until(expiresAt).Seconds()); maxAge > 0 {
 					w.Header().Set("Cache-Control", "public, max-age="+strconv.Itoa(maxAge))
 				}
 				if match := r.Header.Get("If-None-Match"); match != "" && etagMatches(match, etag) {
@@ -1038,6 +1042,19 @@ func sameOriginRender(r *http.Request) bool {
 		}
 	}
 	return false
+}
+
+// inlinePreview reports whether a render is an inline config loaded by a browser,
+// from the configurator page or opened directly in a tab.
+func inlinePreview(r *http.Request, configParam string) bool {
+	if !strings.HasPrefix(configParam, "{") {
+		return false
+	}
+	switch r.Header.Get("Sec-Fetch-Site") {
+	case "same-origin", "none":
+		return true
+	}
+	return sameOriginRender(r)
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {
