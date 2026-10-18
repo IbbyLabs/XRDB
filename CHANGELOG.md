@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.128.2](https://github.com/IbbyLabs/XRDB/compare/v3.128.1...v3.128.2) (2026-10-18)
+
+
+### Fixed
+
+* **server:** revalidate browser previews of inline configs (BUG-296) ([0d52f7d](https://github.com/IbbyLabs/XRDB/commit/0d52f7d63f8011323704933d8c3264117f471df7))
+
 ## [3.128.1](https://github.com/IbbyLabs/XRDB/compare/v3.128.0...v3.128.1) (2026-10-17)
 
 
