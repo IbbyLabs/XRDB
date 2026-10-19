@@ -159,6 +159,24 @@ export function ConfiguratorClient() {
 
   const [activeTab, setActiveTab] = useState<TabId>('display');
 
+  const stageRef = useRef<HTMLDivElement>(null);
+  const mediaTabsRef = useRef<HTMLDivElement>(null);
+  const [stageScrolledPast, setStageScrolledPast] = useState(false);
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => {
+      setStageScrolledPast(!e.isIntersecting && e.boundingClientRect.top < 0);
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const backToPreview = useCallback(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    mediaTabsRef.current?.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+    mediaTabsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus({ preventScroll: true });
+  }, []);
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Acknowledgement shown on the share button itself, so the result of the
@@ -548,7 +566,7 @@ export function ConfiguratorClient() {
 
         {/* ── Preview column ───────────────────────────────────────── */}
         <div className="cfg-col cfg-col-preview">
-          <div role="tablist" aria-label="Media type" className="seg" onKeyDown={tablistKeyNav}>
+          <div ref={mediaTabsRef} role="tablist" aria-label="Media type" className="seg" onKeyDown={tablistKeyNav}>
             {MEDIA_TYPES.map(t => (
               <button
                 key={t.id}
@@ -564,6 +582,7 @@ export function ConfiguratorClient() {
           </div>
 
           <div
+            ref={stageRef}
             className={`preview-stage${previewPending ? ' is-updating' : ''}`}
             style={{
               aspectRatio: aspect,
@@ -599,6 +618,20 @@ export function ConfiguratorClient() {
               </>
             )}
           </div>
+
+          {/* Shown only in the stacked layout, once the preview is scrolled past. */}
+          {previewSrc && !imgError && stageScrolledPast && (
+            <button
+              type="button"
+              className="preview-pin"
+              onClick={backToPreview}
+              aria-label="Back to preview"
+              style={{ aspectRatio: aspect, height: mediaType === 'poster' ? '7.5rem' : '4.5rem' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={previewSrc} alt="" decoding="async" />
+            </button>
+          )}
 
           {previewSrc && (
             <div className="preview-actions">

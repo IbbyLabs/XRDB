@@ -1383,6 +1383,11 @@ textarea.input { min-height: 0; line-height: 1.5; }
   margin: 0 0 var(--sp-3);
 }
 
+/* Scroll target for the pinned preview; clears the sticky nav. */
+.cfg-col-preview .seg { scroll-margin-top: 4.5rem; }
+
+.preview-pin { display: none; }
+
 .cfg-idbar {
   display: flex;
   gap: var(--sp-2);
@@ -2007,6 +2012,22 @@ textarea.input { min-height: 0; line-height: 1.5; }
 @media (max-width: 1020px) {
   .cfg-layout { grid-template-columns: minmax(0, 1fr); }
   .cfg-col-preview { position: static; top: auto; }
+  .preview-pin {
+    display: block;
+    position: fixed;
+    right: max(var(--sp-4), env(safe-area-inset-right));
+    bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
+    z-index: var(--z-sticky);
+    max-width: 40vw;
+    padding: 0;
+    overflow: hidden;
+    background: var(--bg-base);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-2);
+    cursor: pointer;
+  }
+  .preview-pin img { width: 100%; height: 100%; object-fit: contain; display: block; }
 }
 
 @media (max-width: 768px) {
