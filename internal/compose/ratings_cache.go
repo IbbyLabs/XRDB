@@ -46,6 +46,17 @@ const absentHoldCap = 24 * time.Hour
 // Oct 2026, none of wikidata's absences later turned into a rating.
 var absentHoldUncapped = map[string]bool{"wikidata": true}
 
+// absentStreakMemory is how long a streak outlives its last absence: the
+// longest hold plus a day to ask again.
+const absentStreakMemory = 8 * 24 * time.Hour
+
+// absentStreak is a title's run of absences from one source. It is kept apart
+// from the entries so eviction and restarts do not reset it.
+type absentStreak struct {
+	N  int       `json:"n"`
+	At time.Time `json:"at"`
+}
+
 // absentHold is the term for the streak-th consecutive absence, counting from 0.
 func absentHold(source string, streak int) time.Duration {
 	if streak < 0 {
@@ -115,6 +126,7 @@ type ratingsCache struct {
 	mu       sync.Mutex
 	entries  map[string]ratingsEntry
 	inflight map[string]*ratingsCall
+	streaks  map[string]absentStreak
 }
 
 // storable reports whether an answer is worth remembering. An answer carrying
@@ -181,6 +193,7 @@ func newRatingsCache(ttl time.Duration, logger *slog.Logger) *ratingsCache {
 		logger:   logger,
 		entries:  make(map[string]ratingsEntry),
 		inflight: make(map[string]*ratingsCall),
+		streaks:  make(map[string]absentStreak),
 	}
 }
 
@@ -438,11 +451,15 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 	// towards new titles, so both are wrong for it.
 	streak := 0
 	if meta == nil || len(meta.Ratings) == 0 {
-		if prev, ok := c.entries[key]; ok && prev.Meta != nil && len(prev.Meta.Ratings) == 0 {
-			streak = prev.AbsentStreak + 1
+		if rec, ok := c.streaks[key]; ok && time.Since(rec.At) < absentStreakMemory {
+			streak = rec.N + 1
 		}
+		c.streaks[key] = absentStreak{N: streak, At: time.Now()}
 		ttl = absentHold(source, streak)
-	} else if prev, ok := c.entries[key]; ok && prev.Meta != nil {
+	} else {
+		delete(c.streaks, key)
+	}
+	if prev, ok := c.entries[key]; ok && prev.Meta != nil && meta != nil && len(meta.Ratings) > 0 {
 		if len(prev.Meta.Ratings) == 0 {
 			// The term for an absence has to come from somewhere, and nothing has
 			// ever stored one. This line is that measurement.
@@ -542,6 +559,7 @@ type ratingsSnapshot struct {
 	Shape        int                     `json:"shape"`
 	SourceShapes map[string]int          `json:"sourceShapes,omitempty"`
 	Entries      map[string]ratingsEntry `json:"entries"`
+	Streaks      map[string]absentStreak `json:"streaks,omitempty"`
 }
 
 // sourceOfRatingsKey reads the source back off a cache key, which
@@ -597,8 +615,14 @@ func (c *ratingsCache) load(logger *slog.Logger) {
 		}
 		c.entries[k] = e
 	}
+	for k, rec := range snap.Streaks {
+		if now.Sub(rec.At) < absentStreakMemory {
+			c.streaks[k] = rec
+		}
+	}
 	logger.Info("Restored remembered ratings from disk",
-		"kept", len(c.entries), "stored", len(snap.Entries), "dropped_stale_source", stale)
+		"kept", len(c.entries), "stored", len(snap.Entries), "dropped_stale_source", stale,
+		"absent_streaks", len(c.streaks))
 }
 
 // Save writes the unexpired answers so a restart does not refetch them. It is
@@ -622,10 +646,18 @@ func (c *ratingsCache) Save() error {
 		}
 		live[k] = e
 	}
+	streaks := make(map[string]absentStreak, len(c.streaks))
+	for k, rec := range c.streaks {
+		if now.Sub(rec.At) >= absentStreakMemory {
+			delete(c.streaks, k)
+			continue
+		}
+		streaks[k] = rec
+	}
 	c.mu.Unlock()
 
 	data, err := json.Marshal(ratingsSnapshot{
-		Shape: ratingsCacheShape, SourceShapes: ratingsSourceShape, Entries: live,
+		Shape: ratingsCacheShape, SourceShapes: ratingsSourceShape, Entries: live, Streaks: streaks,
 	})
 	if err != nil {
 		return err

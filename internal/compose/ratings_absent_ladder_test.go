@@ -76,3 +76,56 @@ func TestARatingSendsTheNextAbsenceBackToTheBottom(t *testing.T) {
 		t.Errorf("an absence after a rating held %s, want %s", got, AbsentRatingsCacheTTL)
 	}
 }
+
+func TestAStreakSurvivesItsEntryBeingEvicted(t *testing.T) {
+	c := newRatingsCache(24*time.Hour, nil)
+	c.answering = func(string, string, time.Duration) bool { return true }
+	key := provider.GoodKey("wikidata", "poster", "tt1")
+	mustDo(t, c, key, titleAge{}, absentFetch)
+	c.mu.Lock()
+	delete(c.entries, key)
+	c.mu.Unlock()
+	mustDo(t, c, key, titleAge{}, absentFetch)
+	if got := heldFor(c, key); got != 6*time.Hour {
+		t.Errorf("the second absence after eviction held %s, want 6h", got)
+	}
+}
+
+func TestAStreakSurvivesARestart(t *testing.T) {
+	path := t.TempDir() + "/ratings.json"
+	key := provider.GoodKey("wikidata", "poster", "tt1")
+
+	c := newRatingsCache(24*time.Hour, nil)
+	c.path = path
+	c.answering = func(string, string, time.Duration) bool { return true }
+	mustDo(t, c, key, titleAge{}, absentFetch)
+	expire(c, key)
+	mustDo(t, c, key, titleAge{}, absentFetch)
+	if err := c.Save(); err != nil {
+		t.Fatal(err)
+	}
+
+	restarted := newRatingsCache(24*time.Hour, nil)
+	restarted.path = path
+	restarted.answering = func(string, string, time.Duration) bool { return true }
+	restarted.load(nil)
+	mustDo(t, restarted, key, titleAge{}, absentFetch)
+	if got := heldFor(restarted, key); got != 24*time.Hour {
+		t.Errorf("the third absence after a restart held %s, want 24h", got)
+	}
+}
+
+func TestAStreakIsForgottenAfterItsMemory(t *testing.T) {
+	c := newRatingsCache(24*time.Hour, nil)
+	c.answering = func(string, string, time.Duration) bool { return true }
+	key := provider.GoodKey("wikidata", "poster", "tt1")
+	mustDo(t, c, key, titleAge{}, absentFetch)
+	expire(c, key)
+	c.mu.Lock()
+	c.streaks[key] = absentStreak{N: 3, At: time.Now().Add(-absentStreakMemory - time.Hour)}
+	c.mu.Unlock()
+	mustDo(t, c, key, titleAge{}, absentFetch)
+	if got := heldFor(c, key); got != AbsentRatingsCacheTTL {
+		t.Errorf("an absence after a forgotten streak held %s, want %s", got, AbsentRatingsCacheTTL)
+	}
+}
