@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,6 +37,17 @@ type TMDB struct {
 	// reports, and a single counter would swallow its first occurrence behind a
 	// common one.
 	substitutions sync.Map
+	// seasonNumbers caches seasonEpisodeNumbers by "<tmdb id>/<season>".
+	seasonNumbers sync.Map
+}
+
+// seasonNumbersTTL is how long a season's episode numbers are reused.
+const seasonNumbersTTL = 6 * time.Hour
+
+type cachedSeasonNumbers struct {
+	numbers []int
+	found   bool
+	at      time.Time
 }
 
 // tmdbStatusError carries the status of a refused request, so a caller can tell
@@ -364,6 +376,9 @@ func (t *TMDB) LocateEpisode(ctx context.Context, seriesID string, season, episo
 		return 0, 0, false
 	}
 	numbers, ok := t.seasonEpisodeNumbers(ctx, tmdbID, season)
+	if slices.Contains(numbers, episode) {
+		return 0, 0, false
+	}
 	if ok && len(numbers) > 0 && numbers[0] != 1 && episode <= len(numbers) {
 		return season, numbers[episode-1], true
 	}
@@ -386,23 +401,40 @@ func (t *TMDB) LocateEpisode(ctx context.Context, seriesID string, season, episo
 
 // seasonEpisodeNumbers lists the episode numbers TMDB files under one season.
 func (t *TMDB) seasonEpisodeNumbers(ctx context.Context, tmdbID string, season int) ([]int, bool) {
+	key := tmdbID + "/" + strconv.Itoa(season)
+	if v, ok := t.seasonNumbers.Load(key); ok {
+		if c := v.(cachedSeasonNumbers); time.Since(c.at) < seasonNumbersTTL {
+			return c.numbers, c.found
+		}
+	}
+	numbers, found, cacheable := t.fetchSeasonEpisodeNumbers(ctx, tmdbID, season)
+	if cacheable {
+		t.seasonNumbers.Store(key, cachedSeasonNumbers{numbers: numbers, found: found, at: time.Now()})
+	}
+	return numbers, found
+}
+
+// fetchSeasonEpisodeNumbers reads one season's episode numbers from TMDB. A
+// failure other than a missing season is not cacheable.
+func (t *TMDB) fetchSeasonEpisodeNumbers(ctx context.Context, tmdbID string, season int) ([]int, bool, bool) {
 	var out struct {
 		Episodes []struct {
 			EpisodeNumber int `json:"episode_number"`
 		} `json:"episodes"`
 	}
 	if err := t.get(ctx, fmt.Sprintf("%s/tv/%s/season/%d", t.base(), tmdbID, season), &out); err != nil {
-		if !isNotFound(err) {
-			t.log().DebugContext(ctx, "Could not read a TMDB season's episode numbers",
-				"tmdb_id", tmdbID, "season", season, "error", err)
+		if isNotFound(err) {
+			return nil, false, true
 		}
-		return nil, false
+		t.log().DebugContext(ctx, "Could not read a TMDB season's episode numbers",
+			"tmdb_id", tmdbID, "season", season, "error", err)
+		return nil, false, false
 	}
 	numbers := make([]int, 0, len(out.Episodes))
 	for _, e := range out.Episodes {
 		numbers = append(numbers, e.EpisodeNumber)
 	}
-	return numbers, true
+	return numbers, true, true
 }
 
 // findByExternalID resolves an external identifier (an IMDb tt-id or a TVDB id)

@@ -45,7 +45,7 @@ func TestLocateEpisodeOnContinuousNumbering(t *testing.T) {
 	tm := seasonStub(t, map[int][2]int{1: {1, 62}, 2: {63, 136}, 3: {137, 148}})
 	cases := []struct{ season, episode, wantS, wantE int }{
 		{2, 1, 2, 63},    // a season's first episode
-		{2, 74, 2, 136},  // its last
+		{2, 12, 2, 74},   // its twelfth
 		{1, 63, 2, 63},   // a number past season 1's end
 		{1, 140, 3, 140}, // two seasons on
 	}
@@ -63,5 +63,34 @@ func TestLocateEpisodeLeavesOrdinaryNumberingAlone(t *testing.T) {
 		if s, e, ok := tm.LocateEpisode(context.Background(), "1", tc[0], tc[1]); ok {
 			t.Errorf("LocateEpisode(%d, %d) placed it at %d, %d on a show numbered from 1 each season", tc[0], tc[1], s, e)
 		}
+	}
+}
+
+// An episode TMDB files under its own number, missing only a still, is left
+// alone: 2:63 of a continuously numbered show is TMDB 2x63, not its 63rd.
+func TestLocateEpisodeLeavesAFiledNumberAlone(t *testing.T) {
+	tm := seasonStub(t, map[int][2]int{1: {1, 62}, 2: {63, 136}})
+	if s, e, ok := tm.LocateEpisode(context.Background(), "46298", 2, 63); ok {
+		t.Errorf("2:63 was moved to %d:%d", s, e)
+	}
+}
+
+// A season read once is reused, so a popular unaired episode does not cost a
+// TMDB call per render.
+func TestSeasonEpisodeNumbersAreCached(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_, _ = w.Write([]byte(`{"episodes":[{"episode_number":1},{"episode_number":2}]}`))
+	}))
+	t.Cleanup(srv.Close)
+	tm := NewTMDB("key", "")
+	tm.httpClient = srv.Client()
+	tm.baseURL = srv.URL
+	for i := 0; i < 3; i++ {
+		tm.LocateEpisode(context.Background(), "1", 1, 2)
+	}
+	if calls != 1 {
+		t.Errorf("TMDB was asked %d times, want 1", calls)
 	}
 }
