@@ -545,7 +545,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// which is how one blip froze across a CDN for days. It is not stored
 			// and carries no-store below, so every serve is a fresh attempt.
 			if !placeholder && (!degraded || degradedByUs) {
-				ttl := effectiveTTL(renderResult, ttls, mediaType)
+				var def time.Duration
+				if renderCache != nil {
+					def = renderCache.TTL()
+				}
+				ttl := renderTTL(renderResult, ttls, mediaType, def)
 				if renderCache != nil {
 					// A recognised sweep's renders are not stored: they are not
 					// re-read. An unknown caller's are, large ones shed first. A

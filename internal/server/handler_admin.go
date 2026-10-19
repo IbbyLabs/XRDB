@@ -719,7 +719,7 @@ func warmPosters(
 				slog.Warn("Skipped warming an item", "media_type", mediaType, "media_id", id, "error", err)
 				return
 			}
-			ttl := effectiveTTL(result, ttls, mediaType)
+			ttl := renderTTL(result, ttls, mediaType, renderCache.TTL())
 			if err := renderCache.SetWithTTL(cacheKey, result.ImageBytes, ttl); err != nil {
 				slog.Warn("Failed to cache a warmed render", "media_type", mediaType, "media_id", id, "error", err)
 			}
@@ -729,6 +729,19 @@ func warmPosters(
 	for range concurrency {
 		sem <- struct{}{}
 	}
+}
+
+// renderTTL is effectiveTTL with the cache default filled in and the render's
+// own cap applied, which effectiveTTL alone cannot see past a zero.
+func renderTTL(result *compose.Result, ttls *ttlStore, surface string, def time.Duration) time.Duration {
+	ttl := effectiveTTL(result, ttls, surface)
+	if ttl <= 0 {
+		ttl = def
+	}
+	if result != nil && result.FreshFor > 0 && ttl > 0 && result.FreshFor < ttl {
+		ttl = result.FreshFor
+	}
+	return ttl
 }
 
 // effectiveTTL returns the minimum TTL across the rating sources that answered
@@ -759,9 +772,6 @@ func effectiveTTL(result *compose.Result, ttls *ttlStore, surface string) time.D
 	// short-lived whatever surface it was.
 	if t, ok := ttls.surfaceTTL(surface); ok && t > 0 {
 		min = t
-	}
-	if result.FreshFor > 0 && (min == 0 || result.FreshFor < min) {
-		min = result.FreshFor
 	}
 	if result.Degraded {
 		// A render held back by one of our own gates lost nothing to a failure,
