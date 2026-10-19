@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.129.1](https://github.com/IbbyLabs/XRDB/compare/v3.129.0...v3.129.1) (2026-10-19)
+
+
+### Fixed
+
+* **compose:** rate a located episode at its TMDB numbers (BUG-299) ([3badfde](https://github.com/IbbyLabs/XRDB/commit/3badfde78abd33e0e54ea3f0d557bfca841d66a2))
+
 ## [3.129.0](https://github.com/IbbyLabs/XRDB/compare/v3.128.3...v3.129.0) (2026-10-19)
 
 
