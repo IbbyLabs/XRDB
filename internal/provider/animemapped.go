@@ -69,6 +69,20 @@ func (w *AnimeMapped) translate(ctx context.Context, mediaType, id string) (stri
 	return fmt.Sprintf("%s%d", w.prefix, n), nil
 }
 
+// EntryID is this service's id for the entry an anime id names, so a season
+// requested by its own id is rated as that season.
+func (w *AnimeMapped) EntryID(animeID string) (string, bool) {
+	ids, ok := w.mapper.EntryIDs(animeID)
+	if !ok {
+		return "", false
+	}
+	n := w.pick(ids)
+	if n == 0 {
+		return "", false
+	}
+	return fmt.Sprintf("%s%d", w.prefix, n), true
+}
+
 // SeriesScoped reports that MAL, AniList and Kitsu are series-level. The anime
 // map is keyed on series ids, so an episode id matches nothing.
 func (w *AnimeMapped) SeriesScoped() bool { return true }

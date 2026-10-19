@@ -60,6 +60,12 @@ type Request struct {
 	malID, malEpisode int
 	// episodeName is the episode's TMDB title, for checking a mapped MAL episode.
 	episodeName string
+	// animeEntry is the anime id the request named, as "kitsu:48649", kept when
+	// the id is rewritten to its series. Empty for an episode.
+	animeEntry string
+	// seasonPoster is the Kitsu id whose cover draws the poster of a later
+	// season, which would otherwise share its series' poster.
+	seasonPoster string
 }
 
 type episodeRef struct {
@@ -259,6 +265,18 @@ type episodeLocator interface {
 	LocateEpisode(ctx context.Context, seriesID string, season, episode int) (int, int, bool)
 }
 
+// animeLaterSeason answers whether an anime id names a TV season aired after
+// another of its series, and that entry's Kitsu id.
+type animeLaterSeason interface {
+	LaterSeasonKitsu(animeID string) (int, bool)
+}
+
+// animeEntryScoped is a rating source that can be asked about one anime entry
+// rather than the series it belongs to.
+type animeEntryScoped interface {
+	EntryID(animeID string) (string, bool)
+}
+
 // seriesSeasonCounter answers how many seasons a series has. Separate interface
 // for the same reason as the others, and satisfied by the TMDB provider.
 type seriesSeasonCounter interface {
@@ -327,6 +345,16 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 		p.log().DebugContext(ctx, "No mainstream id is mapped for this anime id",
 			"id", logging.RequestID(ctx), "media_id", req.MediaID)
 		return req
+	}
+	if tail == "" {
+		req.animeEntry = head
+		if req.MediaType == "poster" {
+			if later, ok := p.anime.(animeLaterSeason); ok {
+				if kitsu, found := later.LaterSeasonKitsu(head); found {
+					req.seasonPoster = "kitsu:" + strconv.Itoa(kitsu)
+				}
+			}
+		}
 	}
 	switch {
 	case target.IMDb != "":
@@ -574,6 +602,9 @@ func titleID(mediaID string) string {
 // kitsuID maps the requested title onto the Kitsu id Kitsu answers to. A title
 // the anime map does not carry has no Kitsu entry to find.
 func (p *Pipeline) kitsuID(ctx context.Context, req Request) (string, bool) {
+	if req.seasonPoster != "" {
+		return req.seasonPoster, true
+	}
 	if strings.HasPrefix(req.MediaID, "kitsu:") {
 		return req.MediaID, true
 	}
@@ -2288,6 +2319,9 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	var baseMeta *provider.MediaMeta
 	var baseFrom string
 	order := p.artworkOrderFor(string(req.Config.ArtworkSource), req.MediaType, req.MediaID)
+	if req.seasonPoster != "" {
+		order = withKitsuFirst(order)
+	}
 	knownID, knownType := p.identify(ctx, req, order)
 	contentType := req.ContentType
 	// The kind token is stripped off the id before providers see it, so an id
@@ -2490,6 +2524,18 @@ func contentKindFromID(id string) string {
 		}
 	}
 	return ""
+}
+
+// withKitsuFirst moves Kitsu to the front of an artwork order.
+func withKitsuFirst(order []string) []string {
+	out := make([]string, 0, len(order)+1)
+	out = append(out, string(imageconfig.ArtworkKitsu))
+	for _, name := range order {
+		if name != string(imageconfig.ArtworkKitsu) {
+			out = append(out, name)
+		}
+	}
+	return out
 }
 
 // stripContentKindPrefix removes that token. resolveContentKind has already
@@ -2761,6 +2807,14 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 // series id where the request names an episode; everything else gets the request
 // unchanged.
 func askAbout(req Request, prov provider.Provider) Request {
+	if req.animeEntry != "" {
+		if e, ok := prov.(animeEntryScoped); ok {
+			if id, found := e.EntryID(req.animeEntry); found {
+				req.MediaID = id
+				return req
+			}
+		}
+	}
 	if req.seriesID == "" || req.seriesID == req.MediaID {
 		return req
 	}

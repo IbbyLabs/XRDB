@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"xrdb_rewrite/internal/provider"
 	"xrdb_rewrite/internal/provider/animemap"
 )
 
@@ -444,5 +445,31 @@ func TestRatingsHeldUntil(t *testing.T) {
 		if got := ratingsHeldUntil(tc.date, now); !got.Equal(tc.want) {
 			t.Errorf("%s: ratingsHeldUntil = %v, want %v", tc.name, got, tc.want)
 		}
+	}
+}
+
+type entryScopedProvider struct {
+	provider.StubProvider
+	ids map[string]string
+}
+
+func (e *entryScopedProvider) EntryID(animeID string) (string, bool) {
+	id, ok := e.ids[animeID]
+	return id, ok
+}
+
+// FR-233. A season named by its own anime id is rated as that season by the
+// sources that have one; the rest keep the series.
+func TestAnAnimeEntryIsAskedAboutAsItself(t *testing.T) {
+	req := Request{MediaID: "tt26743760", animeEntry: "kitsu:48649"}
+	mal := &entryScopedProvider{ids: map[string]string{"kitsu:48649": "mal:58514"}}
+	if got := askAbout(req, mal).MediaID; got != "mal:58514" {
+		t.Errorf("an entry-scoped source was asked about %q, want mal:58514", got)
+	}
+	if got := askAbout(req, &provider.StubProvider{}).MediaID; got != "tt26743760" {
+		t.Errorf("a series source was asked about %q, want the series", got)
+	}
+	if got := askAbout(Request{MediaID: "tt26743760"}, mal).MediaID; got != "tt26743760" {
+		t.Errorf("a request naming no entry was rewritten to %q", got)
 	}
 }

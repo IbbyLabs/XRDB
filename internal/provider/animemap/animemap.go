@@ -82,9 +82,10 @@ type Target struct {
 // up, and Kitsu is the only anime service XRDB can draw artwork from — there is
 // no AniList artwork source to fall back to.
 type reverseEntry struct {
-	Target Target
-	Kitsu  int
-	MAL    int
+	Target  Target
+	Kitsu   int
+	MAL     int
+	AniList int
 }
 
 // renderable reports whether a row can produce a poster by some route. A row
@@ -369,6 +370,7 @@ func seasonClaimKey(seriesKey string, season int) string {
 type animeSeasonRef struct {
 	seriesKey string
 	aired     int
+	tv        bool
 }
 
 // seasonRow is one aired season of a series and where TMDB files its episodes.
@@ -377,6 +379,7 @@ type seasonRow struct {
 	tmdbSeason int
 	offset     int
 	hasOffset  bool
+	tv         bool
 }
 
 // SeasonMapping is where an aired season's episodes sit on TMDB. The zero value
@@ -882,6 +885,66 @@ func (s *source) lookupTarget(key string) (Target, bool) {
 		return Target{}, false
 	}
 	return e.Target, true
+}
+
+// EntryIDs returns the MAL, AniList and Kitsu ids of the one entry an anime id
+// names. Resolve answers for a series and picks one of its entries; this keeps
+// a season's own.
+func (m *Mapper) EntryIDs(animeID string) (IDs, bool) {
+	service, num, ok := ParseAnimeID(animeID)
+	if !ok {
+		return IDs{}, false
+	}
+	key := animeKey(service, num)
+	for _, src := range []*source{m.primary, m.supplement} {
+		if src == nil {
+			continue
+		}
+		if e, found := src.lookupReverse(key); found {
+			return IDs{MAL: e.MAL, AniList: e.AniList, Kitsu: e.Kitsu}, true
+		}
+	}
+	return IDs{}, false
+}
+
+// LaterSeasonKitsu returns the Kitsu id of the entry an anime id names when that
+// entry is a TV season aired after another TV season of the same series. A
+// movie, an OVA and a series' first season all answer false.
+func (m *Mapper) LaterSeasonKitsu(animeID string) (int, bool) {
+	service, num, ok := ParseAnimeID(animeID)
+	if !ok {
+		return 0, false
+	}
+	key := animeKey(service, num)
+	for _, src := range []*source{m.primary, m.supplement} {
+		if src == nil {
+			continue
+		}
+		ref, found := src.animeSeasonRef(key)
+		if !found {
+			continue
+		}
+		if !ref.tv {
+			return 0, false
+		}
+		rows, _ := src.seasonRows(ref.seriesKey)
+		earlier := false
+		for _, r := range rows {
+			if r.tv && r.aired < ref.aired {
+				earlier = true
+				break
+			}
+		}
+		if !earlier {
+			return 0, false
+		}
+		e, found := src.lookupReverse(key)
+		if !found || e.Kitsu == 0 {
+			return 0, false
+		}
+		return e.Kitsu, true
+	}
+	return 0, false
 }
 
 // lookupReverse returns the whole entry, including a Kitsu id for a row that
@@ -1401,6 +1464,7 @@ func buildIndexes(data []byte) (indexes, error) {
 				tmdbSeason: e.Season.tmdb,
 				offset:     e.Offset.tmdb,
 				hasOffset:  e.Offset.set,
+				tv:         strings.EqualFold(e.Type, "TV"),
 			}
 			for _, imdbID := range e.IMDbID {
 				if imdbID != "" {
@@ -1417,7 +1481,7 @@ func buildIndexes(data []byte) (indexes, error) {
 			}
 			if seriesKey != "" {
 				for _, k := range reverseKeys(ids) {
-					idx.animeSeason[k] = animeSeasonRef{seriesKey: seriesKey, aired: e.Season.tvdb}
+					idx.animeSeason[k] = animeSeasonRef{seriesKey: seriesKey, aired: e.Season.tvdb, tv: row.tv}
 				}
 			}
 		}
@@ -1432,7 +1496,7 @@ func insertTarget(rev map[string]reverseEntry, ranks map[string]int, ids IDs, ta
 	if !renderable(ids, target) {
 		return
 	}
-	entry := reverseEntry{Target: target, Kitsu: ids.Kitsu, MAL: ids.MAL}
+	entry := reverseEntry{Target: target, Kitsu: ids.Kitsu, MAL: ids.MAL, AniList: ids.AniList}
 	for _, key := range reverseKeys(ids) {
 		if _, ok := rev[key]; ok && ranks[key] <= rank {
 			continue
