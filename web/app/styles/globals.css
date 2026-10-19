@@ -2012,6 +2012,8 @@ textarea.input { min-height: 0; line-height: 1.5; }
 @media (max-width: 1020px) {
   .cfg-layout { grid-template-columns: minmax(0, 1fr); }
   .cfg-col-preview { position: static; top: auto; }
+  /* Room for the last controls to scroll clear of the pinned preview. */
+  .cfg-layout { padding-bottom: calc(7rem + env(safe-area-inset-bottom)); }
   .preview-pin {
     display: block;
     position: fixed;

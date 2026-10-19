@@ -626,7 +626,7 @@ export function ConfiguratorClient() {
               className="preview-pin"
               onClick={backToPreview}
               aria-label="Back to preview"
-              style={{ aspectRatio: aspect, height: mediaType === 'poster' ? '7.5rem' : '4.5rem' }}
+              style={{ aspectRatio: aspect, height: mediaType === 'poster' ? '6rem' : '3.5rem' }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={previewSrc} alt="" decoding="async" />
