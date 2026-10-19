@@ -105,6 +105,9 @@ type Result struct {
 	// FaultRetryIn is when every source that failed this render is expected to
 	// answer again, or zero when any of them gave no such time.
 	FaultRetryIn time.Duration
+	// FreshFor caps how long the render may be kept, zero for no cap. Set on an
+	// episode drawn before it airs.
+	FreshFor time.Duration
 }
 
 // Pipeline orchestrates metadata fetch + image composition.
@@ -1388,7 +1391,18 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		marksDone <- marksResult{m, failed}
 	}()
 	ratingsCtx, faults := withFaultRetry(ctx)
-	allRatings, ratingProviders, degraded, sourceFault, queueHeld, _ := p.collectRatingsWithProviders(ratingsCtx, ratingReq, meta)
+	var allRatings []provider.Rating
+	var ratingProviders []string
+	var degraded, sourceFault, queueHeld bool
+	if meta != nil && !meta.RatingsHeldUntil.IsZero() {
+		// An episode with no ratings of its own yet would otherwise show the
+		// series', read as the episode's.
+		result.FreshFor = time.Until(meta.RatingsHeldUntil)
+		p.log().DebugContext(ctx, "Drew no ratings on an episode that has none of its own yet",
+			"id", logging.RequestID(ctx), "media_id", req.MediaID, "held_until", meta.RatingsHeldUntil)
+	} else {
+		allRatings, ratingProviders, degraded, sourceFault, queueHeld, _ = p.collectRatingsWithProviders(ratingsCtx, ratingReq, meta)
+	}
 	timings.mark("ratings")
 	// Resolved here, where the title's identity is, so the draw path receives an
 	// answer rather than an id and never needs to know a bundled list exists.
@@ -1999,7 +2013,13 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 		// not answering about the episode at all.
 		return nil, nil, "", "", false, errors.Is(err, provider.ErrEpisodeNotFound)
 	}
-	if info == nil || info.StillURL == "" {
+	if info == nil {
+		return nil, nil, "", "", false, true
+	}
+	if info.StillURL == "" {
+		if held := ratingsHeldUntil(info.AirDate, time.Now()); !held.IsZero() {
+			return nil, &provider.MediaMeta{EpisodeName: info.Name, RatingsHeldUntil: held}, "", "", false, true
+		}
 		return nil, nil, "", "", false, true
 	}
 	data, err := p.fetcher.Fetch(ctx, info.StillURL)
@@ -2015,6 +2035,31 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 		ratingID = info.IMDbID
 	}
 	return data, meta, ratingID, info.StillURL, true, false
+}
+
+// recentlyAired is how long after its air date an episode with no TMDB still
+// is still treated as having no ratings of its own.
+const recentlyAired = 7 * 24 * time.Hour
+
+// recheckRecent is how soon a recently aired episode's render is looked at again.
+const recheckRecent = 6 * time.Hour
+
+// ratingsHeldUntil is when an episode TMDB has no still for can be rated, or
+// zero when it can be now. Before its air date has ended in UTC that is the end
+// of the day; within a week after, it is a short recheck. TMDB gives a date
+// without a time.
+func ratingsHeldUntil(date, now time.Time) time.Time {
+	if date.IsZero() {
+		return time.Time{}
+	}
+	end := date.UTC().Add(24 * time.Hour)
+	switch {
+	case end.After(now):
+		return end
+	case now.Sub(end) < recentlyAired:
+		return now.Add(recheckRecent)
+	}
+	return time.Time{}
 }
 
 // episodeRatingFor is the id the rating sources should be asked about for one
@@ -2084,7 +2129,16 @@ func ratingIDFor(episodeID, mediaID string) string {
 // names the provider whose artwork was actually used, which is not always the
 // configured source: a source that cannot serve this id falls through to the
 // next, and the ratings pass must not skip a source that never answered.
-func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ []byte, _ *provider.MediaMeta, _ string, _ string, _ string, err error) {
+func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ []byte, outMeta *provider.MediaMeta, _ string, _ string, _ string, err error) {
+	var unairedUntil time.Time
+	defer func() {
+		// The meta may be a cached one shared by other renders, so it is copied.
+		if !unairedUntil.IsZero() && outMeta != nil {
+			m := *outMeta
+			m.RatingsHeldUntil = unairedUntil
+			outMeta = &m
+		}
+	}()
 	// The fetch timeout below bounds one HTTP request, and this stage tries one
 	// per provider, so a title whose sources all hang costs as many timeouts as
 	// there are providers and holds a render slot for the sum. The stage gets
@@ -2140,6 +2194,9 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	if ok {
 		waitingOn, waitingFor = "tmdb", "episode"
 		data, meta, ratingID, stillURL, handled, absent := p.fetchEpisode(ctx, req, series, season, episode)
+		if meta != nil && !meta.RatingsHeldUntil.IsZero() {
+			unairedUntil = meta.RatingsHeldUntil
+		}
 		if absent {
 			if s2, e2, found := p.locateEpisode(ctx, series, season, episode); found {
 				if d2, m2, r2, u2, ok2, _ := p.fetchEpisode(ctx, req, series, s2, e2); ok2 {

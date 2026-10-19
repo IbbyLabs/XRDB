@@ -581,6 +581,8 @@ type EpisodeInfo struct {
 	StillURL string
 	IMDbID   string
 	Rating   *Rating
+	// AirDate is TMDB's air date, zero when TMDB has none.
+	AirDate time.Time
 }
 
 // FetchEpisode resolves a single episode of a series. seriesID may be an IMDb
@@ -599,6 +601,7 @@ func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episod
 		t.base(), tmdbID, season, episode)
 	var result struct {
 		Name        string  `json:"name"`
+		AirDate     string  `json:"air_date"`
 		StillPath   string  `json:"still_path"`
 		VoteAverage float64 `json:"vote_average"`
 		VoteCount   int     `json:"vote_count"`
@@ -613,6 +616,9 @@ func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episod
 		return nil, err
 	}
 	info := &EpisodeInfo{Name: result.Name, IMDbID: result.ExternalIDs.IMDbID}
+	if d, err := time.Parse("2006-01-02", result.AirDate); err == nil {
+		info.AirDate = d
+	}
 	stillRes := "/w780"
 	if opts.Size == "large" || opts.Size == "4k" {
 		stillRes = "/original"

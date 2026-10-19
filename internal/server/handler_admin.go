@@ -760,6 +760,9 @@ func effectiveTTL(result *compose.Result, ttls *ttlStore, surface string) time.D
 	if t, ok := ttls.surfaceTTL(surface); ok && t > 0 {
 		min = t
 	}
+	if result.FreshFor > 0 && (min == 0 || result.FreshFor < min) {
+		min = result.FreshFor
+	}
 	if result.Degraded {
 		// A render held back by one of our own gates lost nothing to a failure,
 		// so it takes the longer of the two caps.

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"time"
 
 	"xrdb_rewrite/internal/provider/animemap"
 )
@@ -415,5 +416,29 @@ func TestAlignAiredSeasonLeavesOrdinarySeasonsAlone(t *testing.T) {
 				t.Errorf("got %d/%d aligned=%v, want %d/4 untouched", season, episode, ok, tc.season)
 			}
 		})
+	}
+}
+
+// FR-234. An episode with no still has no ratings of its own until it has
+// aired, and for a week after, it is rechecked rather than given the series'.
+func TestRatingsHeldUntil(t *testing.T) {
+	now := time.Date(2026, 10, 19, 2, 0, 0, 0, time.UTC)
+	today := time.Date(2026, 10, 19, 0, 0, 0, 0, time.UTC)
+	day := 24 * time.Hour
+	cases := []struct {
+		name string
+		date time.Time
+		want time.Time
+	}{
+		{"no date", time.Time{}, time.Time{}},
+		{"airs in four days", today.Add(4 * day), today.Add(5 * day)},
+		{"airs today", today, today.Add(day)},
+		{"aired three days ago", today.Add(-3 * day), now.Add(recheckRecent)},
+		{"aired a month ago", today.Add(-30 * day), time.Time{}},
+	}
+	for _, tc := range cases {
+		if got := ratingsHeldUntil(tc.date, now); !got.Equal(tc.want) {
+			t.Errorf("%s: ratingsHeldUntil = %v, want %v", tc.name, got, tc.want)
+		}
 	}
 }
