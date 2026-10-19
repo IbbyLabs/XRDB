@@ -9,8 +9,8 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"sort"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,6 +21,7 @@ import (
 )
 
 var tmdbBaseURL = sourceBaseURL("TMDB", "https://api.themoviedb.org/3")
+
 const tmdbImageBase = "https://image.tmdb.org/t/p"
 
 // TMDB is the TMDB metadata provider.
@@ -1378,12 +1379,18 @@ func (t *TMDB) get(ctx context.Context, path string, out any) error {
 	return json.NewDecoder(resp.Body).Decode(out)
 }
 
-// TMDB release types: 2 and 3 are limited and wide theatrical, 4 is digital.
+// TMDB release types: 2 and 3 are limited and wide theatrical, 4 is digital,
+// 5 physical and 6 TV.
 const (
 	releaseTypeTheatricalLimited = 2
 	releaseTypeTheatrical        = 3
 	releaseTypeDigital           = 4
+	releaseTypePhysical          = 5
+	releaseTypeTV                = 6
 )
+
+// cinemaRunWindow is how long after its first theatrical date a film counts as in cinemas.
+const cinemaRunWindow = 180 * 24 * time.Hour
 
 // releaseEntry is one region's record of a release of a given kind.
 type releaseEntry struct {
@@ -1460,13 +1467,37 @@ func nextRelease(entries []releaseEntry, now time.Time, kinds ...int) UpcomingRe
 }
 
 // resolveReleaseStatus picks the badge-worthy release state, preferring digital
-// because a title available at home has moved past its cinema run.
+// because a title available at home has moved past its cinema run. In cinemas
+// is dated from the first theatrical release, so a re-release does not count.
 func resolveReleaseStatus(entries []releaseEntry, now time.Time) string {
 	switch {
 	case releaseLanded(entries, now, releaseTypeDigital):
 		return "digital"
-	case releaseLanded(entries, now, releaseTypeTheatricalLimited, releaseTypeTheatrical):
+	case releaseLanded(entries, now, releaseTypePhysical, releaseTypeTV):
+		return ""
+	}
+	first, ok := firstTheatricalDate(entries, now)
+	if ok && now.Sub(first) < cinemaRunWindow {
 		return "cinemas"
 	}
 	return ""
+}
+
+// firstTheatricalDate returns the earliest landed theatrical date. An undated
+// entry is ignored, since it cannot place the run.
+func firstTheatricalDate(entries []releaseEntry, now time.Time) (time.Time, bool) {
+	var first time.Time
+	for _, e := range entries {
+		if e.kind != releaseTypeTheatricalLimited && e.kind != releaseTypeTheatrical {
+			continue
+		}
+		ts, err := time.Parse("2006-01-02T15:04:05.000Z", e.date)
+		if err != nil || ts.After(now) {
+			continue
+		}
+		if first.IsZero() || ts.Before(first) {
+			first = ts
+		}
+	}
+	return first, !first.IsZero()
 }
