@@ -249,6 +249,13 @@ type animeAiredSeasonResolver interface {
 	SeasonFor(seriesKey string, aired int) (animemap.SeasonMapping, animemap.SeasonRefusal)
 }
 
+// episodeLocator places an episode TMDB numbers on from the previous season.
+// Separate interface for the same reason as the others, and satisfied by the
+// TMDB provider.
+type episodeLocator interface {
+	LocateEpisode(ctx context.Context, seriesID string, season, episode int) (int, int, bool)
+}
+
 // seriesSeasonCounter answers how many seasons a series has. Separate interface
 // for the same reason as the others, and satisfied by the TMDB provider.
 type seriesSeasonCounter interface {
@@ -1869,6 +1876,16 @@ func (p *Pipeline) statedSeasonFor(series string, season int) (int, bool) {
 	return 0, false
 }
 
+// locateEpisode asks TMDB where an episode it did not find sits, for a series
+// that numbers episodes on across seasons.
+func (p *Pipeline) locateEpisode(ctx context.Context, series string, season, episode int) (int, int, bool) {
+	locator, ok := p.providers.Get("tmdb").(episodeLocator)
+	if !ok || locator == nil || series == "" {
+		return 0, 0, false
+	}
+	return locator.LocateEpisode(ctx, strings.TrimPrefix(series, "tmdb:"), season, episode)
+}
+
 // seriesHasOneSeason reports whether TMDB files the series under exactly one
 // season. False when it cannot say, so an unreachable or unknown series leaves
 // the render exactly as it is today.
@@ -2123,6 +2140,16 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	if ok {
 		waitingOn, waitingFor = "tmdb", "episode"
 		data, meta, ratingID, stillURL, handled, absent := p.fetchEpisode(ctx, req, series, season, episode)
+		if absent {
+			if s2, e2, found := p.locateEpisode(ctx, series, season, episode); found {
+				if d2, m2, r2, u2, ok2, _ := p.fetchEpisode(ctx, req, series, s2, e2); ok2 {
+					p.log().InfoContext(ctx, "An episode TMDB numbers on from the previous season was placed",
+						"id", logging.RequestID(ctx), "media_id", req.MediaID, "season", s2, "episode", e2)
+					data, meta, ratingID, stillURL, handled, absent = d2, m2, r2, u2, ok2, false
+					season, episode = s2, e2
+				}
+			}
+		}
 		if absent && season > 1 {
 			// BUG-286 case 1. Callers outside XRDB put a catalogue id where the
 			// season belongs, and for most of the anime dataset nothing maps it

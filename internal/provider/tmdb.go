@@ -345,6 +345,66 @@ func (t *TMDB) SeasonCount(ctx context.Context, seriesID string) (int, bool) {
 	return out.NumberOfSeasons, out.NumberOfSeasons > 0
 }
 
+// maxLocateSeasons bounds how many later seasons LocateEpisode reads.
+const maxLocateSeasons = 4
+
+// LocateEpisode places an episode TMDB does not file at that season and number,
+// for a series whose episode numbers run on across seasons: Hunter x Hunter's
+// season 2 opens at episode 63. "2:1" is the season's first episode, and "1:63"
+// is the episode numbered 63 in whichever later season holds it.
+func (t *TMDB) LocateEpisode(ctx context.Context, seriesID string, season, episode int) (int, int, bool) {
+	if season < 1 || episode < 1 {
+		return 0, 0, false
+	}
+	if apiKey, readToken := t.credentials(ctx); apiKey == "" && readToken == "" {
+		return 0, 0, false
+	}
+	tmdbID, _, _, _, err := t.resolveID(ctx, "series", seriesID)
+	if err != nil {
+		return 0, 0, false
+	}
+	numbers, ok := t.seasonEpisodeNumbers(ctx, tmdbID, season)
+	if ok && len(numbers) > 0 && numbers[0] != 1 && episode <= len(numbers) {
+		return season, numbers[episode-1], true
+	}
+	if !ok || len(numbers) == 0 || episode <= numbers[len(numbers)-1] {
+		return 0, 0, false
+	}
+	last := numbers[len(numbers)-1]
+	for s := season + 1; s <= season+maxLocateSeasons; s++ {
+		next, ok := t.seasonEpisodeNumbers(ctx, tmdbID, s)
+		if !ok || len(next) == 0 || next[0] != last+1 {
+			return 0, 0, false
+		}
+		if episode <= next[len(next)-1] {
+			return s, episode, true
+		}
+		last = next[len(next)-1]
+	}
+	return 0, 0, false
+}
+
+// seasonEpisodeNumbers lists the episode numbers TMDB files under one season.
+func (t *TMDB) seasonEpisodeNumbers(ctx context.Context, tmdbID string, season int) ([]int, bool) {
+	var out struct {
+		Episodes []struct {
+			EpisodeNumber int `json:"episode_number"`
+		} `json:"episodes"`
+	}
+	if err := t.get(ctx, fmt.Sprintf("%s/tv/%s/season/%d", t.base(), tmdbID, season), &out); err != nil {
+		if !isNotFound(err) {
+			t.log().DebugContext(ctx, "Could not read a TMDB season's episode numbers",
+				"tmdb_id", tmdbID, "season", season, "error", err)
+		}
+		return nil, false
+	}
+	numbers := make([]int, 0, len(out.Episodes))
+	for _, e := range out.Episodes {
+		numbers = append(numbers, e.EpisodeNumber)
+	}
+	return numbers, true
+}
+
 // findByExternalID resolves an external identifier (an IMDb tt-id or a TVDB id)
 // to a TMDB id via TMDB's /find endpoint. found is false when TMDB returns no
 // match; err is non-nil only on a transport/decoding failure.
