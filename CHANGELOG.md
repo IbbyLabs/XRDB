@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.130.0](https://github.com/IbbyLabs/XRDB/compare/v3.129.2...v3.130.0) (2026-10-19)
+
+
+### Added
+
+* **compose:** rate and draw an anime season by its own entry (FR-233) ([d5cf837](https://github.com/IbbyLabs/XRDB/commit/d5cf8371453c9d5bc2485c18a3076fdc842cf565))
+
+
+### Fixed
+
+* **animemap:** count only a numbered season as earlier (FR-233) ([513ea7a](https://github.com/IbbyLabs/XRDB/commit/513ea7a48a6bbfa9f40370ae8172abbd1f69d501))
+* **compose:** keep the series age rating on a later season (FR-233) ([a67a83e](https://github.com/IbbyLabs/XRDB/commit/a67a83e1d9d02b00442a6420aa73c8bb73c9f580))
+* **tmdb:** sweep expired season episode-number cache entries ([0e758b1](https://github.com/IbbyLabs/XRDB/commit/0e758b14d872b504a9979bf9638d1bc762aa2843))
+
 ## [3.129.2](https://github.com/IbbyLabs/XRDB/compare/v3.129.1...v3.129.2) (2026-10-19)
 
 
