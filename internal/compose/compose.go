@@ -2626,7 +2626,9 @@ func mergeArtworkURLs(dst, src *provider.MediaMeta) {
 // age/genre/provider/stinger badges even though the data exists.
 func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta *provider.MediaMeta) {
 	metaLine := req.Config.MetaLine
-	needsRating := (req.Config.AgeRating || metaLine && req.Config.MetaLineAgeRating) && meta.ContentRating == ""
+	wantsRating := req.Config.AgeRating || metaLine && req.Config.MetaLineAgeRating
+	// A later season's Kitsu cover carries Kitsu's rating scale, not the series'.
+	needsRating := wantsRating && (meta.ContentRating == "" || req.seasonPoster != "")
 	needsGenres := (req.Config.Genre || metaLine && req.Config.MetaLineGenre) && len(meta.Genres) == 0
 	needsYear := metaLine && meta.Year == 0
 	needsProviders := req.Config.Providers && len(meta.WatchProviders) == 0
@@ -2638,7 +2640,7 @@ func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta 
 		return
 	}
 	tmdb := p.providers.Get("tmdb")
-	if tmdb == nil || tmdb.Name() == string(req.Config.ArtworkSource) {
+	if tmdb == nil || tmdb.Name() == string(req.Config.ArtworkSource) && req.seasonPoster == "" {
 		return
 	}
 	var extra *provider.MediaMeta
@@ -2654,7 +2656,7 @@ func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta 
 	if err != nil || extra == nil {
 		return
 	}
-	if needsRating {
+	if needsRating && extra.ContentRating != "" {
 		meta.ContentRating = extra.ContentRating
 	}
 	if needsGenres {

@@ -51,3 +51,23 @@ func TestOverlayMetaIsToppedUpFromTMDBForOtherArtworkSources(t *testing.T) {
 		})
 	}
 }
+
+// FR-233. A later season drawn from Kitsu's cover keeps the series' age rating.
+func TestALaterSeasonPosterKeepsTheSeriesAgeRating(t *testing.T) {
+	cfg := imageconfig.Default()
+	cfg.AgeRating = true
+	for _, tc := range []struct {
+		name, tmdb, want string
+	}{
+		{"TMDB has one", "TV-14", "TV-14"},
+		{"TMDB has none", "", "PG"},
+	} {
+		p := &Pipeline{providers: testRegistry(&provider.StubProvider{ProviderName: "tmdb", Meta: &provider.MediaMeta{ContentRating: tc.tmdb}})}
+		meta := &provider.MediaMeta{ContentRating: "PG"}
+		req := Request{ContentType: "series", MediaID: "tt22248376", Config: cfg, seasonPoster: "kitsu:49240"}
+		p.enrichMetaForOverlays(context.Background(), req, meta)
+		if meta.ContentRating != tc.want {
+			t.Errorf("%s: age rating = %q, want %q", tc.name, meta.ContentRating, tc.want)
+		}
+	}
+}
