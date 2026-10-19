@@ -75,3 +75,16 @@ func TestLaterSeasonKitsu(t *testing.T) {
 		}
 	}
 }
+
+// A TV row with no season of its own is not an earlier season of its series.
+func TestLaterSeasonKitsuIgnoresASeasonlessRow(t *testing.T) {
+	m := laterSeasonMapper(t, `[
+	  {"type":"TV","mal_id":100,"kitsu_id":200,
+	   "imdb_id":["tt0000001"],"themoviedb_id":{"tv":300}},
+	  {"type":"TV","mal_id":101,"kitsu_id":201,
+	   "imdb_id":["tt0000001"],"themoviedb_id":{"tv":300},"season":{"tvdb":1,"tmdb":1}}
+	]`)
+	if got, ok := m.LaterSeasonKitsu("kitsu:201"); ok {
+		t.Errorf("season 1 beside a seasonless row was read as a later season, Kitsu %d", got)
+	}
+}

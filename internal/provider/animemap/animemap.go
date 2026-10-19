@@ -930,7 +930,7 @@ func (m *Mapper) LaterSeasonKitsu(animeID string) (int, bool) {
 		rows, _ := src.seasonRows(ref.seriesKey)
 		earlier := false
 		for _, r := range rows {
-			if r.tv && r.aired < ref.aired {
+			if r.tv && r.aired > 0 && r.aired < ref.aired {
 				earlier = true
 				break
 			}
