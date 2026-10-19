@@ -731,20 +731,22 @@ export function ConfiguratorClient() {
 
               <div className="fine-bar">
                 <div>
-                  <span className="fine-bar-label">
+                  <label className="fine-bar-label" htmlFor={`${uid}-fine`}>
                     <SlidersHorizontal size={14} aria-hidden />
                     Fine tuning
-                  </span>
-                  <span className="fine-bar-hint">
+                  </label>
+                  <span className="fine-bar-hint" id={`${uid}-fine-hint`}>
                     Scale, offset and colour, shown with the badge itself. Blank fields use the default.
                   </span>
                 </div>
                 <button
+                  id={`${uid}-fine`}
+                  type="button"
                   role="switch"
                   aria-checked={fine}
+                  aria-describedby={`${uid}-fine-hint`}
                   className={`toggle${fine ? ' toggle--on' : ''}`}
                   onClick={() => setFine(v => !v)}
-                  aria-label="Toggle fine tuning"
                 >
                   <span className="toggle-thumb" />
                 </button>
