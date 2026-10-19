@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.128.3](https://github.com/IbbyLabs/XRDB/compare/v3.128.2...v3.128.3) (2026-10-19)
+
+
+### Fixed
+
+* **compose:** place an aired anime season TMDB packs into one (BUG-298) ([fd6f3c0](https://github.com/IbbyLabs/XRDB/commit/fd6f3c065d0e24fcb61cf260e2ba30ac71e2ff75))
+
 ## [3.128.2](https://github.com/IbbyLabs/XRDB/compare/v3.128.1...v3.128.2) (2026-10-18)
 
 
