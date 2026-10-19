@@ -2,6 +2,23 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.131.0](https://github.com/IbbyLabs/XRDB/compare/v3.130.0...v3.131.0) (2026-10-19)
+
+
+### Added
+
+* **web:** group display settings under section headings ([b8b7580](https://github.com/IbbyLabs/XRDB/commit/b8b7580ddd636de74977672945a44bb54e399464))
+* **web:** pin a small preview on narrow screens once the main one scrolls away ([8658443](https://github.com/IbbyLabs/XRDB/commit/86584431357a2183f99444296adf66830b34dccd))
+
+
+### Fixed
+
+* **web:** hide the pinned preview while the footer is on screen ([6c0d288](https://github.com/IbbyLabs/XRDB/commit/6c0d288c8e0dbb909f7d700485f1604c7445b69c))
+* **web:** label configurator switches and mark their groups as headings ([b5f7056](https://github.com/IbbyLabs/XRDB/commit/b5f705621f464f961819cf2361183877d22503af))
+* **web:** name the fine tuning switch by its visible label ([b0b5b17](https://github.com/IbbyLabs/XRDB/commit/b0b5b172921a70bc4a37924977837ccd1972a74c))
+* **web:** outline off switches and keep colour fades under reduced motion ([36e9405](https://github.com/IbbyLabs/XRDB/commit/36e94051fa1163e302b7d0ec2f5c1ebfc6c61fe2))
+* **web:** shrink the pinned preview and leave room below the last controls ([62ee68e](https://github.com/IbbyLabs/XRDB/commit/62ee68e12c950481be9371218f359368452b6603))
+
 ## [3.130.0](https://github.com/IbbyLabs/XRDB/compare/v3.129.2...v3.130.0) (2026-10-19)
 
 
