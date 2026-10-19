@@ -39,6 +39,8 @@ type TMDB struct {
 	substitutions sync.Map
 	// seasonNumbers caches seasonEpisodeNumbers by "<tmdb id>/<season>".
 	seasonNumbers sync.Map
+	// seasonsSweptAt is when seasonNumbers was last swept, in unix nanoseconds.
+	seasonsSweptAt atomic.Int64
 }
 
 // seasonNumbersTTL is how long a season's episode numbers are reused.
@@ -403,15 +405,32 @@ func (t *TMDB) LocateEpisode(ctx context.Context, seriesID string, season, episo
 func (t *TMDB) seasonEpisodeNumbers(ctx context.Context, tmdbID string, season int) ([]int, bool) {
 	key := tmdbID + "/" + strconv.Itoa(season)
 	if v, ok := t.seasonNumbers.Load(key); ok {
-		if c := v.(cachedSeasonNumbers); time.Since(c.at) < seasonNumbersTTL {
+		if c := v.(*cachedSeasonNumbers); time.Since(c.at) < seasonNumbersTTL {
 			return c.numbers, c.found
 		}
 	}
 	numbers, found, cacheable := t.fetchSeasonEpisodeNumbers(ctx, tmdbID, season)
 	if cacheable {
-		t.seasonNumbers.Store(key, cachedSeasonNumbers{numbers: numbers, found: found, at: time.Now()})
+		now := time.Now()
+		t.seasonNumbers.Store(key, &cachedSeasonNumbers{numbers: numbers, found: found, at: now})
+		t.sweepSeasonNumbers(now)
 	}
 	return numbers, found
+}
+
+// sweepSeasonNumbers removes expired seasonNumbers entries, at most once per
+// seasonNumbersTTL.
+func (t *TMDB) sweepSeasonNumbers(now time.Time) {
+	last := t.seasonsSweptAt.Load()
+	if now.UnixNano()-last < int64(seasonNumbersTTL) || !t.seasonsSweptAt.CompareAndSwap(last, now.UnixNano()) {
+		return
+	}
+	t.seasonNumbers.Range(func(k, v any) bool {
+		if now.Sub(v.(*cachedSeasonNumbers).at) >= seasonNumbersTTL {
+			t.seasonNumbers.CompareAndDelete(k, v)
+		}
+		return true
+	})
 }
 
 // fetchSeasonEpisodeNumbers reads one season's episode numbers from TMDB. A

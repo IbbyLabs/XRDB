@@ -7,7 +7,9 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 // seasonStub serves /tv/<id>/season/<n> with the episode numbers given for n.
@@ -93,4 +95,55 @@ func TestSeasonEpisodeNumbersAreCached(t *testing.T) {
 	if calls != 1 {
 		t.Errorf("TMDB was asked %d times, want 1", calls)
 	}
+}
+
+func TestSeasonNumbersSweepDropsExpiredEntries(t *testing.T) {
+	tm := NewTMDB("key", "")
+	now := time.Now()
+	stale := now.Add(-seasonNumbersTTL - time.Minute)
+	tm.seasonNumbers.Store("1/1", &cachedSeasonNumbers{at: stale})
+	tm.seasonNumbers.Store("1/2", &cachedSeasonNumbers{at: now})
+
+	tm.sweepSeasonNumbers(now)
+	if _, ok := tm.seasonNumbers.Load("1/1"); ok {
+		t.Error("an expired entry survived the sweep")
+	}
+	if _, ok := tm.seasonNumbers.Load("1/2"); !ok {
+		t.Error("a fresh entry was swept")
+	}
+
+	tm.seasonNumbers.Store("1/3", &cachedSeasonNumbers{at: stale})
+	tm.sweepSeasonNumbers(now.Add(time.Minute))
+	if _, ok := tm.seasonNumbers.Load("1/3"); !ok {
+		t.Error("a second sweep ran within the interval")
+	}
+	tm.sweepSeasonNumbers(now.Add(seasonNumbersTTL))
+	if _, ok := tm.seasonNumbers.Load("1/3"); ok {
+		t.Error("no sweep ran once the interval had passed")
+	}
+}
+
+func TestSeasonEpisodeNumbersSweepsOnStore(t *testing.T) {
+	tm := seasonStub(t, map[int][2]int{1: {1, 2}})
+	tm.seasonNumbers.Store("old/1", &cachedSeasonNumbers{at: time.Now().Add(-seasonNumbersTTL - time.Minute)})
+	tm.seasonEpisodeNumbers(context.Background(), "1", 1)
+	if _, ok := tm.seasonNumbers.Load("old/1"); ok {
+		t.Error("storing a season did not sweep an expired entry")
+	}
+}
+
+func TestSeasonNumbersConcurrentLookupsAndSweeps(t *testing.T) {
+	tm := seasonStub(t, map[int][2]int{1: {1, 2}, 2: {3, 4}})
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for j := 0; j < 50; j++ {
+				tm.seasonEpisodeNumbers(context.Background(), strconv.Itoa(j%5), 1+j%2)
+				tm.sweepSeasonNumbers(time.Now().Add(time.Duration(i*j) * time.Hour))
+			}
+		}(i)
+	}
+	wg.Wait()
 }
