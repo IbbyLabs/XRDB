@@ -1806,7 +1806,8 @@ func (p *Pipeline) recoverAnimeSeasonSlot(ctx context.Context, series string, se
 		m, refusal := resolver.SeasonForAnimeID(service+":"+strconv.Itoa(season), series)
 		if refusal != animemap.SeasonResolved || !m.Resolved() {
 			refusals = append(refusals, service+"="+string(refusal))
-			if refusal != animemap.SeasonNoRows {
+			// An id belonging to another series says nothing about this one.
+			if refusal != animemap.SeasonNoRows && refusal != animemap.SeasonWrongSeries {
 				named = true
 			}
 			continue

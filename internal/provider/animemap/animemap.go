@@ -343,6 +343,9 @@ type indexes struct {
 	// series, keyed like seasons. Only TV and ONA rows with a MAL id and a TMDB
 	// season are kept.
 	episodeRows map[string][]episodeRow
+	// tvMAL holds the MAL ids of every TV and ONA entry of a series, keyed like
+	// seasons, whether or not the entry names a season.
+	tvMAL map[string][]int
 }
 
 // statedSeason is a TMDB season an anime id names outright.
@@ -452,6 +455,7 @@ type source struct {
 	statedSeas  map[string]statedSeason
 	claims      map[string]int
 	episodeRs   map[string][]episodeRow
+	tvMALs      map[string][]int
 }
 
 // New creates a Mapper. Datasets load lazily on first Resolve.
@@ -1033,6 +1037,7 @@ func (s *source) loadFromDiskLocked() error {
 	s.bySeason, s.partialSeas, s.animeSeas = idx.seasons, idx.partialSeasons, idx.animeSeason
 	s.entriesPer, s.statedSeas, s.claims = idx.seriesEntries, idx.statedSeasons, idx.seasonClaims
 	s.episodeRs = idx.episodeRows
+	s.tvMALs = idx.tvMAL
 	s.loadedAt = info.ModTime()
 	return nil
 }
@@ -1288,6 +1293,7 @@ func buildIndexes(data []byte) (indexes, error) {
 		statedSeasons:  make(map[string]statedSeason),
 		seasonClaims:   make(map[string]int),
 		episodeRows:    make(map[string][]episodeRow),
+		tvMAL:          make(map[string][]int),
 	}
 	ranks := make(map[string]int)
 	for _, e := range entries {
@@ -1353,6 +1359,17 @@ func buildIndexes(data []byte) (indexes, error) {
 				for _, k := range reverseKeys(ids) {
 					idx.statedSeasons[k] = statedSeason{seriesKey: seriesKey, tmdbSeason: e.Season.tmdb}
 				}
+			}
+		}
+		if rank := rankForType(e.Type); (rank == typeRankTV || rank == typeRankONA) && ids.MAL != 0 {
+			for _, imdbID := range e.IMDbID {
+				if imdbID != "" {
+					idx.tvMAL[imdbID] = append(idx.tvMAL[imdbID], ids.MAL)
+				}
+			}
+			if e.TMDBID.TV != 0 {
+				k := "tv:" + strconv.Itoa(e.TMDBID.TV)
+				idx.tvMAL[k] = append(idx.tvMAL[k], ids.MAL)
 			}
 		}
 		if rank := rankForType(e.Type); (rank == typeRankTV || rank == typeRankONA) && ids.MAL != 0 && e.Season.tmdb > 0 {

@@ -21,6 +21,9 @@ type EpisodeEntry struct {
 	HasPrev    bool
 	PrevMALID  int
 	PrevOffset int
+	// Unanchored is an entry placed only because it is the series' one TV
+	// entry, with no season stated, so the episode number is read as MAL's.
+	Unanchored bool
 }
 
 // EpisodeRefusal names why a TMDB episode did not map onto a MAL entry.
@@ -71,7 +74,20 @@ func (m *Mapper) EpisodeEntry(seriesKey string, season, episode int) (EpisodeEnt
 			return mapEpisode(rows, season, episode)
 		}
 	}
+	if m.primary != nil {
+		if mals := m.primary.tvMALsFor(seriesKey); len(mals) == 1 {
+			return EpisodeEntry{MALID: mals[0], Episode: episode, Unanchored: true}, EpisodeResolved
+		}
+	}
 	return EpisodeEntry{}, EpisodeNoRows
+}
+
+// tvMALsFor returns the MAL ids of a series' TV and ONA entries.
+func (s *source) tvMALsFor(key string) []int {
+	s.ensureLoaded()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.tvMALs[key]
 }
 
 func mapEpisode(rows []episodeRow, season, episode int) (EpisodeEntry, EpisodeRefusal) {

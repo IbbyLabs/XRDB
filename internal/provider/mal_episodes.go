@@ -201,6 +201,15 @@ func (m *MALEpisodes) entryFor(ctx context.Context, series string, season, episo
 // before it ends.
 func (m *MALEpisodes) placed(ctx context.Context, series string, season int, e animemap.EpisodeEntry, jk *jikanEpisode) (bool, error) {
 	name := episodeNameFrom(ctx)
+	// An unanchored entry past season 1 rests on TMDB numbering episodes on
+	// across seasons, which only matching titles confirm.
+	if e.Unanchored && season > 1 {
+		if genericTitle(name) || jk == nil {
+			m.noteBrokenChain(ctx, series, season, "an unanchored entry past season 1 has no title to confirm it", e)
+			return false, nil
+		}
+		return titlesMatch(name, jk.Title) || titlesMatch(name, jk.TitleRomanji), nil
+	}
 	if genericTitle(name) || jk == nil || (genericTitle(jk.Title) && genericTitle(jk.TitleRomanji)) {
 		return m.chainHolds(ctx, series, season, e)
 	}

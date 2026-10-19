@@ -219,27 +219,31 @@ func TestAnExplicitSeasonAndEpisodeIsUntouched(t *testing.T) {
 	}
 }
 
-// A declined recovery ends as a 404 with no artwork, so without a line saying
-// why, the difference between a number that was never an anime id and one we
-// held and could not use is invisible from outside.
-func TestADeclinedRecoverySaysWhyWhenTheIDWasFound(t *testing.T) {
-	var buf bytes.Buffer
-	p := &Pipeline{
-		logger: slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})),
-		anime: seasonSlotResolver{rows: map[string]map[string]animemap.SeasonMapping{
-			"kitsu:11209": {"tt9999999": mappingFor(t, 1, 0)},
-		}},
+// BUG-300. A number that is another series' anime id is reached by every
+// episode of a series the dataset names no seasons for, so it stays off the
+// info log and still says why at debug.
+func TestAnIDBelongingToAnotherSeriesIsDebugOnly(t *testing.T) {
+	var info, debug bytes.Buffer
+	resolver := seasonSlotResolver{rows: map[string]map[string]animemap.SeasonMapping{
+		"kitsu:11209": {"tt9999999": mappingFor(t, 1, 0)},
+	}}
+	for _, run := range []struct {
+		buf   *bytes.Buffer
+		level slog.Level
+	}{{&info, slog.LevelInfo}, {&debug, slog.LevelDebug}} {
+		p := &Pipeline{
+			logger: slog.New(slog.NewTextHandler(run.buf, &slog.HandlerOptions{Level: run.level})),
+			anime:  resolver,
+		}
+		if _, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 11209, 1); ok {
+			t.Fatal("recovered against the wrong series, which the refusal exists to prevent")
+		}
 	}
-
-	if _, _, ok := p.recoverAnimeSeasonSlot(context.Background(), "tt5607616", 11209, 1); ok {
-		t.Fatal("recovered against the wrong series, which the refusal exists to prevent")
+	if info.Len() != 0 {
+		t.Errorf("an id naming another series reached the info log: %q", info.String())
 	}
-	out := buf.String()
-	if !strings.Contains(out, "could not be converted") {
-		t.Errorf("no info line for a found-but-unusable id, got %q", out)
-	}
-	if !strings.Contains(out, string(animemap.SeasonWrongSeries)) {
-		t.Errorf("line does not name the refusal, got %q", out)
+	if !strings.Contains(debug.String(), string(animemap.SeasonWrongSeries)) {
+		t.Errorf("the debug line does not name the refusal, got %q", debug.String())
 	}
 }
 
