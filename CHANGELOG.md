@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.131.1](https://github.com/IbbyLabs/XRDB/compare/v3.131.0...v3.131.1) (2026-10-19)
+
+
+### Fixed
+
+* **tmdb:** stop old films reading as in cinemas (BUG-301) ([47af414](https://github.com/IbbyLabs/XRDB/commit/47af4143f3f6d03b3a8f8040f02b8c628fb39c26))
+
 ## [3.131.0](https://github.com/IbbyLabs/XRDB/compare/v3.130.0...v3.131.0) (2026-10-19)
 
 
