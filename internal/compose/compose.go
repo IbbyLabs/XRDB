@@ -243,6 +243,12 @@ type animeSeriesNamer interface {
 	SoleSeasonlessSeries(animeID, seriesKey string) bool
 }
 
+// animeAiredSeasonResolver maps an aired season of a series onto the TMDB season
+// holding its episodes. Separate interface for the same reason as the others.
+type animeAiredSeasonResolver interface {
+	SeasonFor(seriesKey string, aired int) (animemap.SeasonMapping, animemap.SeasonRefusal)
+}
+
 // seriesSeasonCounter answers how many seasons a series has. Separate interface
 // for the same reason as the others, and satisfied by the TMDB provider.
 type seriesSeasonCounter interface {
@@ -1350,6 +1356,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// on series ids, so an episode tconst matches nothing in it.
 	ratingReq.seriesID = titleID(req.MediaID)
 	if series, season, episode, ok := parseEpisodeID(req.MediaID); ok {
+		season, episode, _ = p.alignAiredSeason(series, season, episode)
 		ratingReq.episode = &episodeRef{series: series, season: season, number: episode}
 	}
 	ratingReq.artworkFrom = artworkFrom
@@ -1799,6 +1806,30 @@ func (p *Pipeline) recoverAnimeSeasonSlot(ctx context.Context, series string, se
 	return found.TMDBSeason, episode + found.EpisodeDelta, true
 }
 
+// alignAiredSeason converts an aired season TMDB does not have into the TMDB
+// season and episode holding it. TMDB files some anime as one long season, so
+// "tt26743760:2:4" is TMDB 1x28.
+//
+// Only a season the dataset does not name as a TMDB season is touched, and only
+// when the dataset places it.
+func (p *Pipeline) alignAiredSeason(series string, season, episode int) (int, int, bool) {
+	if series == "" || season <= 0 {
+		return season, episode, false
+	}
+	aired, ok := p.anime.(animeAiredSeasonResolver)
+	if !ok || aired == nil {
+		return season, episode, false
+	}
+	if known, ok := p.anime.(animeSeasonResolver); ok && known.KnowsTMDBSeason(series, season) {
+		return season, episode, false
+	}
+	m, refusal := aired.SeasonFor(series, season)
+	if refusal != animemap.SeasonResolved || !m.Resolved() || m.TMDBSeason == season {
+		return season, episode, false
+	}
+	return m.TMDBSeason, episode + m.EpisodeDelta, true
+}
+
 // animeServices are the catalogues a number in the season position might be an
 // id from, tried in order.
 var animeServices = []string{"kitsu", "mal", "anilist", "anidb"}
@@ -2076,7 +2107,11 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 		series, season, episode, ok = p.identifyEpisode(ctx, req.MediaID)
 	}
 	if ok {
-		if s2, e2, recovered := p.recoverAnimeSeasonSlot(ctx, series, season, episode); recovered {
+		if s2, e2, aligned := p.alignAiredSeason(series, season, episode); aligned {
+			p.log().InfoContext(ctx, "An aired season TMDB does not have was moved to where TMDB files it",
+				"id", logging.RequestID(ctx), "media_id", req.MediaID, "season", s2, "episode", e2)
+			season, episode = s2, e2
+		} else if s2, e2, recovered := p.recoverAnimeSeasonSlot(ctx, series, season, episode); recovered {
 			p.log().InfoContext(ctx, "An anime catalogue id was sitting in the season position; converted it",
 				"id", logging.RequestID(ctx), "media_id", req.MediaID,
 				"season", s2, "episode", e2)

@@ -362,3 +362,58 @@ func TestAStatedSeasonRefusedDoesNotPlace(t *testing.T) {
 		t.Errorf("the stated-season guard was never asked: %v", r.asked)
 	}
 }
+
+// airedSeasonResolver adds the aired-season lookup to seasonSlotResolver.
+type airedSeasonResolver struct {
+	seasonSlotResolver
+	aired map[string]map[int]animemap.SeasonMapping
+}
+
+func (a airedSeasonResolver) SeasonFor(seriesKey string, aired int) (animemap.SeasonMapping, animemap.SeasonRefusal) {
+	m, ok := a.aired[seriesKey][aired]
+	if !ok {
+		return animemap.SeasonMapping{}, animemap.SeasonUnknownAired
+	}
+	return m, animemap.SeasonResolved
+}
+
+// BUG-298. TMDB files The Apothecary Diaries as one 60-episode season, so the
+// second aired season's fourth episode is TMDB 1x28.
+func TestAnAiredSeasonTMDBPacksIsAligned(t *testing.T) {
+	p := &Pipeline{anime: airedSeasonResolver{
+		seasonSlotResolver: seasonSlotResolver{known: map[string][]int{"tt26743760": {1}}},
+		aired:              map[string]map[int]animemap.SeasonMapping{"tt26743760": {2: mappingFor(t, 1, 24)}},
+	}}
+
+	season, episode, ok := p.alignAiredSeason("tt26743760", 2, 4)
+	if !ok || season != 1 || episode != 28 {
+		t.Errorf("got season %d episode %d aligned=%v, want 1/28 aligned", season, episode, ok)
+	}
+}
+
+func TestAlignAiredSeasonLeavesOrdinarySeasonsAlone(t *testing.T) {
+	cases := []struct {
+		name     string
+		resolver animeResolver
+		season   int
+	}{
+		{"a season TMDB has", airedSeasonResolver{
+			seasonSlotResolver: seasonSlotResolver{known: map[string][]int{"tt26743760": {1, 2}}},
+			aired:              map[string]map[int]animemap.SeasonMapping{"tt26743760": {2: mappingFor(t, 1, 24)}},
+		}, 2},
+		{"a series the dataset does not cover", airedSeasonResolver{}, 2},
+		{"specials", airedSeasonResolver{
+			aired: map[string]map[int]animemap.SeasonMapping{"tt26743760": {0: mappingFor(t, 1, 0)}},
+		}, 0},
+		{"a resolver without the lookup", seasonSlotResolver{}, 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &Pipeline{anime: tc.resolver}
+			season, episode, ok := p.alignAiredSeason("tt26743760", tc.season, 4)
+			if ok || season != tc.season || episode != 4 {
+				t.Errorf("got %d/%d aligned=%v, want %d/4 untouched", season, episode, ok, tc.season)
+			}
+		})
+	}
+}
