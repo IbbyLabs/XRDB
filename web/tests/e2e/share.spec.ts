@@ -14,7 +14,7 @@ async function gotoConfigurator(page: Page) {
   await expect(page.locator('.preview-actions')).toBeVisible();
 }
 
-const genreToggle = (page: Page) => page.getByRole('switch', { name: /toggle genre badge/i });
+const genreToggle = (page: Page) => page.getByRole('switch', { name: /^genre badge$/i });
 const shareButton = (page: Page) => page.getByRole('button', { name: /share this look/i });
 
 test('sharing works without the async clipboard API', async ({ page }) => {

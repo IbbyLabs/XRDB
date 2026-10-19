@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { Check, AlertCircle } from 'lucide-react';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
@@ -79,20 +80,23 @@ function ToggleRow({ label, hint, checked, onChange, disabled, note }: {
   label: string; hint: string; checked: boolean; onChange: () => void;
   disabled?: boolean; note?: string;
 }) {
+  const id = useId();
   return (
     <div className="toggle-row">
       <div>
-        <span className="label" style={{ marginBottom: 0 }}>{label}</span>
-        <span className="hint" style={{ marginTop: 0 }}>{hint}</span>
+        <label className="label" htmlFor={id} style={{ marginBottom: 0 }}>{label}</label>
+        <span className="hint" id={`${id}-hint`} style={{ marginTop: 0 }}>{hint}</span>
         {note && <span className="hint hint-warn" style={{ marginTop: 0 }}>{note}</span>}
       </div>
       <button
+        id={id}
+        type="button"
         role="switch"
         aria-checked={checked}
+        aria-describedby={`${id}-hint`}
         disabled={disabled}
         className={`toggle${checked ? ' toggle--on' : ''}`}
         onClick={onChange}
-        aria-label={`Toggle ${label.toLowerCase()}`}
       >
         <span className="toggle-thumb" />
       </button>
@@ -144,7 +148,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
         </Field>
 
         <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'var(--sp-3)', margin: 0 }}>
-          <legend className="label" style={{ padding: '0 var(--sp-1)' }}>Per type artwork source</legend>
+          <legend style={{ padding: '0 var(--sp-1)' }}><h3 className="label group-heading">Per type artwork source</h3></legend>
           <div className="cfg-fields">
             <Field label="Movies" htmlFor={`${uid}-artwork-movie`} hint="Overrides the artwork source for films.">
               <select id={`${uid}-artwork-movie`} className="select" value={config.artworkSourceMovie}
@@ -171,7 +175,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
         </fieldset>
 
         <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'var(--sp-3)', margin: 0 }}>
-          <legend className="label" style={{ padding: '0 var(--sp-1)' }}>Output</legend>
+          <legend style={{ padding: '0 var(--sp-1)' }}><h3 className="label group-heading">Output</h3></legend>
           <div className="cfg-fields">
             <Field label="Format" htmlFor={`${uid}-output-format`} hint="Auto picks the best encoding for the artwork.">
               <select id={`${uid}-output-format`} className="select" value={config.outputFormat}
@@ -203,7 +207,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
 
         {config.artworkSource === 'random' && (
           <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'var(--sp-3)', margin: 0 }}>
-            <legend className="label" style={{ padding: '0 var(--sp-1)' }}>Random filters</legend>
+            <legend style={{ padding: '0 var(--sp-1)' }}><h3 className="label group-heading">Random filters</h3></legend>
             <div className="cfg-fields">
               <Field label="Text" htmlFor={`${uid}-rp-text`}>
                 <select id={`${uid}-rp-text`} className="select" value={config.randomPosterText}
@@ -687,11 +691,13 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
         )}
 
         <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-          <legend className="label" style={{ marginBottom: 'var(--sp-2)' }}>
-            Quality badges
-            {config.badges.length > 0 && (
-              <span className="count-pill">{config.badges.length}</span>
-            )}
+          <legend style={{ marginBottom: 'var(--sp-2)' }}>
+            <h3 className="label group-heading">
+              Quality badges
+              {config.badges.length > 0 && (
+                <span className="count-pill">{config.badges.length}</span>
+              )}
+            </h3>
           </legend>
           {/* A release format belongs to a file, not to a title, so no metadata
               source carries it. Checking means asking a stream addon, which the

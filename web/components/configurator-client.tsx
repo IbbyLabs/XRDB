@@ -754,18 +754,21 @@ export function ConfiguratorClient() {
 
           {activeTab === 'display' && (
             <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
+              <h2 className="sr-only">Display settings</h2>
               <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} fine={fine} features={features} onReset={() => { lastEditRef.current = null; pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
             </div>
           )}
 
           {activeTab === 'ratings' && (
             <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`} className="tabpanel-enter">
+              <h2 className="sr-only">Rating sources</h2>
               <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} onMoveRating={moveRating} fine={fine} />
             </div>
           )}
 
           {activeTab === 'profile' && (
             <div id={`${uid}-panel-profile`} role="tabpanel" aria-labelledby={`${uid}-tab-profile`} className="tabpanel-enter">
+              <h2 className="sr-only">Profile</h2>
               <ProfilePanel
                 configs={configs}
                 mediaType={mediaType}
@@ -782,6 +785,7 @@ export function ConfiguratorClient() {
 
           {activeTab === 'install' && (
             <div id={`${uid}-panel-install`} role="tabpanel" aria-labelledby={`${uid}-tab-install`} className="tabpanel-enter">
+              <h2 className="sr-only">Install</h2>
               <InstallPanel
                 configKey={loadedProfile ? (loadedProfile.alias || loadedProfile.id) : ''}
                 renderKey={renderKey}
