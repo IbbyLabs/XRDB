@@ -1366,15 +1366,21 @@ textarea.input { min-height: 0; line-height: 1.5; }
   gap: var(--sp-4);
 }
 
+.cfg-section + .cfg-section {
+  border-top: 1px solid var(--border);
+  padding-top: var(--sp-4);
+}
+
 .cfg-section-label {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   font-size: var(--text-xs);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--subtle);
-  margin-top: var(--sp-2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0 0 var(--sp-3);
 }
 
 .cfg-idbar {
