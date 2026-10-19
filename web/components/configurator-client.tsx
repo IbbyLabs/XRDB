@@ -162,6 +162,7 @@ export function ConfiguratorClient() {
   const stageRef = useRef<HTMLDivElement>(null);
   const mediaTabsRef = useRef<HTMLDivElement>(null);
   const [stageScrolledPast, setStageScrolledPast] = useState(false);
+  const [footerInView, setFooterInView] = useState(false);
   useEffect(() => {
     const el = stageRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
@@ -169,7 +170,10 @@ export function ConfiguratorClient() {
       setStageScrolledPast(!e.isIntersecting && e.boundingClientRect.top < 0);
     });
     io.observe(el);
-    return () => io.disconnect();
+    const footer = document.querySelector('.site-footer');
+    const fo = new IntersectionObserver(([e]) => setFooterInView(e.isIntersecting));
+    if (footer) fo.observe(footer);
+    return () => { io.disconnect(); fo.disconnect(); };
   }, []);
   const backToPreview = useCallback(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -619,8 +623,8 @@ export function ConfiguratorClient() {
             )}
           </div>
 
-          {/* Shown only in the stacked layout, once the preview is scrolled past. */}
-          {previewSrc && !imgError && stageScrolledPast && (
+          {/* Shown only in the stacked layout, between the preview and the footer. */}
+          {previewSrc && !imgError && stageScrolledPast && !footerInView && (
             <button
               type="button"
               className="preview-pin"
