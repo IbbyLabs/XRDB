@@ -343,9 +343,15 @@ type indexes struct {
 	// series, keyed like seasons. Only TV and ONA rows with a MAL id and a TMDB
 	// season are kept.
 	episodeRows map[string][]episodeRow
-	// tvMAL holds the MAL ids of every TV and ONA entry of a series, keyed like
-	// seasons, whether or not the entry names a season.
-	tvMAL map[string][]int
+	// tvMAL holds every TV and ONA entry of a series, keyed like seasons,
+	// whether or not the entry names a season.
+	tvMAL map[string][]tvEntry
+}
+
+// tvEntry is one TV or ONA entry of a series.
+type tvEntry struct {
+	mal        int
+	seasonless bool
 }
 
 // statedSeason is a TMDB season an anime id names outright.
@@ -455,7 +461,7 @@ type source struct {
 	statedSeas  map[string]statedSeason
 	claims      map[string]int
 	episodeRs   map[string][]episodeRow
-	tvMALs      map[string][]int
+	tvMALs      map[string][]tvEntry
 }
 
 // New creates a Mapper. Datasets load lazily on first Resolve.
@@ -1155,6 +1161,9 @@ type seasonRef struct {
 	// rank above is a coarse ordering; these are what a numbering conversion
 	// reads.
 	tvdb, tmdb int
+	// stated is false for a row with no season field at all, which is not the
+	// same as one stating season 0.
+	stated bool
 }
 
 func (s *seasonRef) UnmarshalJSON(b []byte) error {
@@ -1162,6 +1171,7 @@ func (s *seasonRef) UnmarshalJSON(b []byte) error {
 	if trimmed == "" || trimmed == "null" {
 		return nil
 	}
+	s.stated = true
 	season := 0
 	if trimmed[0] == '{' {
 		var obj struct {
@@ -1293,7 +1303,7 @@ func buildIndexes(data []byte) (indexes, error) {
 		statedSeasons:  make(map[string]statedSeason),
 		seasonClaims:   make(map[string]int),
 		episodeRows:    make(map[string][]episodeRow),
-		tvMAL:          make(map[string][]int),
+		tvMAL:          make(map[string][]tvEntry),
 	}
 	ranks := make(map[string]int)
 	for _, e := range entries {
@@ -1362,14 +1372,15 @@ func buildIndexes(data []byte) (indexes, error) {
 			}
 		}
 		if rank := rankForType(e.Type); (rank == typeRankTV || rank == typeRankONA) && ids.MAL != 0 {
+			tv := tvEntry{mal: ids.MAL, seasonless: !e.Season.stated}
 			for _, imdbID := range e.IMDbID {
 				if imdbID != "" {
-					idx.tvMAL[imdbID] = append(idx.tvMAL[imdbID], ids.MAL)
+					idx.tvMAL[imdbID] = append(idx.tvMAL[imdbID], tv)
 				}
 			}
 			if e.TMDBID.TV != 0 {
 				k := "tv:" + strconv.Itoa(e.TMDBID.TV)
-				idx.tvMAL[k] = append(idx.tvMAL[k], ids.MAL)
+				idx.tvMAL[k] = append(idx.tvMAL[k], tv)
 			}
 		}
 		if rank := rankForType(e.Type); (rank == typeRankTV || rank == typeRankONA) && ids.MAL != 0 && e.Season.tmdb > 0 {

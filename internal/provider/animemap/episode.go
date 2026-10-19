@@ -75,15 +75,15 @@ func (m *Mapper) EpisodeEntry(seriesKey string, season, episode int) (EpisodeEnt
 		}
 	}
 	if m.primary != nil {
-		if mals := m.primary.tvMALsFor(seriesKey); len(mals) == 1 {
-			return EpisodeEntry{MALID: mals[0], Episode: episode, Unanchored: true}, EpisodeResolved
+		if tv := m.primary.tvMALsFor(seriesKey); len(tv) == 1 && tv[0].seasonless {
+			return EpisodeEntry{MALID: tv[0].mal, Episode: episode, Unanchored: true}, EpisodeResolved
 		}
 	}
 	return EpisodeEntry{}, EpisodeNoRows
 }
 
-// tvMALsFor returns the MAL ids of a series' TV and ONA entries.
-func (s *source) tvMALsFor(key string) []int {
+// tvMALsFor returns a series' TV and ONA entries.
+func (s *source) tvMALsFor(key string) []tvEntry {
 	s.ensureLoaded()
 	s.mu.Lock()
 	defer s.mu.Unlock()

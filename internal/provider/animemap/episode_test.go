@@ -53,7 +53,7 @@ func TestEpisodeEntry(t *testing.T) {
 		{"Re:Zero third season", "tt5607616", 1, 51, EpisodeEntry{MALID: 54857, Episode: 1}, EpisodeResolved},
 		{"Re:Zero fourth season", "tt5607616", 1, 70, EpisodeEntry{MALID: 61316, Episode: 4}, EpisodeResolved},
 		{"season 0 is refused", "tt2560140", 0, 1, EpisodeEntry{}, EpisodeSpecials},
-		{"One Piece has no season data", "tt0388629", 1, 1000, EpisodeEntry{}, EpisodeNoRows},
+		{"One Piece has no season data, so its one TV entry takes the number", "tt0388629", 1, 1000, EpisodeEntry{MALID: 21, Episode: 1000}, EpisodeResolved},
 		{"unknown series", "tt0000001", 1, 1, EpisodeEntry{}, EpisodeNoRows},
 		{"tvdb key is unmapped", "tvdb:81797", 1, 1, EpisodeEntry{}, EpisodeNoRows},
 		{"season the series lacks", "tt2560140", 4, 1, EpisodeEntry{}, EpisodeNoSeasonRows},
