@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.131.2](https://github.com/IbbyLabs/XRDB/compare/v3.131.1...v3.131.2) (2026-10-19)
+
+
+### Performance
+
+* **ratings:** hold repeated absences on a 30m, 6h, 1d, 1w ladder ([1ba8f44](https://github.com/IbbyLabs/XRDB/commit/1ba8f44119e7a062513dfa7d9df293f781f790c5))
+* **ratings:** keep absence streaks across evictions and restarts ([d536196](https://github.com/IbbyLabs/XRDB/commit/d5361967df510fcb5de6caa779ed8f901b731411))
+
 ## [3.131.1](https://github.com/IbbyLabs/XRDB/compare/v3.131.0...v3.131.1) (2026-10-19)
 
 
