@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.129.2](https://github.com/IbbyLabs/XRDB/compare/v3.129.1...v3.129.2) (2026-10-19)
+
+
+### Fixed
+
+* **mal:** fall back only for an entry with no season field (BUG-300) ([cf6a436](https://github.com/IbbyLabs/XRDB/commit/cf6a43616f6ee086ccb408f877e6109de5949580))
+* **mal:** score episodes of a sole seasonless anime entry (BUG-300) ([f1a428d](https://github.com/IbbyLabs/XRDB/commit/f1a428d07dd457de3938cd079f1db6f0fb564338))
+
 ## [3.129.1](https://github.com/IbbyLabs/XRDB/compare/v3.129.0...v3.129.1) (2026-10-19)
 
 
