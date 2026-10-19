@@ -1367,6 +1367,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	ratingReq.seriesID = titleID(req.MediaID)
 	if series, season, episode, ok := parseEpisodeID(req.MediaID); ok {
 		season, episode, _ = p.alignAiredSeason(series, season, episode)
+		if meta != nil && meta.LocatedSeason > 0 {
+			season, episode = meta.LocatedSeason, meta.LocatedEpisode
+		}
 		ratingReq.episode = &episodeRef{series: series, season: season, number: episode}
 	}
 	ratingReq.artworkFrom = artworkFrom
@@ -2131,11 +2134,13 @@ func ratingIDFor(episodeID, mediaID string) string {
 // next, and the ratings pass must not skip a source that never answered.
 func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ []byte, outMeta *provider.MediaMeta, _ string, _ string, _ string, err error) {
 	var unairedUntil time.Time
+	var locatedSeason, locatedEpisode int
 	defer func() {
 		// The meta may be a cached one shared by other renders, so it is copied.
-		if !unairedUntil.IsZero() && outMeta != nil {
+		if outMeta != nil && (!unairedUntil.IsZero() || locatedSeason > 0) {
 			m := *outMeta
 			m.RatingsHeldUntil = unairedUntil
+			m.LocatedSeason, m.LocatedEpisode = locatedSeason, locatedEpisode
 			outMeta = &m
 		}
 	}()
@@ -2204,6 +2209,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 						"id", logging.RequestID(ctx), "media_id", req.MediaID, "season", s2, "episode", e2)
 					data, meta, ratingID, stillURL, handled, absent = d2, m2, r2, u2, ok2, false
 					season, episode = s2, e2
+					locatedSeason, locatedEpisode = s2, e2
 				}
 			}
 		}

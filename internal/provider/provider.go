@@ -30,7 +30,10 @@ type MediaMeta struct {
 	// of its own yet, because it has not aired or aired days ago with nothing
 	// from TMDB.
 	RatingsHeldUntil time.Time
-	Title            string
+	// LocatedSeason and LocatedEpisode are where TMDB files the episode the
+	// request named, set when that differs from the numbers asked for.
+	LocatedSeason, LocatedEpisode int
+	Title                         string
 	// OriginalTitle is the title in the original language, when it differs from
 	// Title. Sources that are matched by name rather than by id search both, as
 	// a national site often indexes only one of the two.
