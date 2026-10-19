@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.129.0](https://github.com/IbbyLabs/XRDB/compare/v3.128.3...v3.129.0) (2026-10-19)
+
+
+### Added
+
+* **compose:** no badges on an episode with no ratings yet (FR-234) ([0a7c886](https://github.com/IbbyLabs/XRDB/commit/0a7c8865123907e6e85740213a02a9c87b2bb4aa))
+
+
+### Fixed
+
+* **compose:** place episodes TMDB numbers on across seasons (BUG-299) ([c7accfe](https://github.com/IbbyLabs/XRDB/commit/c7accfef1dc1b9b8e6c0b5867067f0a1f6a5f7e6))
+* **server:** cap an unaired episode's render below the default (FR-234) ([a918aa1](https://github.com/IbbyLabs/XRDB/commit/a918aa1dc2bdb5a5bd5c25dbfa8002d2db49d4f4))
+* **tmdb:** cache season episode numbers and keep filed ones (BUG-299) ([9f2e5b1](https://github.com/IbbyLabs/XRDB/commit/9f2e5b16a49e2547b2a047b876b8528f03ab3dfd))
+
 ## [3.128.3](https://github.com/IbbyLabs/XRDB/compare/v3.128.2...v3.128.3) (2026-10-19)
 
 
