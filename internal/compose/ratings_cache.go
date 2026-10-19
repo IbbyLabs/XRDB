@@ -35,6 +35,32 @@ const PartialRatingsCacheTTL = 10 * time.Minute
 // absence that later becomes a rating is the case that costs a reader a badge.
 const AbsentRatingsCacheTTL = 30 * time.Minute
 
+// absentHoldLadder is the term for an absence by how many absences in a row the
+// source has given for the title, the first taking AbsentRatingsCacheTTL.
+var absentHoldLadder = []time.Duration{AbsentRatingsCacheTTL, 6 * time.Hour, 24 * time.Hour, 7 * 24 * time.Hour}
+
+// absentHoldCap bounds the ladder for every source not in absentHoldUncapped.
+const absentHoldCap = 24 * time.Hour
+
+// absentHoldUncapped are sources that climb the whole ladder. Measured to 16
+// Oct 2026, none of wikidata's absences later turned into a rating.
+var absentHoldUncapped = map[string]bool{"wikidata": true}
+
+// absentHold is the term for the streak-th consecutive absence, counting from 0.
+func absentHold(source string, streak int) time.Duration {
+	if streak < 0 {
+		streak = 0
+	}
+	if streak >= len(absentHoldLadder) {
+		streak = len(absentHoldLadder) - 1
+	}
+	hold := absentHoldLadder[streak]
+	if !absentHoldUncapped[source] && hold > absentHoldCap {
+		hold = absentHoldCap
+	}
+	return hold
+}
+
 // ratingsAnswerFreshness is how recently a source must have produced ratings for
 // a content type before an absence from it is believed. It bounds the damage of
 // a scrape breaking: absences are trusted for at most this long past the
@@ -135,6 +161,8 @@ type ratingsEntry struct {
 	// is a fraction of the entry's own term rather than the base's. Absent on an
 	// entry written before this field, which reads as the base.
 	TTL time.Duration `json:"ttl,omitempty"`
+	// AbsentStreak counts the absences before this one with no rating between.
+	AbsentStreak int `json:"absentStreak,omitempty"`
 }
 
 type ratingsCall struct {
@@ -322,7 +350,7 @@ var ratingsAgeTTLTiers = []struct {
 
 // settledRatingsTTL is the term for a present answer from a source whose scores
 // are critic aggregates fixed once reviews are in. Wikidata supplies only Rotten
-// Tomatoes and Metacritic. Absences keep AbsentRatingsCacheTTL.
+// Tomatoes and Metacritic. Absences take absentHold.
 var settledRatingsTTL = map[string]time.Duration{
 	"wikidata": 25 * 24 * time.Hour,
 }
@@ -408,8 +436,12 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 	// An absence carries no sources, so the partial rule cannot see it and the
 	// age rule would give the newest titles the longest term. Absences skew
 	// towards new titles, so both are wrong for it.
+	streak := 0
 	if meta == nil || len(meta.Ratings) == 0 {
-		ttl = AbsentRatingsCacheTTL
+		if prev, ok := c.entries[key]; ok && prev.Meta != nil && len(prev.Meta.Ratings) == 0 {
+			streak = prev.AbsentStreak + 1
+		}
+		ttl = absentHold(source, streak)
 	} else if prev, ok := c.entries[key]; ok && prev.Meta != nil {
 		if len(prev.Meta.Ratings) == 0 {
 			// The term for an absence has to come from somewhere, and nothing has
@@ -418,7 +450,8 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 			c.log().Info("A remembered absence turned into a rating",
 				"source", source, "content_type", contentType, "media_id", id,
 				"absent_for_ms", time.Since(prev.ExpiresAt.Add(-prev.TTL)).Milliseconds(),
-				"term_ms", prev.TTL.Milliseconds())
+				"term_ms", prev.TTL.Milliseconds(),
+				"absent_streak", prev.AbsentStreak)
 		} else {
 			// FR-210. How far the score moved over a known interval, which is
 			// what the age multipliers should be derived from and what nothing
@@ -426,7 +459,7 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 			sampleScoreMovement(key, prev, meta, age)
 		}
 	}
-	c.entries[key] = ratingsEntry{Meta: meta, ExpiresAt: time.Now().Add(ttl), TTL: ttl}
+	c.entries[key] = ratingsEntry{Meta: meta, ExpiresAt: time.Now().Add(ttl), TTL: ttl, AbsentStreak: streak}
 }
 
 // Len reports how many answers are held, for the admin surface.
@@ -462,9 +495,7 @@ func (c *ratingsCache) evictLocked() {
 		all = append(all, aged{k, e.ExpiresAt})
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].at.Before(all[j].at) })
-	// Absences take AbsentRatingsCacheTTL against a base term in hours, so they
-	// are always nearest expiry and always evicted first. At the cap, absence
-	// caching stops rather than degrades.
+	// Absences low on the hold ladder are nearest expiry and evicted first.
 	//
 	// A tenth at a time, so the cap is not hit again on the very next write.
 	for i := 0; i < len(all)/10+1; i++ {
