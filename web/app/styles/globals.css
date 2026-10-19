@@ -454,6 +454,8 @@ code, pre { font-family: var(--font-mono-stack); }
 }
 
 .hint-error { color: var(--err); }
+
+.group-heading { margin-top: 0; }
 .hint-warn { color: var(--warn); }
 
 .input,
@@ -508,6 +510,7 @@ textarea.input { min-height: 0; line-height: 1.5; }
   height: 1.375rem;
   border-radius: 999px;
   background: var(--border-strong);
+  box-shadow: inset 0 0 0 1px var(--subtle);
   border: none;
   cursor: pointer;
   position: relative;
@@ -519,7 +522,7 @@ textarea.input { min-height: 0; line-height: 1.5; }
   position: absolute;
   inset: -11px;
 }
-.toggle--on { background: var(--accent); }
+.toggle--on { background: var(--accent); box-shadow: none; }
 .toggle:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -2109,7 +2112,7 @@ textarea.input { min-height: 0; line-height: 1.5; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: color, background-color, border-color, opacity, box-shadow !important;
   }
   .spin { animation: none; opacity: 0.5; }
 }
