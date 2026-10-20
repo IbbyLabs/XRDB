@@ -2,6 +2,17 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.131.3](https://github.com/IbbyLabs/XRDB/compare/v3.131.2...v3.131.3) (2026-10-20)
+
+
+### Fixed
+
+* **aiometadata:** answer a refused private address with 400 so the reason reaches the browser ([355fb35](https://github.com/IbbyLabs/XRDB/commit/355fb355a341849fc90126f03039a470eb1805be))
+* **aiometadata:** limit the install proxy to public addresses unless XRDB_AIOM_ALLOW_PRIVATE is set ([2b76b4d](https://github.com/IbbyLabs/XRDB/commit/2b76b4d43a938e8fecd5783e21145a9fc3043cdc))
+* **aiometadata:** name XRDB_AIOM_ALLOW_PRIVATE when the install refuses a private address ([39098bb](https://github.com/IbbyLabs/XRDB/commit/39098bb13b4b042001e0cedc97a423704478f164))
+* **profiles:** assign new profile ids server-side and refuse ids that shadow an alias or uuid ([1632ff4](https://github.com/IbbyLabs/XRDB/commit/1632ff45434ee6a4b368f527459913c259e15af5))
+* **profiles:** leave v2 credential keys out of passwordless profile reads and exports ([3a56814](https://github.com/IbbyLabs/XRDB/commit/3a56814ee5be9320517ec89a1b5b2d559b28c4ae))
+
 ## [3.131.2](https://github.com/IbbyLabs/XRDB/compare/v3.131.1...v3.131.2) (2026-10-19)
 
 
