@@ -682,16 +682,20 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		// governor wait above, inside this same timeout, so a caller timing the
 		// request would be timing our queue.
 		upstream := time.Since(sent)
+		ownerKeyed := HasOwnerKey(req.Context(), t.source)
 		// Counted here rather than at the call site so retries and refusals are
-		// charged too. The allowance meters requests, not answers.
-		dailyBudgetFor(t.source).spend()
+		// charged too. The allowance meters requests, not answers, and only the
+		// instance's own keys draw on it.
+		if !ownerKeyed {
+			dailyBudgetFor(t.source).spend()
+		}
 		// An owner-keyed render carries a foreign credential with its own
 		// allowance. Its rate-limit headers describe that key, not the server's,
 		// so feeding them to the shared governor would pace every other render
 		// from one user's free-tier limit. wait() above stays unconditional —
 		// that is the load shedding — but the budget must not learn a stranger's
 		// allowance. Owner-keyed renders never mutate shared source state.
-		if !HasOwnerKey(req.Context(), t.source) {
+		if !ownerKeyed {
 			t.governor.observe(req.Context(), resp.Header)
 			// The daily budget is told separately from the governor, because it
 			// needs to know which credential answered and the governor does not.
