@@ -281,6 +281,9 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
+			if updated.PasswordHash == "" {
+				updated.Config = withoutV2Credentials(updated.Config)
+			}
 			writeJSON(w, http.StatusOK, updated)
 		case http.MethodDelete:
 			existing, err := store.Resolve(id)

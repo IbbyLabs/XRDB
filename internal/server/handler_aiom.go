@@ -79,6 +79,15 @@ func newAIOMClient(allowPrivate bool) *http.Client {
 	}
 }
 
+// aiomReachError explains a failed request to the AIOMetadata instance.
+func aiomReachError(err error) string {
+	if errors.Is(err, errAIOMBlockedAddress) {
+		return "This AIOMetadata address is private, and this XRDB instance only installs into public addresses. " +
+			"Use the instance's public URL, or set XRDB_AIOM_ALLOW_PRIVATE=true on XRDB."
+	}
+	return "could not reach the AIOMetadata instance"
+}
+
 // upstreamError bounds an upstream error message to one short printable line.
 func upstreamError(msg, fallback string) string {
 	msg = strings.TrimSpace(strings.Map(func(r rune) rune {
@@ -160,7 +169,7 @@ func registerAIOMRoutes(mux *http.ServeMux, allowPrivate bool) {
 			"application/json", bytes.NewReader(loadBody),
 		)
 		if err != nil {
-			writeJSON(w, http.StatusBadGateway, map[string]string{"error": "could not reach the AIOMetadata instance"})
+			writeJSON(w, http.StatusBadGateway, map[string]string{"error": aiomReachError(err)})
 			return
 		}
 		defer loadResp.Body.Close()
@@ -199,7 +208,7 @@ func registerAIOMRoutes(mux *http.ServeMux, allowPrivate bool) {
 		updateReq.Header.Set("Content-Type", "application/json")
 		updateResp, err := client.Do(updateReq)
 		if err != nil {
-			writeJSON(w, http.StatusBadGateway, map[string]string{"error": "could not reach the AIOMetadata instance"})
+			writeJSON(w, http.StatusBadGateway, map[string]string{"error": aiomReachError(err)})
 			return
 		}
 		defer updateResp.Body.Close()

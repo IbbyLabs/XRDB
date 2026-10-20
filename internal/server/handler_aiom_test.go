@@ -55,6 +55,9 @@ func TestAIOMInstallRefusesPrivateAddressesByDefault(t *testing.T) {
 	if strings.Contains(rr.Body.String(), "INTERNAL BANNER") {
 		t.Errorf("a private service's answer was returned: %s", rr.Body.String())
 	}
+	if !strings.Contains(rr.Body.String(), "XRDB_AIOM_ALLOW_PRIVATE") {
+		t.Errorf("the refusal does not name the setting that lifts it: %s", rr.Body.String())
+	}
 }
 
 func TestAIOMClientRefusesEveryPrivateDial(t *testing.T) {
