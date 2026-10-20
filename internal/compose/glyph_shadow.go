@@ -52,9 +52,22 @@ func drawGlyphShadow(base *image.NRGBA, logo *image.NRGBA, originX, originY int,
 		radius = 1
 	}
 
+	maxPad := maxShadowPad(lb.Dx(), lb.Dy())
+	if radius > maxPad/3 {
+		radius = max(1, maxPad/3)
+	}
+
 	offX, offY := o.offsetX, o.offsetY
 	if offX == 0 && offY == 0 {
 		offX, offY = defaultShadowOffset(o.style, radius)
+	}
+	switch o.style {
+	case logoShadowExtrude:
+		limit := max(0, maxPad-4)
+		offX, offY = clampAbs(offX, limit), clampAbs(offY, limit)
+	case logoShadowGel:
+		limit := max(0, maxPad-radius-1)
+		offX, offY = clampAbs(offX, limit), clampAbs(offY, limit)
 	}
 
 	tint := o.color
@@ -71,6 +84,33 @@ func drawGlyphShadow(base *image.NRGBA, logo *image.NRGBA, originX, originY int,
 	default: // the drop shadow, and anything the parser did not recognise
 		drawSoftShadow(base, logo, originX, originY, radius, offX, offY, strength, tint)
 	}
+}
+
+// maxShadowMaskCells bounds the float64 mask a shadow works in.
+const maxShadowMaskCells = 4 << 20
+
+// maxShadowPad is the widest pad around a w×h mark that keeps its mask within
+// maxShadowMaskCells.
+func maxShadowPad(w, h int) int {
+	if w*h >= maxShadowMaskCells {
+		return 0
+	}
+	sum := float64(w + h)
+	p := int((-sum + math.Sqrt(sum*sum-4*float64(w*h-maxShadowMaskCells))) / 4)
+	for p > 0 && (w+2*p)*(h+2*p) > maxShadowMaskCells {
+		p--
+	}
+	return p
+}
+
+func clampAbs(v, limit int) int {
+	if v > limit {
+		return limit
+	}
+	if v < -limit {
+		return -limit
+	}
+	return v
 }
 
 // defaultShadowOffset is where a style puts its shadow when the config sets no
