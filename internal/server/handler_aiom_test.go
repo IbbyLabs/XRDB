@@ -46,8 +46,8 @@ func TestAIOMInstallRefusesPrivateAddressesByDefault(t *testing.T) {
 	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
 
 	rr := postAIOMInstall(h, srv.URL)
-	if rr.Code != http.StatusBadGateway {
-		t.Errorf("status %d, want 502", rr.Code)
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("status %d, want 400", rr.Code)
 	}
 	if hits.Load() != 0 {
 		t.Errorf("the private address was reached %d times", hits.Load())
