@@ -1256,3 +1256,14 @@ func TestCapAddressKeyGroupsAnIPv6Prefix(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderPlaceholderJSONIsValidForAnyID(t *testing.T) {
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	for _, q := range []string{"id=%01", "id=%FF%FE", "id=a%22b%5C", "id=x&simulate=heavy"} {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/render-placeholder?"+q, nil))
+		if !json.Valid(rr.Body.Bytes()) {
+			t.Errorf("%s gave invalid JSON: %q", q, rr.Body.String())
+		}
+	}
+}
