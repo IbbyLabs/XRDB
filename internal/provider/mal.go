@@ -142,7 +142,7 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 	if base == "" {
 		base = jikanBaseURL
 	}
-	url := base + malID
+	url := base + url.PathEscape(malID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("mal: build request: %w", err)

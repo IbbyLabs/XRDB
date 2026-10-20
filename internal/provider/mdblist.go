@@ -217,7 +217,7 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 	}
 	used := m.pick(ctx)
 	params := url.Values{"apikey": {used}}
-	endpoint := fmt.Sprintf("%s/imdb/%s/%s?%s", base, mdbType, id, params.Encode())
+	endpoint := fmt.Sprintf("%s/imdb/%s/%s?%s", base, mdbType, url.PathEscape(id), params.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err

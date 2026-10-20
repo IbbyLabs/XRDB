@@ -354,7 +354,7 @@ func (t *TMDB) SeasonCount(ctx context.Context, seriesID string) (int, bool) {
 	var out struct {
 		NumberOfSeasons int `json:"number_of_seasons"`
 	}
-	if err := t.get(ctx, t.base()+"/tv/"+tmdbID, &out); err != nil {
+	if err := t.get(ctx, t.base()+"/tv/"+url.PathEscape(tmdbID), &out); err != nil {
 		return 0, false
 	}
 	return out.NumberOfSeasons, out.NumberOfSeasons > 0
@@ -442,7 +442,7 @@ func (t *TMDB) fetchSeasonEpisodeNumbers(ctx context.Context, tmdbID string, sea
 			EpisodeNumber int `json:"episode_number"`
 		} `json:"episodes"`
 	}
-	if err := t.get(ctx, fmt.Sprintf("%s/tv/%s/season/%d", t.base(), tmdbID, season), &out); err != nil {
+	if err := t.get(ctx, fmt.Sprintf("%s/tv/%s/season/%d", t.base(), url.PathEscape(tmdbID), season), &out); err != nil {
 		if isNotFound(err) {
 			return nil, false, true
 		}
@@ -618,7 +618,7 @@ func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episod
 		return nil, fmt.Errorf("tmdb: resolve series %q: %w", seriesID, err)
 	}
 	path := fmt.Sprintf("%s/tv/%s/season/%d/episode/%d?append_to_response=external_ids",
-		t.base(), tmdbID, season, episode)
+		t.base(), url.PathEscape(tmdbID), season, episode)
 	var result struct {
 		Name        string  `json:"name"`
 		AirDate     string  `json:"air_date"`
@@ -689,7 +689,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 	if fallback != "" && fallback != "en" {
 		imgLangs = strings.TrimSuffix(imgLangs, ",en,null") + "," + fallback + ",en,null"
 	}
-	path := t.base() + "/" + mediaType + "/" + id +
+	path := t.base() + "/" + mediaType + "/" + url.PathEscape(id) +
 		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders,external_ids,keywords"
 	if wantOriginal {
 		// The title's own language is only known once TMDB answers, and there is

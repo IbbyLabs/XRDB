@@ -163,6 +163,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// Artwork URLs configured against v2 carry a file extension, and
 		// sometimes an "imdb:" prefix, on the id segment.
 		id := normalizeLegacyMediaID(r.PathValue("id"))
+		if !validMediaID(id) {
+			http.Error(w, "unknown media id", http.StatusNotFound)
+			record(r, "/"+mediaType, http.StatusNotFound, latMs(start))
+			return
+		}
 		raw := r.URL.RawQuery
 		configParam := queryValue(raw, "config", "default")
 		// A request naming no config takes the instance default where one is

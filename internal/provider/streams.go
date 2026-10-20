@@ -151,7 +151,7 @@ func (s *StreamQuality) Detect(ctx context.Context, contentType, id string) (map
 		return nil, fmt.Errorf("streams: only IMDb tt-IDs supported, got %q", id)
 	}
 
-	url := s.baseURL + "/stream/" + contentType + "/" + id + ".json"
+	url := s.baseURL + "/stream/" + contentType + "/" + url.PathEscape(id) + ".json"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

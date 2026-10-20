@@ -1212,3 +1212,25 @@ func TestProfileIDCannotShadowAnotherProfile(t *testing.T) {
 		}
 	}
 }
+
+// An id that is not one plain path segment is refused before any provider sees it.
+func TestRenderRefusesAnIDWithPathCharacters(t *testing.T) {
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	for _, path := range []string{
+		"/poster/1%2F..%2F..%2Fsearch%2Fmulti%3Fquery%3Dx",
+		"/poster/tt1%3Fx=1",
+		"/backdrop/tmdb:1%23frag",
+		"/poster/" + strings.Repeat("1", 65),
+	} {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, path, nil))
+		if rr.Code != http.StatusNotFound || !strings.Contains(rr.Body.String(), "unknown media id") {
+			t.Errorf("%s: %d %q, want the unknown-id 404", path, rr.Code, rr.Body.String())
+		}
+	}
+	for _, id := range []string{"tt0111161", "tmdb:movie:550", "tmdb:series:1399.jpg", "imdb:tt0111161", "movie:tt0111161", "tt0944947:1:2"} {
+		if !validMediaID(normalizeLegacyMediaID(id)) {
+			t.Errorf("%s was refused", id)
+		}
+	}
+}

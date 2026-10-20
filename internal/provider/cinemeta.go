@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -92,7 +93,7 @@ func (c *Cinemeta) FetchArtwork(ctx context.Context, mediaType, id string, opts 
 }
 
 func (c *Cinemeta) fetchMeta(ctx context.Context, contentType, id string) (*MediaMeta, error) {
-	url := c.baseURL + "/meta/" + contentType + "/" + id + ".json"
+	url := c.baseURL + "/meta/" + contentType + "/" + url.PathEscape(id) + ".json"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

@@ -33,6 +33,13 @@ var legacyIDExtensions = []string{".jpg", ".jpeg", ".png", ".webp"}
 
 // normalizeLegacyMediaID rewrites a v2-shaped id into the form the render route
 // resolves. An id already in the current shape is returned unchanged.
+// mediaIDShape is every character an artwork id uses: tt and numeric ids,
+// scheme:type:number forms and episode suffixes.
+var mediaIDShape = regexp.MustCompile(`^[A-Za-z0-9:_-]{1,64}$`)
+
+// validMediaID reports whether id can be passed to a provider as one path segment.
+func validMediaID(id string) bool { return mediaIDShape.MatchString(id) }
+
 func normalizeLegacyMediaID(id string) string {
 	// "imdb:tt0816692" says nothing the bare tt-id does not: the tt prefix
 	// already names the source. A "tmdb:" scheme is kept, because the rating

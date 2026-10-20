@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -174,7 +175,7 @@ func fanartRecordTMDBID(raw map[string]json.RawMessage) string {
 }
 
 func (f *Fanart) fetchRaw(ctx context.Context, base, id string) (map[string]json.RawMessage, error) {
-	url := base + id + "?api_key=" + f.cred(ctx)
+	url := base + url.PathEscape(id) + "?api_key=" + f.cred(ctx)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("fanart: build request: %w", err)
