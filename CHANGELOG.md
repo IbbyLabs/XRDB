@@ -2,6 +2,21 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.131.4](https://github.com/IbbyLabs/XRDB/compare/v3.131.3...v3.131.4) (2026-10-20)
+
+
+### Fixed
+
+* bound request-keyed state in providersCountry, TMDB kind misses, upcoming regions and absence streaks ([cbc1d1f](https://github.com/IbbyLabs/XRDB/commit/cbc1d1f8588c8a86044780931fcb4bd9e6f8a803))
+* **compose:** bound the logo shadow mask so spread and offsets cannot grow it past 4M cells ([d92e088](https://github.com/IbbyLabs/XRDB/commit/d92e08811a5c2a3ced9d5b5d383607292ed19586))
+* **compose:** recover panics in render goroutines and in ratings fetches ([2e423a3](https://github.com/IbbyLabs/XRDB/commit/2e423a3b80e44947d55d9971dfae092efe8bcc35))
+* **config:** accept only language codes for language and fallbackLanguage ([9ff99b3](https://github.com/IbbyLabs/XRDB/commit/9ff99b3f74662951984928906f27af791498f438))
+* **provider:** charge only instance-keyed calls to a source's shared daily budget ([7708e09](https://github.com/IbbyLabs/XRDB/commit/7708e09c833eb5181211d32bfcb01eab3865518b))
+* **render:** refuse media ids that are not one path segment and escape ids in provider URLs ([67093ec](https://github.com/IbbyLabs/XRDB/commit/67093ec281c47fd77765d50af4fc27738503fb2f))
+* **server:** cap an IPv6 caller by its /64 ([d69013f](https://github.com/IbbyLabs/XRDB/commit/d69013f1f08a8d1382ad0f5b64e9ac5b1d60a160))
+* **server:** write render-placeholder ids as valid JSON strings ([316a454](https://github.com/IbbyLabs/XRDB/commit/316a454f8f57e2241bc5f776a34a0edf6e6a92d1))
+* **warm:** recover a panic in an in-process warm render and count it as failed ([4826d57](https://github.com/IbbyLabs/XRDB/commit/4826d57cb83b8d01766c330071c6e7660da07396))
+
 ## [3.131.3](https://github.com/IbbyLabs/XRDB/compare/v3.131.2...v3.131.3) (2026-10-20)
 
 
