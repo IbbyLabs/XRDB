@@ -32,9 +32,9 @@ func updateProfileBody(t *testing.T, h http.Handler, id, body string) profile.Pr
 func TestAnUpdateOmittingThePreviewKeepsIt(t *testing.T) {
 	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
 	create := `{"id":"pv1","type":"poster","config":{"v":1},"preview":{"mediaType":"poster","id":"tt2560140","title":"Attack on Titan (2013)"}}`
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(create)))
+	id := postProfile(t, h, create)
 
-	got := updateProfileBody(t, h, "pv1", `{"name":"Updated","config":{"v":2}}`)
+	got := updateProfileBody(t, h, id, `{"name":"Updated","config":{"v":2}}`)
 	if got.Preview == nil {
 		t.Fatal("an update that did not mention the preview cleared it")
 	}
@@ -48,9 +48,9 @@ func TestAnUpdateOmittingThePreviewKeepsIt(t *testing.T) {
 func TestAnUpdateNamingAPreviewReplacesIt(t *testing.T) {
 	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
 	create := `{"id":"pv2","type":"poster","config":{"v":1},"preview":{"mediaType":"poster","id":"tt1","title":"First"}}`
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(create)))
+	id := postProfile(t, h, create)
 
-	got := updateProfileBody(t, h, "pv2",
+	got := updateProfileBody(t, h, id,
 		`{"config":{"v":2},"preview":{"mediaType":"backdrop","id":"tt2","title":"Second"}}`)
 	if got.Preview == nil || got.Preview.Title != "Second" || got.Preview.MediaType != "backdrop" {
 		t.Errorf("preview %v, want the one just sent", got.Preview)
@@ -61,9 +61,9 @@ func TestAnUpdateNamingAPreviewReplacesIt(t *testing.T) {
 func TestAnUpdateSendingAnEmptyPreviewClearsIt(t *testing.T) {
 	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
 	create := `{"id":"pv3","type":"poster","config":{"v":1},"preview":{"mediaType":"poster","id":"tt1","title":"First"}}`
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(create)))
+	id := postProfile(t, h, create)
 
-	if got := updateProfileBody(t, h, "pv3", `{"config":{"v":2},"preview":{}}`); got.Preview != nil {
+	if got := updateProfileBody(t, h, id, `{"config":{"v":2},"preview":{}}`); got.Preview != nil {
 		t.Errorf("preview %+v, want nil after an explicit clear", *got.Preview)
 	}
 }

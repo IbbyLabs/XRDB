@@ -290,20 +290,20 @@ func TestProfileCreateAndGet(t *testing.T) {
 	if err := json.Unmarshal(rr.Body.Bytes(), &created); err != nil {
 		t.Fatalf("decode created profile: %v", err)
 	}
-	if created.ID != "p1" || created.Version != 1 {
+	if created.ID == "" || created.ID == "p1" || created.Version != 1 {
 		t.Errorf("unexpected created profile: %+v", created)
 	}
 
 	rr2 := httptest.NewRecorder()
-	h.ServeHTTP(rr2, httptest.NewRequest(http.MethodGet, "/profile/p1", nil))
+	h.ServeHTTP(rr2, httptest.NewRequest(http.MethodGet, "/profile/"+created.ID, nil))
 	if rr2.Code != http.StatusOK {
-		t.Fatalf("GET /profile/p1: expected 200, got %d", rr2.Code)
+		t.Fatalf("GET /profile/%s: expected 200, got %d", created.ID, rr2.Code)
 	}
 	var got profile.Profile
 	if err := json.Unmarshal(rr2.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode get response: %v", err)
 	}
-	if got.ID != "p1" || got.Type != "poster" {
+	if got.ID != created.ID || got.Type != "poster" {
 		t.Errorf("unexpected get response: %+v", got)
 	}
 }
@@ -319,7 +319,7 @@ func TestProfileGetNotFound(t *testing.T) {
 
 func TestProfileCreateConflict(t *testing.T) {
 	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
-	body := `{"id":"dup","type":"poster","config":{}}`
+	body := `{"alias":"dupalias","type":"poster","config":{}}`
 	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(body)))
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(body)))
@@ -330,12 +330,12 @@ func TestProfileCreateConflict(t *testing.T) {
 
 func TestProfileUpdate(t *testing.T) {
 	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
-	create := `{"id":"upd1","type":"poster","config":{"v":1}}`
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(create)))
+	create := `{"type":"poster","config":{"v":1}}`
+	id := postProfile(t, h, create)
 
 	update := `{"name":"Updated","config":{"v":2}}`
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPut, "/profile/upd1", strings.NewReader(update)))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPut, "/profile/"+id, strings.NewReader(update)))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("PUT /profile/upd1: expected 200, got %d: %s", rr.Code, rr.Body.String())
 	}
@@ -363,16 +363,16 @@ func TestProfileExportAndImport(t *testing.T) {
 
 	// create a profile
 	createBody := `{"id":"exp1","type":"poster","name":"Export Test","config":{"ratings":["imdb"]}}`
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(createBody)))
+	id := postProfile(t, h, createBody)
 
 	// export it
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/exp1/export", nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/"+id+"/export", nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("export: expected 200, got %d: %s", rr.Code, rr.Body.String())
 	}
 	exportedJSON := rr.Body.String()
-	if !strings.Contains(exportedJSON, `"exp1"`) {
+	if !strings.Contains(exportedJSON, `"`+id+`"`) {
 		t.Error("export should contain profile id")
 	}
 
@@ -394,7 +394,7 @@ func TestProfileExportAndImport(t *testing.T) {
 
 	// verify it's in the second store
 	rr3 := httptest.NewRecorder()
-	h2.ServeHTTP(rr3, httptest.NewRequest(http.MethodGet, "/profile/exp1", nil))
+	h2.ServeHTTP(rr3, httptest.NewRequest(http.MethodGet, "/profile/"+id, nil))
 	if rr3.Code != http.StatusOK {
 		t.Fatalf("get after import: expected 200, got %d", rr3.Code)
 	}
@@ -405,7 +405,7 @@ func TestProfileExportByAlias(t *testing.T) {
 	h := NewHandler("test", store, nil, nil, nil, config.Config{})
 
 	createBody := `{"id":"exp2","alias":"myalias","type":"poster","name":"Aliased","config":{}}`
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(createBody)))
+	id := postProfile(t, h, createBody)
 
 	// Export addressed by the alias (not the id) must resolve, like the other routes.
 	rr := httptest.NewRecorder()
@@ -413,7 +413,7 @@ func TestProfileExportByAlias(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("export by alias: expected 200, got %d: %s", rr.Code, rr.Body.String())
 	}
-	if !strings.Contains(rr.Body.String(), `"exp2"`) {
+	if !strings.Contains(rr.Body.String(), `"`+id+`"`) {
 		t.Error("export by alias should return the underlying profile")
 	}
 }
@@ -714,24 +714,20 @@ func TestAPIKeyDoesNotBlockHealthz(t *testing.T) {
 func TestProfilePasswordProtection(t *testing.T) {
 	store := openTestStore(t)
 	// Create a profile
-	body := strings.NewReader(`{"id":"locked","type":"poster","config":{}}`)
+	body := `{"type":"poster","config":{}}`
 	h := NewHandler("test", store, nil, nil, nil, config.Config{})
-	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile", body))
-	if rr.Code != http.StatusCreated {
-		t.Fatalf("create profile: expected 201, got %d: %s", rr.Code, rr.Body.String())
-	}
+	locked := postProfile(t, h, body)
 
 	// Set a password directly on the store
-	if err := store.SetPassword("locked", "mypassword"); err != nil {
+	if err := store.SetPassword(locked, "mypassword"); err != nil {
 		t.Fatalf("SetPassword: %v", err)
 	}
 
 	// Rendering with a protected profile stays public: artwork URLs are
 	// consumed by media apps that cannot send credentials. The password
 	// protects editing, not viewing.
-	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config=locked", nil))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config="+locked, nil))
 	// Viewing is public (not password-gated); no pipeline means a placeholder 404.
 	if rr.Code != http.StatusNotFound {
 		t.Errorf("render without password: expected 404 placeholder (not blocked), got %d", rr.Code)
@@ -739,14 +735,14 @@ func TestProfilePasswordProtection(t *testing.T) {
 
 	// Reading the profile config without the password → 401
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/locked", nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/"+locked, nil))
 	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("profile read without password: expected 401, got %d", rr.Code)
 	}
 
 	// Updating without the password → 401
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPut, "/profile/locked",
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPut, "/profile/"+locked,
 		strings.NewReader(`{"type":"poster","config":{}}`)))
 	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("update without password: expected 401, got %d", rr.Code)
@@ -754,13 +750,13 @@ func TestProfilePasswordProtection(t *testing.T) {
 
 	// Deleting without the password → 401
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodDelete, "/profile/locked", nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodDelete, "/profile/"+locked, nil))
 	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("delete without password: expected 401, got %d", rr.Code)
 	}
 
 	// Updating with the correct password → 200
-	req := httptest.NewRequest(http.MethodPut, "/profile/locked",
+	req := httptest.NewRequest(http.MethodPut, "/profile/"+locked,
 		strings.NewReader(`{"type":"poster","config":{}}`))
 	req.Header.Set("X-Profile-Password", "mypassword")
 	rr = httptest.NewRecorder()
@@ -937,14 +933,13 @@ func TestProfileImportDoesNotClobberExisting(t *testing.T) {
 	h := NewHandler("test", store, nil, nil, nil, config.Config{})
 
 	// An existing v3 profile with a distinctive config.
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile",
-		strings.NewReader(`{"id":"v3-native","type":"poster","config":{"language":"ja"}}`)))
+	id := postProfile(t, h, `{"type":"poster","config":{"language":"ja"}}`)
 
 	body := `{"version":1,"profiles":[{"id":"v2-imported","type":"poster","uuid":"u1","config":{"language":"de"}}]}`
 	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(body)))
 
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/v3-native", nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/"+id, nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("existing profile gone after import: %d", rr.Code)
 	}
@@ -1175,6 +1170,45 @@ func TestAdminSettingsReportsEnvironmentKeys(t *testing.T) {
 		if have.set != want.set || have.source != want.source {
 			t.Fatalf("%s: got set=%v source=%q, want set=%v source=%q",
 				want.key, have.set, have.source, want.set, want.source)
+		}
+	}
+}
+
+// postProfile creates a profile and returns the id the server assigned.
+func postProfile(t *testing.T, h http.Handler, body string) string {
+	t.Helper()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(body)))
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("POST /profile: expected 201, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var created profile.Profile
+	if err := json.Unmarshal(rr.Body.Bytes(), &created); err != nil {
+		t.Fatalf("decode created profile: %v", err)
+	}
+	return created.ID
+}
+
+// A create or import naming another profile's alias or v2 uuid as its id must
+// not take over the URLs that already resolve to that profile.
+func TestProfileIDCannotShadowAnotherProfile(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+	if err := store.Save(&profile.Profile{ID: "owner01", Type: "poster", Alias: "victim", UUID: "legacy-v2-uuid", Config: json.RawMessage(`{"who":"owner"}`)}); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"victim", "legacy-v2-uuid"} {
+		created := postProfile(t, h, `{"id":"`+key+`","type":"poster","config":{"who":"intruder"}}`)
+		if created == key {
+			t.Errorf("POST /profile kept the client id %q", key)
+		}
+		imp := `{"version":1,"profiles":[{"id":"` + key + `","type":"poster","config":{"who":"intruder"}}]}`
+		h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(imp)))
+
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/"+key, nil))
+		if !strings.Contains(rr.Body.String(), `"owner"`) {
+			t.Errorf("/profile/%s no longer resolves to its owner: %s", key, rr.Body.String())
 		}
 	}
 }

@@ -189,6 +189,9 @@ func (s *Store) Save(p *Profile) error {
 	// otherwise a padded stored uuid would silently fail both URL resolution and
 	// import de-duplication.
 	p.UUID = strings.TrimSpace(p.UUID)
+	if err := s.checkIdentityFree(p.ID, p.Alias, ""); err != nil {
+		return err
+	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	p.Version = schemaVersion
 	p.CreatedAt = now
@@ -228,6 +231,36 @@ func (s *Store) Get(id string) (*Profile, error) {
 		 FROM profiles WHERE id = ?`, id,
 	)
 	return s.scanProfile(row)
+}
+
+// checkIdentityFree refuses a new id that is another profile's alias or uuid,
+// and an alias that is another profile's id or uuid. Resolve tries id before
+// alias before uuid, so either would take over URLs that already resolve.
+func (s *Store) checkIdentityFree(newID, alias, selfID string) error {
+	var n int
+	if newID != "" {
+		if err := s.db.QueryRow(
+			`SELECT COUNT(*) FROM profiles WHERE (alias != '' AND alias = ?) OR (uuid != '' AND uuid = ?)`,
+			strings.ToLower(newID), newID,
+		).Scan(&n); err != nil {
+			return fmt.Errorf("check profile id: %w", err)
+		}
+		if n > 0 {
+			return ErrConflict
+		}
+	}
+	if alias != "" {
+		if err := s.db.QueryRow(
+			`SELECT COUNT(*) FROM profiles WHERE id != ? AND (id = ? OR (uuid != '' AND uuid = ?))`,
+			selfID, alias, alias,
+		).Scan(&n); err != nil {
+			return fmt.Errorf("check profile alias: %w", err)
+		}
+		if n > 0 {
+			return ErrAliasTaken
+		}
+	}
+	return nil
 }
 
 // Resolve retrieves a profile by ID, then alias, then legacy v2 uuid. The uuid
@@ -347,6 +380,9 @@ func (s *Store) Update(p *Profile) error {
 	}
 	p.Alias = alias
 	p.UUID = strings.TrimSpace(p.UUID)
+	if err := s.checkIdentityFree("", p.Alias, p.ID); err != nil {
+		return err
+	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	p.UpdatedAt = now
 

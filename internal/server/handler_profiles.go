@@ -93,9 +93,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				}
 				p.PasswordHash = string(hash)
 			}
-			if p.ID == "" {
-				p.ID = generateProfileID()
-			}
+			p.ID = generateProfileID()
 			if err := store.Save(&p); err != nil {
 				switch {
 				case errors.Is(err, profile.ErrConflict):

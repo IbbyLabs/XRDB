@@ -175,3 +175,54 @@ func TestUUIDTrimmedOnWrite(t *testing.T) {
 		t.Errorf("stored uuid not trimmed: %q", got.UUID)
 	}
 }
+
+// An id or alias that would shadow a string another profile already resolves
+// by is refused, so existing alias and uuid URLs keep their owner.
+func TestSaveRefusesIdentityThatShadowsAnotherProfile(t *testing.T) {
+	s := openTestStore(t)
+	saveProfile(t, s, &Profile{ID: "owner", Type: "poster", Alias: "victim", UUID: "v2-legacy-uuid", Config: mustConfig(t, map[string]any{})})
+
+	cases := []struct {
+		name string
+		p    Profile
+		want error
+	}{
+		{"id equals alias", Profile{ID: "victim", Type: "poster"}, ErrConflict},
+		{"id equals alias in another case", Profile{ID: "VICTIM", Type: "poster"}, ErrConflict},
+		{"id equals uuid", Profile{ID: "v2-legacy-uuid", Type: "poster"}, ErrConflict},
+		{"alias equals id", Profile{ID: "other", Type: "poster", Alias: "owner"}, ErrAliasTaken},
+	}
+	for _, tc := range cases {
+		tc.p.Config = mustConfig(t, map[string]any{})
+		if err := s.Save(&tc.p); !errors.Is(err, tc.want) {
+			t.Errorf("%s: Save err = %v, want %v", tc.name, err, tc.want)
+		}
+	}
+	for _, key := range []string{"victim", "v2-legacy-uuid"} {
+		got, err := s.Resolve(key)
+		if err != nil || got.ID != "owner" {
+			t.Errorf("Resolve(%q) = %v, %v; want owner", key, got, err)
+		}
+	}
+}
+
+func TestUpdateRefusesAliasThatIsAnotherProfilesID(t *testing.T) {
+	s := openTestStore(t)
+	saveProfile(t, s, &Profile{ID: "owner", Type: "poster", Config: mustConfig(t, map[string]any{})})
+	saveProfile(t, s, &Profile{ID: "other", Type: "poster", Config: mustConfig(t, map[string]any{})})
+	other, err := s.Get("other")
+	if err != nil {
+		t.Fatal(err)
+	}
+	other.Alias = "owner"
+	if err := s.Update(other); !errors.Is(err, ErrAliasTaken) {
+		t.Errorf("Update err = %v, want ErrAliasTaken", err)
+	}
+	other.Alias = "fresh"
+	if err := s.Update(other); err != nil {
+		t.Errorf("a free alias was refused: %v", err)
+	}
+	if err := s.Update(other); err != nil {
+		t.Errorf("re-saving a profile's own alias was refused: %v", err)
+	}
+}
