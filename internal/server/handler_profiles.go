@@ -141,6 +141,8 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 					http.Error(w, "profile password required", http.StatusUnauthorized)
 					return
 				}
+			} else {
+				p.Config = withoutV2Credentials(p.Config)
 			}
 			writeJSON(w, http.StatusOK, p)
 		case http.MethodPut:
@@ -342,6 +344,8 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
+		} else {
+			p.Config = withoutV2Credentials(p.Config)
 		}
 		safeID := strings.NewReplacer(`"`, "_", "\n", "_", "\r", "_", `\`, "_", ";", "_").Replace(p.ID)
 		env := profile.ExportEnvelope{Version: 1, Profiles: []profile.Profile{*p}}
@@ -449,6 +453,43 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			"imported", res.Imported, "skipped", res.Skipped, "errors", len(res.Errors))
 		writeJSON(w, status, res)
 	})
+}
+
+// withoutV2Credentials drops v2 credential keys at any depth of a config.
+// A config that does not parse is returned unchanged.
+func withoutV2Credentials(cfg json.RawMessage) json.RawMessage {
+	var v any
+	if err := json.Unmarshal(cfg, &v); err != nil {
+		return cfg
+	}
+	if !stripV2Credentials(v) {
+		return cfg
+	}
+	out, err := json.Marshal(v)
+	if err != nil {
+		return cfg
+	}
+	return out
+}
+
+func stripV2Credentials(v any) bool {
+	changed := false
+	switch t := v.(type) {
+	case map[string]any:
+		for k, child := range t {
+			if migrate.IsCredentialField(k) {
+				delete(t, k)
+				changed = true
+				continue
+			}
+			changed = stripV2Credentials(child) || changed
+		}
+	case []any:
+		for _, child := range t {
+			changed = stripV2Credentials(child) || changed
+		}
+	}
+	return changed
 }
 
 // sentence capitalizes a message for display. Go error strings are lowercase by

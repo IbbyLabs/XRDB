@@ -126,6 +126,7 @@ ignored, so this header text costs nothing.
 ## Migrating from v2
 
 - v2 profiles import and keep every original key; anything that cannot be translated is carried rather than dropped.
+- v2 API keys stored in a profile's config (`tmdbKey`, `mdblistKey`, `fanartKey`, `omdbKey`, `xrdbKey`, `simklClientId`, `traktClientId`) are never used for rendering. A profile without a password leaves them out when it is opened or exported; a password-protected profile shows them to whoever enters the password. Provider keys that XRDB does use are set in the configurator's key fields and are never returned.
 - v2's `streamBadges` switched its torrent-index lookup on and off. There is no equivalent here because the check is not optional, so the key is carried but no longer drives anything. It used to be read as the streaming-service chips, which gave imported profiles service logos nobody chose.
 - v2's "glass" rating style is XRDB's Pill.
 - v2 spellings of config keys are still accepted on import.

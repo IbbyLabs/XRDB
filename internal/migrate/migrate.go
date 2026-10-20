@@ -88,6 +88,12 @@ var credentialFields = map[string]struct{}{
 	"traktClientId": {},
 }
 
+// IsCredentialField reports whether key is a v2 config key that held a credential.
+func IsCredentialField(key string) bool {
+	_, ok := credentialFields[key]
+	return ok
+}
+
 var requiredFields = []string{"id", "type", "config"}
 
 var supportedFields = map[string]struct{}{
