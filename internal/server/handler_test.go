@@ -1267,3 +1267,10 @@ func TestRenderPlaceholderJSONIsValidForAnyID(t *testing.T) {
 		}
 	}
 }
+
+func TestDispatchWarmSurvivesAPanickingRender(t *testing.T) {
+	boom := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("render blew up") })
+	if dispatchWarm(context.Background(), boom, "", "/poster/tt1") {
+		t.Error("a panicked warm was counted as a success")
+	}
+}

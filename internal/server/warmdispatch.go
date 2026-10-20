@@ -2,8 +2,11 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"runtime/debug"
 	"strings"
 	"sync"
 )
@@ -93,7 +96,15 @@ func warmByURL(ctx context.Context, h http.Handler, apiKey string, paths []strin
 	return served, failed
 }
 
-func dispatchWarm(ctx context.Context, h http.Handler, apiKey, path string) bool {
+func dispatchWarm(ctx context.Context, h http.Handler, apiKey, path string) (ok bool) {
+	// An in-process render has no connection loop to recover its panic.
+	defer func() {
+		if v := recover(); v != nil {
+			slog.Default().ErrorContext(ctx, "Recovered from a panic while warming a render",
+				"path", path, "panic", fmt.Sprint(v), "stack", string(debug.Stack()))
+			ok = false
+		}
+	}()
 	req, err := http.NewRequestWithContext(withWarm(ctx), http.MethodGet, path, nil)
 	if err != nil {
 		return false
