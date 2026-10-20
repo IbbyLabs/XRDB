@@ -151,6 +151,11 @@ func (s *customMarkStore) resolve(ctx context.Context, urls map[string]string) (
 		wg.Add(1)
 		go func(source, raw string) {
 			defer wg.Done()
+			defer func() {
+				if v := recover(); v != nil {
+					logRenderPanic(ctx, "custom mark", v)
+				}
+			}()
 			m := s.get(ctx, raw)
 			if m.img == nil {
 				return

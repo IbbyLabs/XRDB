@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"image"
@@ -1293,6 +1294,11 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 		wg.Add(1)
 		go func(i int, path string) {
 			defer wg.Done()
+			defer func() {
+				if v := recover(); v != nil {
+					logRenderPanic(context.Background(), "provider logo", v)
+				}
+			}()
 			logos[i] = fetchProviderLogo(path)
 		}(i, p.LogoPath)
 	}

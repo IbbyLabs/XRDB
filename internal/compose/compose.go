@@ -1376,6 +1376,12 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		earlyDone = make(chan struct{})
 		go func() {
 			defer close(earlyDone)
+			defer func() {
+				if v := recover(); v != nil {
+					logRenderPanic(ctx, "resize", v)
+					earlyResized = nil
+				}
+			}()
 			started := time.Now()
 			// Saliency-aware cropping for the backdrop family, so off-centre
 			// subjects are not clipped by a naive centre crop.
@@ -1421,6 +1427,12 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 	marksDone := make(chan marksResult, 1)
 	go func() {
+		defer func() {
+			if v := recover(); v != nil {
+				logRenderPanic(ctx, "custom marks", v)
+				marksDone <- marksResult{nil, true}
+			}
+		}()
 		m, failed := p.marks.resolve(ctx, selectedMarkURLs(req.Config))
 		marksDone <- marksResult{m, failed}
 	}()
@@ -1524,6 +1536,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	default:
 		<-earlyDone
 		resized = earlyResized
+	}
+	if resized == nil {
+		return nil, errors.New("resizing the artwork failed")
 	}
 
 	// Convert to NRGBA once — all overlay functions draw in-place.
@@ -2947,6 +2962,11 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		wg.Add(1)
 		go func(i int, prov provider.Provider) {
 			defer wg.Done()
+			defer func() {
+				if v := recover(); v != nil {
+					logRenderPanic(ctx, "ratings source "+prov.Name(), v)
+				}
+			}()
 			req := askAbout(req, prov)
 			// What a source can answer for is settled before whether it is
 			// available. Every hold-out gate lives inside fetchRatingsResilient,

@@ -281,7 +281,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, age titleAge, fetch r
 	c.inflight[key] = call
 	c.mu.Unlock()
 
-	call.meta, call.complete, call.err = fetch(ctx)
+	call.meta, call.complete, call.err = safeFetch(ctx, fetch)
 
 	c.mu.Lock()
 	delete(c.inflight, key)
@@ -333,7 +333,7 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, age titleAge,
 	rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), ratingsRefreshTimeout)
 	defer cancel()
 
-	call.meta, call.complete, call.err = fetch(rctx)
+	call.meta, call.complete, call.err = safeFetch(rctx, fetch)
 	// A refresh runs off the render path, so its refusal reaches no hold-out
 	// line and no counter. Unlogged it is spend and contention with no trace.
 	if call.err != nil {

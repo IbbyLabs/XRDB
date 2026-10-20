@@ -2,6 +2,7 @@ package compose
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"sync"
@@ -186,6 +187,12 @@ func (p *Pipeline) startQualityDetect(ctx context.Context, cfg imageconfigBadges
 	}
 	go func() {
 		defer p.releaseWarmSlot()
+		defer func() {
+			if v := recover(); v != nil {
+				logRenderPanic(ctx, "stream quality", v)
+				ch <- outcome{nil, fmt.Errorf("stream quality lookup panicked: %v", v)}
+			}
+		}()
 		fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), p.streamWarmTimeout())
 		defer cancel()
 		tokens, err := p.qualityCache.do(fetchCtx, key, func() (map[string]bool, error) {
