@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net/netip"
 	"sync"
 	"time"
 )
@@ -148,4 +149,14 @@ func (l *callerLimiter) tracked() int {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return len(l.buckets)
+}
+
+// capAddressKey is the address a caller is capped under: an IPv6 client by its
+// /64, since one host is commonly handed the whole prefix.
+func capAddressKey(ip string) string {
+	addr, err := netip.ParseAddr(ip)
+	if err != nil || !addr.Is6() || addr.Is4In6() {
+		return ip
+	}
+	return netip.PrefixFrom(addr, 64).Masked().String()
 }

@@ -410,7 +410,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// cache read and is not what the queue is made of.
 			ok, over := true, ""
 			if !sweep {
-				ok, over = callerCap.allow(capCost(mediaType), capProfileKey, "ip:"+clientIP(r, trust))
+				ok, over = callerCap.allow(capCost(mediaType), capProfileKey, "ip:"+capAddressKey(clientIP(r, trust)))
 			}
 			if !ok {
 				// The key names which allowance ran out. caller_class is an

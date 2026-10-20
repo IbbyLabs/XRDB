@@ -1242,3 +1242,17 @@ func TestUpcomingRegionCode(t *testing.T) {
 		}
 	}
 }
+
+func TestCapAddressKeyGroupsAnIPv6Prefix(t *testing.T) {
+	for in, want := range map[string]string{
+		"2001:db8:1:2:aaaa::1":  "2001:db8:1:2::/64",
+		"2001:db8:1:2:ffff::99": "2001:db8:1:2::/64",
+		"203.0.113.7":           "203.0.113.7",
+		"::ffff:203.0.113.7":    "::ffff:203.0.113.7",
+		"not-an-ip":             "not-an-ip",
+	} {
+		if got := capAddressKey(in); got != want {
+			t.Errorf("capAddressKey(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
