@@ -5,10 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strings"
+	"syscall"
 	"time"
+	"unicode"
+
+	"xrdb_rewrite/internal/compose"
 )
 
 const defaultAIOMBase = "https://aiometadata.elfhosted.com"
@@ -37,11 +43,64 @@ func upstreamStatus(code int) int {
 	return http.StatusBadGateway
 }
 
+const (
+	aiomTimeout        = 20 * time.Second
+	aiomMaxRedirects   = 3
+	aiomMaxErrorLength = 200
+)
+
+var errAIOMBlockedAddress = errors.New("address is not a public internet address")
+
+// newAIOMClient returns the install proxy's client. Unless allowPrivate is
+// set, every dial, including each redirect's, must reach a public address.
+func newAIOMClient(allowPrivate bool) *http.Client {
+	dialer := &net.Dialer{Timeout: aiomTimeout}
+	if !allowPrivate {
+		dialer.Control = func(_, address string, _ syscall.RawConn) error {
+			ap, err := netip.ParseAddrPort(address)
+			if err != nil || !compose.PublicAddress(ap.Addr()) {
+				return errAIOMBlockedAddress
+			}
+			return nil
+		}
+	}
+	return &http.Client{
+		Timeout:   aiomTimeout,
+		Transport: &http.Transport{Proxy: nil, DialContext: dialer.DialContext, TLSHandshakeTimeout: aiomTimeout},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= aiomMaxRedirects {
+				return errors.New("too many redirects")
+			}
+			if req.URL.Scheme != "https" && req.URL.Scheme != "http" {
+				return errors.New("redirect to a non-http scheme")
+			}
+			return nil
+		},
+	}
+}
+
+// upstreamError bounds an upstream error message to one short printable line.
+func upstreamError(msg, fallback string) string {
+	msg = strings.TrimSpace(strings.Map(func(r rune) rune {
+		if unicode.IsPrint(r) {
+			return r
+		}
+		return ' '
+	}, msg))
+	if msg == "" {
+		return fallback
+	}
+	if r := []rune(msg); len(r) > aiomMaxErrorLength {
+		msg = string(r[:aiomMaxErrorLength]) + "…"
+	}
+	return msg
+}
+
 // registerAIOMRoutes mounts the AIOMetadata one-click install proxy.
 // The browser can't reach arbitrary AIOM instances cross-origin, so the
 // server performs the load → merge → update sequence on its behalf.
-func registerAIOMRoutes(mux *http.ServeMux) {
-	client := &http.Client{Timeout: 20 * time.Second}
+func registerAIOMRoutes(mux *http.ServeMux, allowPrivate bool) {
+	client := newAIOMClient(allowPrivate)
 
 	mux.HandleFunc("/api/aiometadata/install", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -112,10 +171,7 @@ func registerAIOMRoutes(mux *http.ServeMux) {
 		}
 		_ = json.NewDecoder(io.LimitReader(loadResp.Body, 4<<20)).Decode(&loadJSON)
 		if loadResp.StatusCode != http.StatusOK || !loadJSON.Success || len(loadJSON.Config) == 0 {
-			msg := loadJSON.Error
-			if msg == "" {
-				msg = "failed to load the AIOMetadata profile"
-			}
+			msg := upstreamError(loadJSON.Error, "failed to load the AIOMetadata profile")
 			writeJSON(w, upstreamStatus(loadResp.StatusCode), map[string]string{"error": msg})
 			return
 		}
@@ -154,10 +210,7 @@ func registerAIOMRoutes(mux *http.ServeMux) {
 		}
 		_ = json.NewDecoder(io.LimitReader(updateResp.Body, 1<<20)).Decode(&updateJSON)
 		if updateResp.StatusCode != http.StatusOK || !updateJSON.Success {
-			msg := updateJSON.Error
-			if msg == "" {
-				msg = "failed to update the AIOMetadata profile"
-			}
+			msg := upstreamError(updateJSON.Error, "failed to update the AIOMetadata profile")
 			writeJSON(w, upstreamStatus(updateResp.StatusCode), map[string]string{"error": msg})
 			return
 		}

@@ -49,6 +49,7 @@ settings store and take precedence on restart).
 | `XRDB_API_KEY` | _(unset)_ | When set, every render request must carry it (`Authorization: Bearer …` or `?key=`). Leave unset for public artwork URLs. |
 | `XRDB_TRUSTED_PROXIES` | loopback + private ranges | Comma-separated CIDRs or addresses whose `X-Forwarded-*` and `CF-Connecting-IP` headers are believed. Setting this replaces the defaults. |
 | `XRDB_TRUST_PROXY_HEADERS` | `false` | Believe forwarded headers from any peer. Needed when the proxy address is unpredictable; makes the client address spoofable. |
+| `XRDB_AIOM_ALLOW_PRIVATE` | `false` | Let the AIOMetadata one-click install reach a private or loopback address, such as `http://aiometadata:PORT` on the same Docker network. Off, it only reaches public addresses. |
 
 Profile passwords are separate: set per profile in the configurator, they
 protect editing that profile (rendering with a profile stays public).

@@ -49,6 +49,9 @@ var blockedPrefixes = []netip.Prefix{
 	netip.MustParsePrefix("64:ff9b:1::/48"),
 }
 
+// PublicAddress reports whether ip is a public unicast address.
+func PublicAddress(ip netip.Addr) bool { return publicAddress(ip) }
+
 // publicDial allows a dial only to a public address.
 func publicDial(ap netip.AddrPort) bool { return publicAddress(ap.Addr()) }
 

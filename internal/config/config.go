@@ -266,6 +266,9 @@ type Config struct {
 	// the proxy address is not predictable, and opt-in because it makes the
 	// client address spoofable.
 	TrustProxyHeaders bool
+	// AIOMAllowPrivate lets the AIOMetadata install proxy reach private and
+	// loopback addresses, for an AIOMetadata container on the same network.
+	AIOMAllowPrivate bool
 	// FolderWriter writes rendered artwork into the media library. Off by
 	// default and deliberately so: it is the only feature that modifies a
 	// user's files, and leaving it off keeps that guarantee intact.
@@ -759,6 +762,7 @@ func Load() Config {
 		LogLevel:              logLevel,
 		TrustedProxies:        os.Getenv("XRDB_TRUSTED_PROXIES"),
 		TrustProxyHeaders:     boolEnv("XRDB_TRUST_PROXY_HEADERS"),
+		AIOMAllowPrivate:      boolEnv("XRDB_AIOM_ALLOW_PRIVATE"),
 		FolderWriter:          boolEnv("XRDB_FOLDER_WRITER"),
 		RecordScoreMovement:   boolEnv("XRDB_RECORD_SCORE_MOVEMENT"),
 		LibraryRoots:          listEnv("XRDB_LIBRARY_ROOTS"),

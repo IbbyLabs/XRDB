@@ -692,7 +692,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 
 	registerProfileRoutes(mux, store, cfg, logger)
 	registerMediaRoutes(mux, pipeline)
-	registerAIOMRoutes(mux)
+	registerAIOMRoutes(mux, cfg.AIOMAllowPrivate)
 	registerAdminRoutes(mux, ms, cfg, store, settingsStore, pipeline, renderCache, ttls)
 
 	// Genre families: GET /api/genre-families — the id, label and built-in

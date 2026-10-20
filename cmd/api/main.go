@@ -312,6 +312,7 @@ func main() {
 		"render_queue_wait_heavy", cfg.RenderQueueWaitHeavy,
 		"imdb_dataset", cfg.IMDbDatasetDir != "",
 		"imdb_top_rated", cfg.IMDbTopRated,
+		"aiom_allow_private", cfg.AIOMAllowPrivate,
 	)
 
 	// Admin routes refuse when no key is set, so an operator who never set one
