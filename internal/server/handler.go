@@ -233,7 +233,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					// nothing". An inline config must start with '{'; anything
 					// else is looked up as an id or alias.
 					logger.WarnContext(r.Context(), "The requested config could not be resolved; rendering the default",
-						"id", logging.RequestID(r.Context()), "config", configParam, "error", err)
+						"id", logging.RequestID(r.Context()), "config", truncateLogged(configParam, 64), "error", err)
 				}
 				if err == nil {
 					// The canonical id rather than what the caller typed: an
@@ -874,12 +874,14 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 
 // truncateUA bounds the logged user agent. It is client-supplied, so an
 // unbounded one would let a caller pad every log line at will.
-func truncateUA(ua string) string {
-	const max = 120
-	if len(ua) > max {
-		return ua[:max] + "…"
+func truncateUA(ua string) string { return truncateLogged(ua, 120) }
+
+// truncateLogged bounds a client-supplied value written to a log line.
+func truncateLogged(v string, max int) string {
+	if len(v) > max {
+		return v[:max] + "…"
 	}
-	return ua
+	return v
 }
 
 // corsMiddleware allows the web frontend to call the API cross-origin —

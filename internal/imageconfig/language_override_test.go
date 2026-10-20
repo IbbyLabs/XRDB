@@ -1,6 +1,11 @@
 package imageconfig
 
-import "testing"
+import (
+	"encoding/json"
+	"strconv"
+	"strings"
+	"testing"
+)
 
 // The value joins the render cache key, so what it accepts bounds the key space.
 // The rejected cases are the point of the test: an unbounded accept is the fault
@@ -82,5 +87,20 @@ func TestAnOverriddenLanguageMovesTheCacheKey(t *testing.T) {
 	}
 	if CacheKey(fr) == CacheKey(base) {
 		t.Error("an overridden language shares the key with the un-overridden config")
+	}
+}
+
+func TestParseRefusesALanguageThatIsNotALanguageCode(t *testing.T) {
+	def := Default()
+	for _, raw := range []string{"xx&append_to_response=x", "en,null&x=1", strings.Repeat("a", 40), "e n"} {
+		cfg := Parse(json.RawMessage(`{"language":` + strconv.Quote(raw) + `,"fallbackLanguage":` + strconv.Quote(raw) + `}`))
+		if cfg.Language != def.Language || cfg.FallbackLanguage != def.FallbackLanguage {
+			t.Errorf("%q gave language %q fallback %q, want the defaults", raw, cfg.Language, cfg.FallbackLanguage)
+		}
+	}
+	for raw, want := range map[string]string{"fr-FR": "fr-fr", "de": "de", "original": OriginalLanguage, "zh-Hans": "zh", "US": "en"} {
+		if got := Parse(json.RawMessage(`{"language":"` + raw + `"}`)).Language; got != want {
+			t.Errorf("%q gave %q, want %q", raw, got, want)
+		}
 	}
 }

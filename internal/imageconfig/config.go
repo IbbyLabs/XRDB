@@ -1220,13 +1220,17 @@ func Parse(data json.RawMessage) Config {
 			cfg.ArtworkSourceAnime = v
 		}
 	}
-	if r.Language != nil && strings.TrimSpace(*r.Language) != "" {
-		cfg.Language = imageLanguage(*r.Language)
-		reportDroppedRegion("language", *r.Language, cfg.Language)
+	if r.Language != nil {
+		if v, ok := configLanguage(*r.Language); ok {
+			cfg.Language = v
+			reportDroppedRegion("language", *r.Language, cfg.Language)
+		}
 	}
-	if r.FallbackLanguage != nil && strings.TrimSpace(*r.FallbackLanguage) != "" {
-		cfg.FallbackLanguage = imageLanguage(*r.FallbackLanguage)
-		reportDroppedRegion("fallbackLanguage", *r.FallbackLanguage, cfg.FallbackLanguage)
+	if r.FallbackLanguage != nil {
+		if v, ok := configLanguage(*r.FallbackLanguage); ok {
+			cfg.FallbackLanguage = v
+			reportDroppedRegion("fallbackLanguage", *r.FallbackLanguage, cfg.FallbackLanguage)
+		}
 	}
 	if r.TextPreference != nil {
 		if v := normalizeTextPreference(*r.TextPreference); v != "" {
@@ -1819,6 +1823,19 @@ func ApplyLanguageOverride(cfg *Config, raw string) bool {
 	cfg.Language = imageLanguage(v)
 	reportDroppedRegion("langOverride", v, cfg.Language)
 	return true
+}
+
+// configLanguage reduces a configured language to an image language, refusing
+// anything that is not a language code or the original-language token.
+func configLanguage(raw string) (string, bool) {
+	if strings.TrimSpace(raw) == "" || len(raw) > 16 {
+		return "", false
+	}
+	v := imageLanguage(raw)
+	if v != OriginalLanguage && !languageOverride.MatchString(v) {
+		return "", false
+	}
+	return v, true
 }
 
 // imageLanguage reduces a language tag to the base subtag that TMDB and Fanart
