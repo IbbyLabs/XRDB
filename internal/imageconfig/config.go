@@ -1369,7 +1369,7 @@ func Parse(data json.RawMessage) Config {
 	if r.Providers != nil {
 		cfg.Providers = *r.Providers
 	}
-	if r.ProvidersCountry != nil && strings.TrimSpace(*r.ProvidersCountry) != "" {
+	if r.ProvidersCountry != nil && isCountryCode(strings.ToUpper(strings.TrimSpace(*r.ProvidersCountry))) {
 		cfg.ProvidersCountry = strings.ToUpper(strings.TrimSpace(*r.ProvidersCountry))
 	}
 	if r.RatingRingPlaceholderColor != nil && isHexColor(*r.RatingRingPlaceholderColor) {
@@ -1855,6 +1855,9 @@ func imageLanguage(v string) string {
 	}
 	return base
 }
+
+// isCountryCode reports whether v is two uppercase letters.
+func isCountryCode(v string) bool { return v == strings.ToUpper(v) && isTwoLetter(strings.ToLower(v)) }
 
 func isTwoLetter(v string) bool {
 	if len(v) != 2 {

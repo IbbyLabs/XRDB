@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -26,7 +27,12 @@ const (
 
 type tmdbKindStore struct {
 	db *sql.DB
+	// lastPrune is the unix second expired misses were last deleted.
+	lastPrune atomic.Int64
 }
+
+// tmdbKindPruneEvery spaces out deleting expired misses.
+const tmdbKindPruneEvery = time.Hour
 
 func openTMDBKindStore(path string) (*tmdbKindStore, error) {
 	db, err := sql.Open("sqlite", path+"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
@@ -42,6 +48,7 @@ func openTMDBKindStore(path string) (*tmdbKindStore, error) {
 			tmdb_id TEXT PRIMARY KEY,
 			seen_at INTEGER NOT NULL
 		);
+		CREATE INDEX IF NOT EXISTS idx_tmdb_kind_misses_seen ON tmdb_kind_misses(seen_at);
 		CREATE TABLE IF NOT EXISTS tmdb_kind_meta (
 			key   TEXT PRIMARY KEY,
 			value TEXT NOT NULL
@@ -94,6 +101,18 @@ func (s *tmdbKindStore) rememberMiss(id string, now time.Time) {
 	}
 	_, _ = s.db.Exec(`INSERT INTO tmdb_kind_misses (tmdb_id, seen_at) VALUES (?, ?)
 		ON CONFLICT(tmdb_id) DO UPDATE SET seen_at = excluded.seen_at`, id, now.Unix())
+	s.pruneMisses(now)
+}
+
+// pruneMisses deletes misses older than their TTL, at most once per interval.
+func (s *tmdbKindStore) pruneMisses(now time.Time) {
+	last := s.lastPrune.Load()
+	if now.Unix()-last < int64(tmdbKindPruneEvery/time.Second) || !s.lastPrune.CompareAndSwap(last, now.Unix()) {
+		return
+	}
+	if _, err := s.db.Exec(`DELETE FROM tmdb_kind_misses WHERE seen_at < ?`, now.Add(-tmdbKindMissTTL).Unix()); err != nil {
+		slog.Warn("Could not prune expired TMDB kind misses", "error", err)
+	}
 }
 
 func (s *tmdbKindStore) Close() error {

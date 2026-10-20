@@ -104,3 +104,11 @@ func TestParseRefusesALanguageThatIsNotALanguageCode(t *testing.T) {
 		}
 	}
 }
+
+func TestParseAcceptsOnlyTwoLetterProvidersCountry(t *testing.T) {
+	for raw, want := range map[string]string{"gb": "GB", " de ": "DE", "GBR": "", "G1": "", "x->y": "", strings.Repeat("A", 50): ""} {
+		if got := Parse(json.RawMessage(`{"providersCountry":` + strconv.Quote(raw) + `}`)).ProvidersCountry; got != want {
+			t.Errorf("%q gave %q, want %q", raw, got, want)
+		}
+	}
+}

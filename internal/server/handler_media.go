@@ -97,8 +97,8 @@ func registerMediaRoutes(mux *http.ServeMux, pipeline *compose.Pipeline) {
 			return
 		}
 		region := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("region")))
-		if len(region) > 2 {
-			region = region[:2]
+		if !isRegionCode(region) {
+			region = ""
 		}
 
 		upcomingMu.Lock()
@@ -158,4 +158,9 @@ func registerMediaRoutes(mux *http.ServeMux, pipeline *compose.Pipeline) {
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"imdbId": imdbID})
 	})
+}
+
+// isRegionCode reports whether v is two letters A-Z.
+func isRegionCode(v string) bool {
+	return len(v) == 2 && v[0] >= 'A' && v[0] <= 'Z' && v[1] >= 'A' && v[1] <= 'Z'
 }

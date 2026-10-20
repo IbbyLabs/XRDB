@@ -2,6 +2,7 @@ package compose
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -129,3 +130,40 @@ func TestAStreakIsForgottenAfterItsMemory(t *testing.T) {
 		t.Errorf("an absence after a forgotten streak held %s, want %s", got, AbsentRatingsCacheTTL)
 	}
 }
+
+func TestStreakRecordsStopAtTheirBound(t *testing.T) {
+	c := newRatingsCache(24*time.Hour, nil)
+	c.answering = func(string, string, time.Duration) bool { return true }
+	c.mu.Lock()
+	for i := 0; i < absentStreakMax; i++ {
+		c.streaks[provider.GoodKey("wikidata", "poster", "tt"+itoa(i))] = absentStreak{N: 0, At: time.Now()}
+	}
+	stale := provider.GoodKey("wikidata", "poster", "tt0")
+	c.streaks[stale] = absentStreak{N: 0, At: time.Now().Add(-absentStreakMemory - time.Hour)}
+	c.mu.Unlock()
+
+	fresh := provider.GoodKey("wikidata", "poster", "tt-new")
+	mustDo(t, c, fresh, titleAge{}, absentFetch)
+	c.mu.Lock()
+	_, recorded := c.streaks[fresh]
+	_, staleKept := c.streaks[stale]
+	n := len(c.streaks)
+	c.mu.Unlock()
+	if !recorded || staleKept {
+		t.Errorf("recorded=%v staleKept=%v, want the stale record swept to make room", recorded, staleKept)
+	}
+	if n > absentStreakMax {
+		t.Errorf("%d streak records, bound is %d", n, absentStreakMax)
+	}
+
+	other := provider.GoodKey("wikidata", "poster", "tt-other")
+	mustDo(t, c, other, titleAge{}, absentFetch)
+	c.mu.Lock()
+	_, recorded = c.streaks[other]
+	c.mu.Unlock()
+	if recorded {
+		t.Error("a full map of fresh records took another one")
+	}
+}
+
+func itoa(i int) string { return strconv.Itoa(i) }

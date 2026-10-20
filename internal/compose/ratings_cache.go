@@ -50,11 +50,32 @@ var absentHoldUncapped = map[string]bool{"wikidata": true}
 // longest hold plus a day to ask again.
 const absentStreakMemory = 8 * 24 * time.Hour
 
+// absentStreakMax bounds the streak records kept beside the entries.
+const absentStreakMax = ratingsCacheMax / 2
+
 // absentStreak is a title's run of absences from one source. It is kept apart
 // from the entries so eviction and restarts do not reset it.
 type absentStreak struct {
 	N  int       `json:"n"`
 	At time.Time `json:"at"`
+}
+
+// roomForStreakLocked reports whether a new streak record fits, first dropping
+// records past absentStreakMemory when the map is full.
+func (c *ratingsCache) roomForStreakLocked() bool {
+	if len(c.streaks) < absentStreakMax {
+		return true
+	}
+	if time.Since(c.streakSweptAt) < time.Minute {
+		return false
+	}
+	c.streakSweptAt = time.Now()
+	for k, rec := range c.streaks {
+		if time.Since(rec.At) >= absentStreakMemory {
+			delete(c.streaks, k)
+		}
+	}
+	return len(c.streaks) < absentStreakMax
 }
 
 // absentHold is the term for the streak-th consecutive absence, counting from 0.
@@ -127,6 +148,8 @@ type ratingsCache struct {
 	entries  map[string]ratingsEntry
 	inflight map[string]*ratingsCall
 	streaks  map[string]absentStreak
+	// streakSweptAt is when full-map streak expiry last ran.
+	streakSweptAt time.Time
 }
 
 // storable reports whether an answer is worth remembering. An answer carrying
@@ -454,7 +477,9 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 		if rec, ok := c.streaks[key]; ok && time.Since(rec.At) < absentStreakMemory {
 			streak = rec.N + 1
 		}
-		c.streaks[key] = absentStreak{N: streak, At: time.Now()}
+		if _, known := c.streaks[key]; known || c.roomForStreakLocked() {
+			c.streaks[key] = absentStreak{N: streak, At: time.Now()}
+		}
 		ttl = absentHold(source, streak)
 	} else {
 		delete(c.streaks, key)

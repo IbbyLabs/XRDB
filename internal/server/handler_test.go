@@ -1234,3 +1234,11 @@ func TestRenderRefusesAnIDWithPathCharacters(t *testing.T) {
 		}
 	}
 }
+
+func TestUpcomingRegionCode(t *testing.T) {
+	for v, want := range map[string]bool{"GB": true, "US": true, "G1": false, "\xff\xfe": false, "GBR": false, "": false} {
+		if isRegionCode(v) != want {
+			t.Errorf("isRegionCode(%q) = %v", v, !want)
+		}
+	}
+}

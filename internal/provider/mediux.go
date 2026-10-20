@@ -175,8 +175,11 @@ func mediaFromSets(sets []mediuxSet) *MediaMeta {
 	return meta
 }
 
+// maxNumericIDLen is longer than any TMDB, TVDB or MediUX id.
+const maxNumericIDLen = 12
+
 func isNumericID(s string) bool {
-	if s == "" {
+	if s == "" || len(s) > maxNumericIDLen {
 		return false
 	}
 	for _, r := range s {
