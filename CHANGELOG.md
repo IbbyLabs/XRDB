@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.133.0](https://github.com/IbbyLabs/XRDB/compare/v3.132.0...v3.133.0) (2026-10-23)
+
+
+### Added
+
+* **compose:** report what happens to empty ratings answers ([9f8f074](https://github.com/IbbyLabs/XRDB/commit/9f8f07490da8869b4457a4825abc10b017cba885))
+
 ## [3.132.0](https://github.com/IbbyLabs/XRDB/compare/v3.131.4...v3.132.0) (2026-10-23)
 
 
