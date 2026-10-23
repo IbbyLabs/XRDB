@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.135.0](https://github.com/IbbyLabs/XRDB/compare/v3.134.0...v3.135.0) (2026-10-23)
+
+
+### Added
+
+* **compose:** bottom fade, bottom blur and a bottom logo margin ([2d27ba5](https://github.com/IbbyLabs/XRDB/commit/2d27ba50070b26299b6f35d44333ecc2fe69c738))
+
+
+### Fixed
+
+* **compose:** measure the logo margin from the top of a bottom ratings row ([4f37382](https://github.com/IbbyLabs/XRDB/commit/4f37382989e3b0c58786b006fc5f01eb965f2bb6))
+
 ## [3.134.0](https://github.com/IbbyLabs/XRDB/compare/v3.133.0...v3.134.0) (2026-10-23)
 
 
