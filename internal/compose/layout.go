@@ -10,10 +10,63 @@ import "image"
 type occupancy struct {
 	bounds image.Rectangle
 	rects  []image.Rectangle
+	// insetX is the least distance, in px, any placed box keeps from the left and
+	// right edges; 0 leaves placement untouched.
+	insetX int
 }
 
 // newOccupancy returns a tracker scoped to the image bounds.
 func newOccupancy(b image.Rectangle) *occupancy { return &occupancy{bounds: b} }
+
+// withInsetX sets the least left/right edge distance placements keep.
+func (o *occupancy) withInsetX(px int) *occupancy {
+	if o != nil && px > 0 {
+		o.insetX = px
+	}
+	return o
+}
+
+// edgeFloor raises a horizontal edge offset to the configured inset.
+func (o *occupancy) edgeFloor(edgeX int) int {
+	if o != nil && o.insetX > edgeX {
+		return o.insetX
+	}
+	return edgeX
+}
+
+// safeBounds is the frame narrowed by the horizontal inset.
+func (o *occupancy) safeBounds() image.Rectangle {
+	b := o.boundsOrZero()
+	if o != nil && o.insetX > 0 {
+		b.Min.X += o.insetX
+		b.Max.X -= o.insetX
+	}
+	return b
+}
+
+// safeBoundsOr is safeBounds, or b when there is no tracker.
+func (o *occupancy) safeBoundsOr(b image.Rectangle) image.Rectangle {
+	if o == nil {
+		return b
+	}
+	return o.safeBounds()
+}
+
+// clampX slides r horizontally inside the inset band; a box wider than the band
+// keeps its left edge on the inset.
+func (o *occupancy) clampX(r image.Rectangle) image.Rectangle {
+	if o == nil || o.insetX <= 0 {
+		return r
+	}
+	b := o.safeBounds()
+	if d := r.Max.X - b.Max.X; d > 0 {
+		r = r.Sub(image.Pt(d, 0))
+	}
+	if d := b.Min.X - r.Min.X; d > 0 {
+		r = r.Add(image.Pt(d, 0))
+	}
+	return r
+}
 
 // reserve records r as occupied. Empty rectangles are ignored.
 func (o *occupancy) reserve(r image.Rectangle) {
@@ -49,6 +102,7 @@ func (o *occupancy) overlaps(r image.Rectangle) bool {
 // with more room, so a stacked frame can trim a genre it turned out not to
 // need. It never clips or displaces, so the direction is the safe one.
 func (o *occupancy) freeWidthAt(corner string, h, edgeX, edgeY, gap, offY int) int {
+	edgeX = o.edgeFloor(edgeX)
 	b := o.boundsOrZero()
 	full := b.Dx() - edgeX*2
 	if o == nil || len(o.rects) == 0 || full <= 0 {
@@ -118,6 +172,7 @@ func (o *occupancy) place(corner string, w, h, edgeX, edgeY, gap int) image.Rect
 // reserving it. A caller that then nudges the box reserves where it actually
 // lands, via placeNudged, rather than where it anchored.
 func (o *occupancy) anchor(corner string, w, h, edgeX, edgeY, gap int) image.Rectangle {
+	edgeX = o.edgeFloor(edgeX)
 	b := o.boundsOrZero()
 	centreX := b.Min.X + (b.Dx()-w)/2
 	var x, y int
@@ -135,7 +190,7 @@ func (o *occupancy) anchor(corner string, w, h, edgeX, edgeY, gap int) image.Rec
 	default: // "br"
 		x, y = b.Max.X-edgeX-w, b.Max.Y-edgeY-h
 	}
-	r := image.Rect(x, y, x+w, y+h)
+	r := o.clampX(image.Rect(x, y, x+w, y+h))
 	if o == nil {
 		return r
 	}
@@ -157,7 +212,7 @@ func (o *occupancy) placeNudged(corner string, w, h, edgeX, edgeY, gap, offX, of
 	if offX != 0 || offY != 0 {
 		r = r.Add(image.Pt(offX, offY))
 		if o != nil {
-			r = keepInside(r, o.boundsOrZero())
+			r = keepInside(r, o.safeBounds())
 		}
 	}
 	o.reserve(r)
@@ -187,12 +242,13 @@ func keepInside(r, b image.Rectangle) image.Rectangle {
 // rectangles, without reserving. Used for wide bottom strips (provider chips)
 // that are not corner-anchored; placeCenteredNudged reserves after nudging.
 func (o *occupancy) anchorCentered(w, h, edgeX, edgeY, gap int) image.Rectangle {
+	edgeX = o.edgeFloor(edgeX)
 	b := o.boundsOrZero()
 	x := b.Min.X + (b.Dx()-w)/2
 	if x < b.Min.X+edgeX {
 		x = b.Min.X + edgeX
 	}
-	r := image.Rect(x, b.Max.Y-edgeY-h, x+w, b.Max.Y-edgeY)
+	r := o.clampX(image.Rect(x, b.Max.Y-edgeY-h, x+w, b.Max.Y-edgeY))
 	if o == nil {
 		return r
 	}
@@ -207,7 +263,7 @@ func (o *occupancy) placeCenteredNudged(w, h, edgeX, edgeY, gap, offX, offY int)
 	if offX != 0 || offY != 0 {
 		r = r.Add(image.Pt(offX, offY))
 		if o != nil {
-			r = keepInside(r, o.boundsOrZero())
+			r = keepInside(r, o.safeBounds())
 		}
 	}
 	o.reserve(r)

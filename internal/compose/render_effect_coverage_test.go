@@ -698,6 +698,7 @@ func keyMutations() map[string]keyOverride {
 		"logoFrost":                     {mut: func(c *imageconfig.Config) { c.LogoFrost = true }},
 		"logoBottomMargin":              {mut: func(c *imageconfig.Config) { c.LogoBottomMargin = 12 }},
 		"bottomFadeHeight":              {mut: func(c *imageconfig.Config) { c.BottomFadeHeight = 30 }},
+		"thumbnailSafeInset":            {mut: func(c *imageconfig.Config) { c.ThumbnailSafeInset = 20 }},
 		"bottomFadeOpacity":             {pre: func(c *imageconfig.Config) { c.BottomFadeHeight = 30 }, mut: func(c *imageconfig.Config) { c.BottomFadeOpacity = 40 }},
 		"bottomFadeColor":               {pre: func(c *imageconfig.Config) { c.BottomFadeHeight = 30 }, mut: setColor(func(c *imageconfig.Config, v string) { c.BottomFadeColor = v })},
 		"bottomBlurHeight":              {mut: func(c *imageconfig.Config) { c.BottomBlurHeight = 30 }},

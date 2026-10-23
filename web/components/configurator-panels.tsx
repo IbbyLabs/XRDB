@@ -8,7 +8,7 @@ import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS, RING_POS_OPTIONS,
   SIDE_LAYOUTS,
 } from './configurator-types';
-import { RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESENTATIONS, scoreColoursHaveAReader, drawsBadgeStrip, hasAnyRatingSource } from './configurator-fine';
+import { NumField, RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESENTATIONS, scoreColoursHaveAReader, drawsBadgeStrip, hasAnyRatingSource } from './configurator-fine';
 
 // ── Template strip ────────────────────────────────────────────────────────────
 
@@ -69,6 +69,13 @@ export function TemplateStrip({
 
 // ── Ratings panel ─────────────────────────────────────────────────────────────
 
+// Nuvio centre-crops the 16:9 thumbnail: cards (phone, desktop, TV) cut 4-7% per
+// side, the square list image cuts 22%.
+const NUVIO_INSET_PRESETS = [
+  { value: 8, label: 'Nuvio cards (phone, desktop, TV): 8%' },
+  { value: 22, label: 'Nuvio list: 22%' },
+] as const;
+
 interface RatingsPanelProps {
   uid: string;
   config: ConfigState;
@@ -77,6 +84,7 @@ interface RatingsPanelProps {
   onMoveRating: (r: string, dir: -1 | 1) => void;
   /** Reveals the per-badge scale, offset and colour controls in place. */
   fine: boolean;
+  mediaType: string;
 }
 
 function SourceRow({ r, active, failed, onToggle, onLogoError }: {
@@ -166,7 +174,7 @@ function SourceOrderList({ ids, labelId, logoFailed, onLogoError, onMove }: {
   );
 }
 
-export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRating, fine }: RatingsPanelProps) {
+export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRating, fine, mediaType }: RatingsPanelProps) {
   // Track source logos that fail to load so we fall back to the accent dot.
   const [logoFailed, setLogoFailed] = useState<Record<string, boolean>>({});
   return (
@@ -184,6 +192,26 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                   className={`opt-btn${config.ratingsLayout === o.id ? ' opt-btn--active' : ''}`}
                   onClick={() => onUpdate('ratingsLayout', o.id)}
                   aria-pressed={config.ratingsLayout === o.id}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {mediaType === 'thumbnail' && (
+          <div className="field">
+            <NumField id={`${uid}-thumb-safe-inset`} label="Safe inset (% of width)" value={config.thumbnailSafeInset}
+              onChange={v => onUpdate('thumbnailSafeInset', v)} min={0} max={25}
+              hint="Keeps badges this far in from the left and right edges. Nuvio crops thumbnails into cards and square list images, so anything on the edge is cut. Top centre is the safe spot: a bottom-centre row is not cut, but the title text and its dark fade sit over it." />
+            <div className="opt-grid" role="group" aria-label="Nuvio inset presets" style={{ marginTop: 'var(--sp-2)' }}>
+              {NUVIO_INSET_PRESETS.map(o => (
+                <button
+                  key={o.value}
+                  className={`opt-btn${config.thumbnailSafeInset === o.value ? ' opt-btn--active' : ''}`}
+                  onClick={() => onUpdate('thumbnailSafeInset', o.value)}
+                  aria-pressed={config.thumbnailSafeInset === o.value}
                 >
                   {o.label}
                 </button>

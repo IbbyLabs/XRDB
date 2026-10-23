@@ -83,7 +83,7 @@ func drawMetaLine(base *image.NRGBA, meta provider.MediaMeta, cfg imageconfig.Co
 	b := base.Bounds()
 	edgeY := px(16)
 	x := b.Min.X + (b.Dx()-lineW)/2
-	line := image.Rect(x, b.Max.Y-edgeY-lineH, x+lineW, b.Max.Y-edgeY)
+	line := occ.clampX(image.Rect(x, b.Max.Y-edgeY-lineH, x+lineW, b.Max.Y-edgeY))
 	if occ != nil {
 		// The rating strip owns the bottom band on most layouts, so the line
 		// stacks above it instead of printing through it.
@@ -92,7 +92,7 @@ func drawMetaLine(base *image.NRGBA, meta provider.MediaMeta, cfg imageconfig.Co
 	// A manual nudge moves the line, its scrim, and the band it reserves
 	// together, so an overlay drawn after it still clears where it actually is.
 	if cfg.MetaLineOffsetX != 0 || cfg.MetaLineOffsetY != 0 {
-		line = keepInside(line.Add(image.Pt(cfg.MetaLineOffsetX, cfg.MetaLineOffsetY)), b)
+		line = keepInside(line.Add(image.Pt(cfg.MetaLineOffsetX, cfg.MetaLineOffsetY)), occ.safeBoundsOr(b))
 	}
 	x = line.Min.X
 	y := line.Min.Y

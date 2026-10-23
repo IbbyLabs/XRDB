@@ -801,7 +801,7 @@ export function ConfiguratorClient() {
           {activeTab === 'ratings' && (
             <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`} className="tabpanel-enter">
               <h2 className="sr-only">Rating sources</h2>
-              <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} onMoveRating={moveRating} fine={fine} />
+              <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} onMoveRating={moveRating} fine={fine} mediaType={mediaType} />
             </div>
           )}
 

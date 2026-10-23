@@ -69,7 +69,7 @@ function FineGroup({ label, children }: { label: string; children: React.ReactNo
  * The placeholder carries the "this is the default" signal on its own — spelling
  * it out per field stacked the same sentence under a dozen controls at once.
  */
-function NumField({
+export function NumField({
   id, label, value, onChange, min, max, step = 1, placeholder = 'default', hint, zeroIsDefault = true,
 }: {
   id: string; label: string; value: number; onChange: (v: number) => void;

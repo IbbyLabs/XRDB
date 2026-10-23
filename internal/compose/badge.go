@@ -1186,7 +1186,7 @@ func resolveBadgeScale(mediaType string, cfg imageconfig.Config, frameW, frameH 
 	if cfg.RatingBadgeScale != 0 {
 		scale *= float64(cfg.RatingBadgeScale) / 100
 	}
-	return fitBadgeScale(scale, frameW, frameH, ratings, cfg, facts)
+	return fitBadgeScaleInset(scale, frameW, frameH, thumbnailSafeInsetPx(mediaType, frameW, cfg), ratings, cfg, facts)
 }
 
 // legibleBadgeScale is the smallest scale a badge's value still reads at. Below
@@ -1223,8 +1223,13 @@ func stripRowsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Confi
 // across its rows rather than as one line, or badges are dropped that a second
 // row would have held.
 func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, frameW, frameH int, facts titleFacts) bool {
+	return stripFitsAtInset(scale, ratings, cfg, frameW, frameH, 0, facts)
+}
+
+// stripFitsAtInset is stripFitsAt with the sides kept safeX px clear.
+func stripFitsAtInset(scale float64, ratings []provider.Rating, cfg imageconfig.Config, frameW, frameH, safeX int, facts titleFacts) bool {
 	d := ratingStripDimsFor(scale, cfg)
-	availW := frameW - (d.edgeX+posterEdgeInsetAt(scale, cfg))*2
+	availW := frameW - stripEdgeX(d, scale, cfg, safeX)*2
 	availH := frameH - d.edgeY*2
 	if availW <= 0 || availH <= 0 {
 		return false
@@ -1244,6 +1249,22 @@ func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Confi
 // posterEdgeInsetAt is the configured edge offset at scale, as the draw adds it.
 func posterEdgeInsetAt(scale float64, cfg imageconfig.Config) int {
 	return int(float64(cfg.PosterEdgeOffset)*scale + 0.5)
+}
+
+// thumbnailSafeInsetPx is the least distance, in px, left- and right-anchored
+// overlays keep from the side edges: ThumbnailSafeInset % of the frame width, on
+// thumbnails only.
+func thumbnailSafeInsetPx(mediaType string, frameW int, cfg imageconfig.Config) int {
+	if mediaType != "thumbnail" || cfg.ThumbnailSafeInset <= 0 || frameW <= 0 {
+		return 0
+	}
+	return frameW * cfg.ThumbnailSafeInset / 100
+}
+
+// stripEdgeX is the horizontal margin the strip keeps at scale: the built-in
+// edge plus the configured offset, raised to the safe inset.
+func stripEdgeX(d ratingStripDims, scale float64, cfg imageconfig.Config, safeX int) int {
+	return maxInt(d.edgeX+posterEdgeInsetAt(scale, cfg), safeX)
 }
 
 // singleRowWidthAt is the width of every badge on one line, gaps included.
@@ -1274,10 +1295,11 @@ func fitBadgesToFrame(mediaType string, cfg imageconfig.Config, frameW, frameH i
 	}
 
 	shown := ratings
-	for len(shown) > 1 && !stripFitsAt(legibleBadgeScale, shown, cfg, frameW, frameH, facts) {
+	safeX := thumbnailSafeInsetPx(mediaType, frameW, cfg)
+	for len(shown) > 1 && !stripFitsAtInset(legibleBadgeScale, shown, cfg, frameW, frameH, safeX, facts) {
 		shown = shown[:len(shown)-1]
 	}
-	if !stripFitsAt(legibleBadgeScale, shown, cfg, frameW, frameH, facts) {
+	if !stripFitsAtInset(legibleBadgeScale, shown, cfg, frameW, frameH, safeX, facts) {
 		return ratings, scale
 	}
 	return shown, legibleBadgeScale
@@ -1319,6 +1341,8 @@ func ratingsBandHeight(mediaType string, frameW, frameH int, ratings []provider.
 	if cfg.RatingsAnchored {
 		edgeX, edgeY = anchoredEdges(cfg, edgeX, edgeY)
 	}
+	safeX := thumbnailSafeInsetPx(mediaType, frameW, cfg)
+	edgeX = maxInt(edgeX, safeX)
 	innerH := padY*2 + maxInt(valH, iconSize)
 	stacked := cfg.BadgeStyle == imageconfig.BadgeStacked
 	hideIcon := cfg.RatingIconHidden
@@ -1403,6 +1427,8 @@ func drawBadgesInPlace(mediaType string, out *image.NRGBA, ratings []provider.Ra
 	if cfg.RatingsAnchored {
 		edgeX, edgeY = anchoredEdges(cfg, edgeX, edgeY)
 	}
+	safeX := thumbnailSafeInsetPx(mediaType, out.Bounds().Dx(), cfg)
+	edgeX = maxInt(edgeX, safeX)
 
 	innerH := padY*2 + maxInt(valH, iconSize)
 	chrome := chromeFor(cfg)
@@ -1477,7 +1503,7 @@ func drawBadgesInPlace(mediaType string, out *image.NRGBA, ratings []provider.Ra
 
 	if cfg.RatingsLayout == imageconfig.LayoutTopBottom {
 		offsetX, offsetY := ratingStripOffsets(cfg)
-		return drawBadgesTopBottom(out, specs, innerH, badgeGap, edgeX, edgeY, padX, iconSize, iconGap, accentW, face, chrome, bounds, offsetX, offsetY)
+		return drawBadgesTopBottom(out, specs, innerH, badgeGap, edgeX, edgeY, padX, iconSize, iconGap, accentW, face, chrome, bounds, offsetX, offsetY, safeX)
 	}
 
 	// One row keeps every badge on a single line, so the strip reads as one band
@@ -1533,7 +1559,7 @@ func drawBadgesInPlace(mediaType string, out *image.NRGBA, ratings []provider.Ra
 		if x < bounds.Min.X+edgeX {
 			x = bounds.Min.X + edgeX
 		}
-		x += offsetX
+		x = clampRowX(x+offsetX, rw, bounds, safeX)
 		for i := range r {
 			r[i].x = x
 			x += r[i].w + badgeGap
@@ -1558,7 +1584,7 @@ type sideRatingsOpts struct {
 // drawBadgesTopBottom puts the first half of the badges in a row against the
 // top edge and the rest against the bottom. It returns the height of one row,
 // which is the band each edge gives up.
-func drawBadgesTopBottom(out *image.NRGBA, specs []badgeSpec, innerH, badgeGap, edgeX, edgeY, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome, bounds image.Rectangle, offsetX, offsetY int) int {
+func drawBadgesTopBottom(out *image.NRGBA, specs []badgeSpec, innerH, badgeGap, edgeX, edgeY, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome, bounds image.Rectangle, offsetX, offsetY, safeX int) int {
 	if len(specs) == 0 {
 		return 0
 	}
@@ -1578,7 +1604,7 @@ func drawBadgesTopBottom(out *image.NRGBA, specs []badgeSpec, innerH, badgeGap, 
 		if x < bounds.Min.X+edgeX {
 			x = bounds.Min.X + edgeX
 		}
-		x += offsetX
+		x = clampRowX(x+offsetX, rowW, bounds, safeX)
 		for i := range row {
 			row[i].x = x
 			x += row[i].w + badgeGap
@@ -1588,6 +1614,22 @@ func drawBadgesTopBottom(out *image.NRGBA, specs []badgeSpec, innerH, badgeGap, 
 	drawRow(specs[:mid], clampStripY(bounds.Min.Y+edgeY+offsetY, innerH, bounds, edgeY))
 	drawRow(specs[mid:], clampStripY(bounds.Max.Y-edgeY-innerH+offsetY, innerH, bounds, edgeY))
 	return innerH
+}
+
+// clampRowX keeps a row of width w, starting at x, inside the frame narrowed by
+// safeX on each side; safeX 0 leaves x alone. A row wider than the band starts
+// on the inset.
+func clampRowX(x, w int, bounds image.Rectangle, safeX int) int {
+	if safeX <= 0 {
+		return x
+	}
+	if hi := bounds.Max.X - safeX - w; x > hi {
+		x = hi
+	}
+	if lo := bounds.Min.X + safeX; x < lo {
+		x = lo
+	}
+	return x
 }
 
 // isSideRatingsLayout reports whether the layout anchors badges to a vertical
@@ -1978,6 +2020,11 @@ func overlayScale(scale float64, frameH int) float64 {
 // fitBadgeScale reduces scale until the widest badge fits inside the frame.
 // It never grows the scale, so a strip that already fits is left alone.
 func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) float64 {
+	return fitBadgeScaleInset(scale, frameW, frameH, 0, ratings, cfg, facts)
+}
+
+// fitBadgeScaleInset is fitBadgeScale with the sides kept safeX px clear.
+func fitBadgeScaleInset(scale float64, frameW, frameH, safeX int, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) float64 {
 	if frameW <= 0 || frameH <= 0 || len(ratings) == 0 {
 		return scale
 	}
@@ -1986,7 +2033,7 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 	widthShare, heightShare := badgeShareCaps(cfg, frameW, frameH)
 	for i := 0; i < 6; i++ {
 		d := ratingStripDimsFor(scale, cfg)
-		availW := frameW - (d.edgeX+posterEdgeInsetAt(scale, cfg))*2
+		availW := frameW - stripEdgeX(d, scale, cfg, safeX)*2
 		// The share cap is per badge; a single row is measured against the full width.
 		rowRoom := availW
 		if share := int(float64(frameW)*widthShare + 0.5); share < availW {

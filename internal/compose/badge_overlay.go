@@ -2934,7 +2934,12 @@ func drawAggregatePills(base *image.NRGBA, cfg imageconfig.Config, scale float64
 	for i, p := range pills {
 		cx, topY := aggregatePillAnchor(b, cfg.AggregatePillPos, split,
 			scorePillWidth(p.label, p.score, p.icon, scale, cfg.RatingBadgeFont), h, pad, gap, i, len(pills))
-		drawScorePill(base, cx+cfg.RatingBadgeOffsetX, topY+cfg.RatingBadgeOffsetY,
+		pw := scorePillWidth(p.label, p.score, p.icon, scale, p.style.font)
+		cx += cfg.RatingBadgeOffsetX
+		if occ != nil && occ.insetX > 0 {
+			cx = occ.clampX(image.Rect(cx-pw/2, topY, cx-pw/2+pw, topY+h)).Min.X + pw/2
+		}
+		drawScorePill(base, cx, topY+cfg.RatingBadgeOffsetY,
 			p.label, p.score, p.icon, p.style, scale, occ)
 	}
 }

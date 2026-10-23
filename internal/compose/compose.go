@@ -1578,7 +1578,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// occ tracks regions claimed by overlays so corner-anchored badges and the
 	// average-rating ring are placed without overlapping one another or, on the
 	// logo media type, the wordmark itself.
-	occ := newOccupancy(composed.Bounds())
+	occ := newOccupancy(composed.Bounds()).withInsetX(thumbnailSafeInsetPx(req.MediaType, composed.Bounds().Dx(), req.Config))
 	if req.MediaType == "logo" {
 		// Reserve the wordmark's content box so no overlay draws over the title.
 		occ.reserve(nonTransparentBounds(composed))

@@ -548,6 +548,7 @@ export interface ConfigState {
   ratingXOffsetSquare: number;
   ratingYOffsetSquare: number;
   posterEdgeOffset: number; // 0..80 extra inset from the edge
+  thumbnailSafeInset: number; // 0..25 % of the thumbnail width kept clear at the left and right edges
   bottomRatingsRow: boolean; // keep every badge on one row instead of wrapping
   ratingsUniformWidth: boolean; // pad every badge to the widest so they share one edge
   ratingUnavailableMark: boolean; // draw a dash where a rating hidden for thin votes would go
@@ -804,6 +805,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingXOffsetSquare: 0,
   ratingYOffsetSquare: 0,
   posterEdgeOffset: 0,
+  thumbnailSafeInset: 0,
   bottomRatingsRow: false,
   ratingsUniformWidth: false,
   ratingUnavailableMark: false,

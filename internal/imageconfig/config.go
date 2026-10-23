@@ -530,6 +530,10 @@ type RatingBadgeConfig struct {
 	// PosterEdgeOffset pushes the whole badge strip further in from the edge it
 	// sits against. 0 keeps the built-in inset.
 	PosterEdgeOffset int `json:"posterEdgeOffset,omitempty"`
+	// ThumbnailSafeInset keeps every left- and right-anchored overlay on the
+	// thumbnail surface at least this many % of the width in from that edge;
+	// 0 = off, 1-25. Other surfaces ignore it.
+	ThumbnailSafeInset int `json:"thumbnailSafeInset,omitempty"`
 	// BottomRatingsRow keeps every badge on one row instead of wrapping them
 	// into a block. The row sits wherever RatingsLayout puts it.
 	BottomRatingsRow bool `json:"bottomRatingsRow,omitempty"`
@@ -1079,6 +1083,7 @@ type rawRating struct {
 	RatingOffsetXSquare     *int               `json:"ratingXOffsetSquare"`
 	RatingOffsetYSquare     *int               `json:"ratingYOffsetSquare"`
 	PosterEdgeOffset        *int               `json:"posterEdgeOffset"`
+	ThumbnailSafeInset      *int               `json:"thumbnailSafeInset"`
 	RatingsAnchored         *bool              `json:"ratingsAnchored"`
 	BottomRatingsRow        *bool              `json:"bottomRatingsRow"`
 	RatingsUniformWidth     *bool              `json:"ratingsUniformWidth"`
@@ -2043,6 +2048,9 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if r.PosterEdgeOffset != nil {
 		cfg.PosterEdgeOffset = clampInt(*r.PosterEdgeOffset, 0, 80)
+	}
+	if r.ThumbnailSafeInset != nil {
+		cfg.ThumbnailSafeInset = clampInt(*r.ThumbnailSafeInset, 0, 25)
 	}
 	if r.RatingsAnchored != nil {
 		cfg.RatingsAnchored = *r.RatingsAnchored
