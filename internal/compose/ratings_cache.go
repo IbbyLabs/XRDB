@@ -150,6 +150,64 @@ type ratingsCache struct {
 	streaks  map[string]absentStreak
 	// streakSweptAt is when full-map streak expiry last ran.
 	streakSweptAt time.Time
+	// absences counts what happened to empty answers per source since the last report.
+	absences map[string]*absenceCounts
+}
+
+// absenceCounts is one source's empty answers over a reporting window.
+type absenceCounts struct {
+	// Remembered is an empty answer stored as an absence.
+	Remembered int
+	// Declined is an empty answer not stored: the source had produced no rating recently.
+	Declined int
+	// Served is a render answered from a remembered absence.
+	Served int
+	// Distrusted is a live absence refetched because the source had produced no rating recently.
+	Distrusted int
+	// Unheld is a fetch for a key whose streak says it should still be held but has no live entry.
+	Unheld int
+	// Refreshed is a refresh-ahead fetch behind an absence near its expiry.
+	Refreshed int
+}
+
+func (c *ratingsCache) countAbsenceLocked(key string, bump func(*absenceCounts)) {
+	source, _, _ := provider.SplitGoodKey(key)
+	if c.absences == nil {
+		c.absences = make(map[string]*absenceCounts)
+	}
+	n := c.absences[source]
+	if n == nil {
+		n = &absenceCounts{}
+		c.absences[source] = n
+	}
+	bump(n)
+}
+
+// takeAbsenceCounts returns the counts since the last call and starts a new window.
+func (c *ratingsCache) takeAbsenceCounts() map[string]absenceCounts {
+	if c == nil {
+		return nil
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	out := make(map[string]absenceCounts, len(c.absences))
+	for source, n := range c.absences {
+		out[source] = *n
+	}
+	c.absences = nil
+	return out
+}
+
+func isAbsence(meta *provider.MediaMeta) bool { return meta != nil && len(meta.Ratings) == 0 }
+
+// heldByStreakLocked reports whether key's last absence is still inside its hold.
+func (c *ratingsCache) heldByStreakLocked(key string) bool {
+	rec, ok := c.streaks[key]
+	if !ok {
+		return false
+	}
+	source, _, _ := provider.SplitGoodKey(key)
+	return time.Since(rec.At) < absentHold(source, rec.N)
 }
 
 // storable reports whether an answer is worth remembering. An answer carrying
@@ -240,6 +298,9 @@ func (c *ratingsCache) peek(key string) (*provider.MediaMeta, time.Duration, boo
 	if !ok || !time.Now().Before(e.ExpiresAt) || !c.trusted(key, e) {
 		return nil, 0, false
 	}
+	if isAbsence(e.Meta) {
+		c.countAbsenceLocked(key, func(n *absenceCounts) { n.Served++ })
+	}
 	term := e.TTL
 	if term <= 0 {
 		term = c.ttl
@@ -262,10 +323,23 @@ func (c *ratingsCache) do(ctx context.Context, key string, age titleAge, fetch r
 	}
 
 	c.mu.Lock()
-	if e, ok := c.entries[key]; ok && time.Now().Before(e.ExpiresAt) && c.trusted(key, e) {
+	e, ok := c.entries[key]
+	live := ok && time.Now().Before(e.ExpiresAt)
+	if live && c.trusted(key, e) {
+		if isAbsence(e.Meta) {
+			c.countAbsenceLocked(key, func(n *absenceCounts) { n.Served++ })
+		}
 		c.refreshAheadLocked(ctx, key, e, age, fetch)
 		c.mu.Unlock()
 		return e.Meta, nil
+	}
+	if _, joining := c.inflight[key]; !joining {
+		switch {
+		case live && isAbsence(e.Meta):
+			c.countAbsenceLocked(key, func(n *absenceCounts) { n.Distrusted++ })
+		case !live && c.heldByStreakLocked(key):
+			c.countAbsenceLocked(key, func(n *absenceCounts) { n.Unheld++ })
+		}
 	}
 	if call, ok := c.inflight[key]; ok {
 		c.mu.Unlock()
@@ -288,9 +362,11 @@ func (c *ratingsCache) do(ctx context.Context, key string, age titleAge, fetch r
 	if call.err == nil && c.storable(key, call.meta) {
 		c.storeLocked(key, call.meta, call.complete, age)
 		if call.meta != nil && len(call.meta.Ratings) == 0 {
+			c.countAbsenceLocked(key, func(n *absenceCounts) { n.Remembered++ })
 			c.log().DebugContext(ctx, "Remembered an empty ratings answer", "key", key)
 		}
 	} else if call.err == nil && call.meta != nil && len(call.meta.Ratings) == 0 {
+		c.countAbsenceLocked(key, func(n *absenceCounts) { n.Declined++ })
 		c.log().DebugContext(ctx, "Did not remember an empty ratings answer: the source has not answered with ratings for this content type recently",
 			"key", key, "freshness", ratingsAnswerFreshness)
 	}
@@ -323,6 +399,9 @@ func (c *ratingsCache) refreshAheadLocked(ctx context.Context, key string, e rat
 	if _, running := c.inflight[key]; running {
 		return
 	}
+	if isAbsence(e.Meta) {
+		c.countAbsenceLocked(key, func(n *absenceCounts) { n.Refreshed++ })
+	}
 	call := &ratingsCall{done: make(chan struct{})}
 	c.inflight[key] = call
 	go c.runRefresh(ctx, key, age, call, fetch)
@@ -352,9 +431,11 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, age titleAge,
 	if call.err == nil && c.storable(key, call.meta) {
 		c.storeLocked(key, call.meta, call.complete, age)
 		if call.meta != nil && len(call.meta.Ratings) == 0 {
+			c.countAbsenceLocked(key, func(n *absenceCounts) { n.Remembered++ })
 			c.log().DebugContext(ctx, "Remembered an empty ratings answer", "key", key)
 		}
 	} else if call.err == nil && call.meta != nil && len(call.meta.Ratings) == 0 {
+		c.countAbsenceLocked(key, func(n *absenceCounts) { n.Declined++ })
 		c.log().DebugContext(ctx, "Did not remember an empty ratings answer: the source has not answered with ratings for this content type recently",
 			"key", key, "freshness", ratingsAnswerFreshness)
 	}

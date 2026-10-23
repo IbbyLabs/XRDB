@@ -194,3 +194,33 @@ func TestAServedAbsenceIsNotCountedAsTheSourceAnsweringEmpty(t *testing.T) {
 		}
 	}
 }
+
+func TestAbsenceCountsSplitWhatHappenedToEmptyAnswers(t *testing.T) {
+	c := newRatingsCache(time.Hour, nil)
+	working := true
+	c.answering = func(string, string, time.Duration) bool { return working }
+	empty := func(context.Context) (*provider.MediaMeta, bool, error) { return noRatings(), true, nil }
+	k1 := provider.GoodKey("wikidata", "movie", "tt1")
+	k2 := provider.GoodKey("wikidata", "movie", "tt2")
+
+	mustDo(t, c, k1, titleAge{}, empty) // remembered
+	mustDo(t, c, k1, titleAge{}, empty) // served
+	working = false
+	mustDo(t, c, k1, titleAge{}, empty) // distrusted, then declined
+	mustDo(t, c, k2, titleAge{}, empty) // declined
+	working = true
+	mustDo(t, c, k2, titleAge{}, empty) // remembered
+	c.mu.Lock()
+	delete(c.entries, k2)
+	c.mu.Unlock()
+	mustDo(t, c, k2, titleAge{}, empty) // unheld, then remembered
+
+	got := c.takeAbsenceCounts()["wikidata"]
+	want := absenceCounts{Remembered: 3, Declined: 2, Served: 1, Distrusted: 1, Unheld: 1}
+	if got != want {
+		t.Errorf("counts = %+v, want %+v", got, want)
+	}
+	if again := c.takeAbsenceCounts(); len(again) != 0 {
+		t.Errorf("a second take returned %+v, want an empty window", again)
+	}
+}

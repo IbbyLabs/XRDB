@@ -88,3 +88,29 @@ func StartMemoryReports(ctx context.Context, pipeline *compose.Pipeline, renderC
 		}
 	}()
 }
+
+// absenceReportInterval is how often the empty-answer counts are logged.
+const absenceReportInterval = 15 * time.Minute
+
+// StartAbsenceReports logs the ratings cache's empty-answer counts every
+// absenceReportInterval until ctx is done.
+func StartAbsenceReports(ctx context.Context, pipeline *compose.Pipeline, logger *slog.Logger) {
+	if pipeline == nil {
+		return
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
+	go func() {
+		ticker := time.NewTicker(absenceReportInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				pipeline.ReportAbsences(logger)
+			}
+		}
+	}()
+}

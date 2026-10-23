@@ -16,6 +16,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -814,6 +815,24 @@ func (p *Pipeline) SetRatingsCacheTTL(ttl time.Duration) {
 
 // CachedRatings reports how many source answers are held.
 func (p *Pipeline) CachedRatings() int { return p.ratings.Len() }
+
+// ReportAbsences logs one line per source on what happened to its empty answers
+// since the previous call.
+func (p *Pipeline) ReportAbsences(logger *slog.Logger) {
+	counts := p.ratings.takeAbsenceCounts()
+	sources := make([]string, 0, len(counts))
+	for s := range counts {
+		sources = append(sources, s)
+	}
+	sort.Strings(sources)
+	for _, s := range sources {
+		n := counts[s]
+		logger.Info("Reporting what happened to a ratings source's empty answers",
+			"source", s, "remembered", n.Remembered, "declined", n.Declined,
+			"served", n.Served, "distrusted", n.Distrusted,
+			"unheld", n.Unheld, "refreshed", n.Refreshed)
+	}
+}
 
 // Health returns the attached tracker, or nil.
 func (p *Pipeline) Health() *provider.HealthTracker { return p.health }
