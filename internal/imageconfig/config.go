@@ -346,10 +346,23 @@ type Config struct {
 	LogoShadowStyle string `json:"logoShadowStyle,omitempty"` // "" = shadow | "extrude" | "gel" | "emboss"
 	LogoShadowColor string `json:"logoShadowColor,omitempty"` // "#RRGGBB"; "" = black
 	// LogoFrost blurs the artwork behind the title logo.
-	LogoFrost       bool   `json:"logoFrost,omitempty"`
-	RatingRing      bool   `json:"ratingRing,omitempty"`
-	RatingRingPos   string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
-	RatingRingColor string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+	LogoFrost bool `json:"logoFrost,omitempty"`
+	// LogoBottomMargin pins the logo's lower edge this many % of the artwork
+	// height above the bottom edge (it implies a bottom anchor); 0 = off.
+	LogoBottomMargin int `json:"logoBottomMargin,omitempty"`
+	// The bottom fade darkens a band rising from the foot of the art, under the
+	// logo and every badge. Height is % of the artwork height (0 = off), opacity
+	// is 0-100 (0 = 80) and colour is "#RRGGBB" ("" = black).
+	BottomFadeHeight  int    `json:"bottomFadeHeight,omitempty"`
+	BottomFadeOpacity int    `json:"bottomFadeOpacity,omitempty"`
+	BottomFadeColor   string `json:"bottomFadeColor,omitempty"`
+	// The bottom blur softens the same kind of band. Height is % of the artwork
+	// height (0 = off); strength is 1-100 (0 = 50).
+	BottomBlurHeight   int    `json:"bottomBlurHeight,omitempty"`
+	BottomBlurStrength int    `json:"bottomBlurStrength,omitempty"`
+	RatingRing         bool   `json:"ratingRing,omitempty"`
+	RatingRingPos      string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
+	RatingRingColor    string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
 
 	OutputFormat  OutputFormat `json:"outputFormat,omitempty"`
 	OutputQuality int          `json:"outputQuality,omitempty"` // JPEG quality 40-100; 0 = default
@@ -934,6 +947,12 @@ type raw struct {
 	LogoShadowStyle               *string   `json:"logoShadowStyle"`
 	LogoShadowColor               *string   `json:"logoShadowColor"`
 	LogoFrost                     *bool     `json:"logoFrost"`
+	LogoBottomMargin              *int      `json:"logoBottomMargin"`
+	BottomFadeHeight              *int      `json:"bottomFadeHeight"`
+	BottomFadeOpacity             *int      `json:"bottomFadeOpacity"`
+	BottomFadeColor               *string   `json:"bottomFadeColor"`
+	BottomBlurHeight              *int      `json:"bottomBlurHeight"`
+	BottomBlurStrength            *int      `json:"bottomBlurStrength"`
 	RatingRing                    *bool     `json:"ratingRing"`
 	RatingRingPos                 *string   `json:"ratingRingPos"`
 	RatingRingColor               *string   `json:"ratingRingColor"`
@@ -1574,6 +1593,24 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.LogoFrost != nil {
 		cfg.LogoFrost = *r.LogoFrost
+	}
+	if r.LogoBottomMargin != nil && *r.LogoBottomMargin > 0 {
+		cfg.LogoBottomMargin = clampInt(*r.LogoBottomMargin, 1, 40)
+	}
+	if r.BottomFadeHeight != nil && *r.BottomFadeHeight > 0 {
+		cfg.BottomFadeHeight = clampInt(*r.BottomFadeHeight, 1, 100)
+	}
+	if r.BottomFadeOpacity != nil && *r.BottomFadeOpacity > 0 {
+		cfg.BottomFadeOpacity = clampInt(*r.BottomFadeOpacity, 1, 100)
+	}
+	if r.BottomFadeColor != nil && isHexColor(strings.TrimSpace(*r.BottomFadeColor)) {
+		cfg.BottomFadeColor = strings.TrimSpace(*r.BottomFadeColor)
+	}
+	if r.BottomBlurHeight != nil && *r.BottomBlurHeight > 0 {
+		cfg.BottomBlurHeight = clampInt(*r.BottomBlurHeight, 1, 100)
+	}
+	if r.BottomBlurStrength != nil && *r.BottomBlurStrength > 0 {
+		cfg.BottomBlurStrength = clampInt(*r.BottomBlurStrength, 1, 100)
 	}
 	if r.LogoPos != nil && *r.LogoPos != 0 {
 		cfg.LogoPos = clampInt(*r.LogoPos, 1, 100)
@@ -2804,26 +2841,32 @@ func CacheKey(cfg Config) string {
 		TrendingRankBorderColor       string         `json:"trendingRankBorderColor,omitempty"`
 		TrendingRankBorderOpacity     int            `json:"trendingRankBorderOpacity,omitempty"`
 		// The rank changes daily, so a render showing one is keyed to its day.
-		TrendingRankDay   string        `json:"trendingRankDay,omitempty"`
-		TrendingStyle     TrendingStyle `json:"trendingStyle"`
-		BackdropAsPoster  bool          `json:"backdropAsPoster"`
-		BackdropLogo      bool          `json:"backdropLogo"`
-		LogoWidth         int           `json:"logoWidth"`
-		LogoHeight        int           `json:"logoHeight"`
-		LogoPos           int           `json:"logoPos"`
-		LogoAnchor        string        `json:"logoAnchor"`
-		LogoScrimSize     int           `json:"logoScrimSize,omitempty"`
-		LogoScrimOpacity  int           `json:"logoScrimOpacity,omitempty"`
-		LogoShadowOffsetX int           `json:"logoShadowOffsetX,omitempty"`
-		LogoShadowOffsetY int           `json:"logoShadowOffsetY,omitempty"`
-		LogoShadowStyle   string        `json:"logoShadowStyle,omitempty"`
-		LogoShadowColor   string        `json:"logoShadowColor,omitempty"`
-		LogoFrost         bool          `json:"logoFrost,omitempty"`
-		RatingRing        bool          `json:"ratingRing"`
-		RatingRingPos     string        `json:"ratingRingPos"`
-		RatingRingColor   string        `json:"ratingRingColor"`
-		OutputFormat      OutputFormat  `json:"outputFormat,omitempty"`
-		OutputQuality     int           `json:"outputQuality,omitempty"`
+		TrendingRankDay    string        `json:"trendingRankDay,omitempty"`
+		TrendingStyle      TrendingStyle `json:"trendingStyle"`
+		BackdropAsPoster   bool          `json:"backdropAsPoster"`
+		BackdropLogo       bool          `json:"backdropLogo"`
+		LogoWidth          int           `json:"logoWidth"`
+		LogoHeight         int           `json:"logoHeight"`
+		LogoPos            int           `json:"logoPos"`
+		LogoAnchor         string        `json:"logoAnchor"`
+		LogoScrimSize      int           `json:"logoScrimSize,omitempty"`
+		LogoScrimOpacity   int           `json:"logoScrimOpacity,omitempty"`
+		LogoShadowOffsetX  int           `json:"logoShadowOffsetX,omitempty"`
+		LogoShadowOffsetY  int           `json:"logoShadowOffsetY,omitempty"`
+		LogoShadowStyle    string        `json:"logoShadowStyle,omitempty"`
+		LogoShadowColor    string        `json:"logoShadowColor,omitempty"`
+		LogoFrost          bool          `json:"logoFrost,omitempty"`
+		LogoBottomMargin   int           `json:"logoBottomMargin,omitempty"`
+		BottomFadeHeight   int           `json:"bottomFadeHeight,omitempty"`
+		BottomFadeOpacity  int           `json:"bottomFadeOpacity,omitempty"`
+		BottomFadeColor    string        `json:"bottomFadeColor,omitempty"`
+		BottomBlurHeight   int           `json:"bottomBlurHeight,omitempty"`
+		BottomBlurStrength int           `json:"bottomBlurStrength,omitempty"`
+		RatingRing         bool          `json:"ratingRing"`
+		RatingRingPos      string        `json:"ratingRingPos"`
+		RatingRingColor    string        `json:"ratingRingColor"`
+		OutputFormat       OutputFormat  `json:"outputFormat,omitempty"`
+		OutputQuality      int           `json:"outputQuality,omitempty"`
 		// Grouped components keep their omitempty tags, so a config with none of
 		// these set hashes exactly as it did before the fields existed.
 		GenreBadgeConfig
@@ -2946,6 +2989,12 @@ func CacheKey(cfg Config) string {
 		LogoShadowStyle:               cfg.LogoShadowStyle,
 		LogoShadowColor:               cfg.LogoShadowColor,
 		LogoFrost:                     cfg.LogoFrost,
+		LogoBottomMargin:              cfg.LogoBottomMargin,
+		BottomFadeHeight:              cfg.BottomFadeHeight,
+		BottomFadeOpacity:             cfg.BottomFadeOpacity,
+		BottomFadeColor:               cfg.BottomFadeColor,
+		BottomBlurHeight:              cfg.BottomBlurHeight,
+		BottomBlurStrength:            cfg.BottomBlurStrength,
 		LogoWidth:                     cfg.LogoWidth,
 		LogoHeight:                    cfg.LogoHeight,
 		LogoPos:                       cfg.LogoPos,

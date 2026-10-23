@@ -1570,6 +1570,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 
 	scale := overlayScale(frameScale(req.MediaType, composed.Bounds().Dx(), req.Config.Size), composed.Bounds().Dy())
 
+	// The bottom fade and blur sit on the bare art, under the logo and every badge.
+	if req.MediaType == "poster" || (req.MediaType != "logo" && req.Config.BackdropLogo) {
+		drawBottomLook(composed, bottomLookFromConfig(req.Config))
+	}
+
 	// occ tracks regions claimed by overlays so corner-anchored badges and the
 	// average-rating ring are placed without overlapping one another or, on the
 	// logo media type, the wordmark itself.

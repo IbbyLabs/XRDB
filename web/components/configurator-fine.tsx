@@ -1721,6 +1721,23 @@ export function TitleLogoFine({ uid, config, onUpdate }: GroupProps) {
         checked={config.logoFrost}
         onChange={v => onUpdate('logoFrost', v)}
         hint="Softly blurs the artwork around the logo so it sits on a frosted panel." />
+      <NumField id={`${uid}-logo-bottom-margin`} label="Bottom margin (%)" value={config.logoBottomMargin}
+        onChange={v => onUpdate('logoBottomMargin', v)} min={1} max={40} step={1}
+        hint="Pins the logo's lower edge this far above the bottom of the artwork. Blank leaves it on the position above." />
+      <NumField id={`${uid}-bottom-fade-height`} label="Bottom fade height (%)" value={config.bottomFadeHeight}
+        onChange={v => onUpdate('bottomFadeHeight', v)} min={1} max={100} step={5}
+        hint="A gradient rising from the bottom edge, under the logo and badges. Blank turns it off." />
+      <NumField id={`${uid}-bottom-fade-opacity`} label="Bottom fade opacity (%)" value={config.bottomFadeOpacity}
+        onChange={v => onUpdate('bottomFadeOpacity', v)} min={1} max={100} step={5}
+        hint="How dark the fade gets at the very bottom. Blank keeps 80." />
+      <ColorField id={`${uid}-bottom-fade-color`} label="Bottom fade colour" value={config.bottomFadeColor}
+        onChange={v => onUpdate('bottomFadeColor', v)} fallback="#000000" resetLabel="Black" />
+      <NumField id={`${uid}-bottom-blur-height`} label="Bottom blur height (%)" value={config.bottomBlurHeight}
+        onChange={v => onUpdate('bottomBlurHeight', v)} min={1} max={100} step={5}
+        hint="Blurs the same kind of band, easing into the sharp art above it. Blank turns it off." />
+      <NumField id={`${uid}-bottom-blur-strength`} label="Bottom blur strength" value={config.bottomBlurStrength}
+        onChange={v => onUpdate('bottomBlurStrength', v)} min={1} max={100} step={5}
+        hint="How strong the blur is at the bottom edge. Blank keeps 50." />
     </FineGroup>
   );
 }

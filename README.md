@@ -155,6 +155,8 @@ Filmweb are read from their public pages, as none of them publishes an API.
 They are cached hard and fall back to the last known good value when a source
 is unavailable, so XRDB reads each page far less often than once per render.
 
+The bottom fade, bottom blur and bottom logo options were inspired by Posters+ by Umbra.
+
 ---
 
 XRDB by [IbbyLabs](https://github.com/IbbyLabs) ·

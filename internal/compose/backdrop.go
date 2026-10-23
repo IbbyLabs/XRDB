@@ -188,6 +188,7 @@ type logoOverlayOpts struct {
 	shadowColor   string // "#RRGGBB"; "" = black
 	shadowStyle   string // "" = shadow | "extrude" | "gel"
 	frost         bool   // blur the artwork behind the logo
+	bottomMargin  int    // % of base height between the logo's lower edge and the bottom edge; 0 = off
 }
 
 func logoOptsFromConfig(cfg imageconfig.Config) logoOverlayOpts {
@@ -203,6 +204,7 @@ func logoOptsFromConfig(cfg imageconfig.Config) logoOverlayOpts {
 		shadowColor:   cfg.LogoShadowColor,
 		shadowStyle:   cfg.LogoShadowStyle,
 		frost:         cfg.LogoFrost,
+		bottomMargin:  cfg.LogoBottomMargin,
 	}
 }
 
@@ -293,6 +295,10 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 	}
 	if logoTopY+dstH > usableH {
 		logoTopY = usableH - dstH
+	}
+	// A bottom margin overrides the position and the ratings reserve.
+	if opts.bottomMargin > 0 {
+		logoTopY = max(0, baseH-pct(baseH, opts.bottomMargin, 0)-dstH)
 	}
 
 	// The shadow behind the logo, for legibility over bright areas. It follows

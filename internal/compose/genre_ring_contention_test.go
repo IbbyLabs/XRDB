@@ -126,6 +126,7 @@ var unrankedOverlays = []string{
 	"drawAggregateBar",
 	"drawAverageRating",
 	"drawBackdropLogoOverlay",
+	"drawBottomLook",
 	"drawBadgesInPlace",
 	"drawDualRating",
 	"drawMinimalRating",

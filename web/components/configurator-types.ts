@@ -522,6 +522,12 @@ export interface ConfigState {
   logoShadowStyle: string; // '' = shadow | 'extrude' | 'gel' | 'emboss'
   logoShadowColor: string;
   logoFrost: boolean; // blur the artwork behind the title logo
+  logoBottomMargin: number; // % of height from the bottom edge to the logo's lower edge; 0 = off
+  bottomFadeHeight: number; // % of height; 0 = off
+  bottomFadeOpacity: number; // 0-100; 0 = 80
+  bottomFadeColor: string; // "#RRGGBB"; '' = black
+  bottomBlurHeight: number; // % of height; 0 = off
+  bottomBlurStrength: number; // 1-100; 0 = 50
   logoHeight: number;
   logoPos: number;
   logoAnchor: string; // \'\' = centre on the position | \'bottom\'
@@ -773,6 +779,12 @@ export const DEFAULT_CONFIG: ConfigState = {
   logoShadowStyle: '',
   logoShadowColor: '',
   logoFrost: false,
+  logoBottomMargin: 0,
+  bottomFadeHeight: 0,
+  bottomFadeOpacity: 0,
+  bottomFadeColor: '',
+  bottomBlurHeight: 0,
+  bottomBlurStrength: 0,
   logoHeight: 0,
   logoPos: 0,
   logoAnchor: '',

@@ -123,11 +123,19 @@ func frostFeatheredRect(base *image.NRGBA, r image.Rectangle, feather, strength 
 	if rad == 0 || r.Empty() {
 		return
 	}
+	if frostObserver != nil {
+		frostObserver(frostCall{feathered: true, rect: r, feather: max(feather, 1), strength: strength})
+	}
+	frostFeatheredRadius(base, r, feather, rad)
+}
+
+// frostFeatheredRadius is frostFeatheredRect with the box radius given in pixels.
+func frostFeatheredRadius(base *image.NRGBA, r image.Rectangle, feather, rad int) {
+	if rad <= 0 || r.Empty() {
+		return
+	}
 	if feather < 1 {
 		feather = 1
-	}
-	if frostObserver != nil {
-		frostObserver(frostCall{feathered: true, rect: r, feather: feather, strength: strength})
 	}
 	area := r.Inset(-feather).Intersect(base.Bounds())
 	if area.Empty() {
