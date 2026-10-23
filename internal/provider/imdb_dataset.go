@@ -20,7 +20,7 @@ var imdbRatingsURL = sourceBaseURL("IMDB_RATINGS", "https://datasets.imdbws.com/
 
 const (
 	imdbDatasetFile   = "imdb_ratings.tsv.gz"
-	imdbDatasetMaxAge = 7 * 24 * time.Hour // re-download weekly
+	imdbDatasetMaxAge = 24 * time.Hour // ratings file: re-download daily
 )
 
 // imdbEntry holds the data for one IMDb title.
@@ -51,6 +51,7 @@ type IMDbDataset struct {
 	// the request path and at most one at a time.
 	rankBuilding bool
 	rankAttempt  time.Time
+	rankBuiltAt  time.Time
 }
 
 const (
@@ -59,6 +60,9 @@ const (
 	topRatedBuildTimeout = 20 * time.Minute
 	// topRatedRetryAfter is the wait before a failed ranking is attempted again.
 	topRatedRetryAfter = 30 * time.Minute
+	// topRatedMaxAge is how old a built ranking may get before a refresh rebuilds
+	// it; the basics dataset is only re-streamed this often.
+	topRatedMaxAge = 7 * 24 * time.Hour
 )
 
 // EnableTopRated turns on the top-rated ranking. It costs one streamed pass
@@ -195,7 +199,7 @@ func (d *IMDbDataset) ensureLoaded(ctx context.Context) error {
 }
 
 // startRankLocked begins a ranking build for idx unless one is running or a
-// recent one failed. Caller holds d.mu.
+// recent one failed. A ranking built within topRatedMaxAge is kept. Caller holds d.mu.
 //
 // The build is detached from the caller: it streams a second, much larger
 // dataset, and a request that ends first would otherwise cancel it. A failure
@@ -203,6 +207,9 @@ func (d *IMDbDataset) ensureLoaded(ctx context.Context) error {
 // ratings are the point.
 func (d *IMDbDataset) startRankLocked(idx map[string]imdbEntry) {
 	if !d.topRatedEnabled || d.rankBuilding || time.Now().Before(d.rankAttempt) {
+		return
+	}
+	if len(d.topRated) > 0 && time.Since(d.rankBuiltAt) < topRatedMaxAge {
 		return
 	}
 	d.rankBuilding = true
@@ -221,6 +228,7 @@ func (d *IMDbDataset) buildRank(idx map[string]imdbEntry) {
 	if err == nil {
 		d.topRated = ranks
 		d.rankAttempt = time.Time{}
+		d.rankBuiltAt = time.Now()
 	}
 	d.mu.Unlock()
 
@@ -248,6 +256,11 @@ func (d *IMDbDataset) refresh(ctx context.Context) error {
 	if err := d.download(ctx, path); err != nil {
 		return fmt.Errorf("download: %w", err)
 	}
+	var size int64
+	if fi, err := os.Stat(path); err == nil {
+		size = fi.Size()
+	}
+	parsed := time.Now()
 	idx, err := parseRatingsTSV(path)
 	if err != nil {
 		return fmt.Errorf("parse: %w", err)
@@ -262,6 +275,8 @@ func (d *IMDbDataset) refresh(ctx context.Context) error {
 	d.rankAttempt = time.Time{}
 	d.startRankLocked(idx)
 	d.mu.Unlock()
+	slog.Info("Downloaded the IMDb ratings dataset",
+		"size_bytes", size, "parse_and_swap_ms", time.Since(parsed).Milliseconds())
 	return nil
 }
 
@@ -288,7 +303,7 @@ func (d *IMDbDataset) StartRefresh(ctx context.Context, every time.Duration, log
 	}
 	// A silent return leaves an operator unable to tell a scheduled refresh from
 	// a disabled one from a dataset that is switched off, because all three
-	// produce no output at all until the first interval elapses — a week at the
+	// produce no output at all until the first interval elapses — a day at the
 	// default.
 	if d == nil {
 		logger.Info("The IMDb dataset is not configured, so no refresh is scheduled")

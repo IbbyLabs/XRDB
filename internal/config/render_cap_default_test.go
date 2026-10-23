@@ -2,6 +2,7 @@ package config
 
 import (
 	"testing"
+	"time"
 )
 
 // A self-hosted owner is their own only caller, so a cap protects them from
@@ -31,6 +32,25 @@ func TestAnOperatorCanStillSetTheRenderCap(t *testing.T) {
 			t.Setenv("XRDB_RENDER_CAP_PER_MINUTE", tc.raw)
 			if got := Load().RenderCapPerMinute; got != tc.want {
 				t.Errorf("XRDB_RENDER_CAP_PER_MINUTE=%q gave %d, want %d", tc.raw, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestTheIMDbRefreshDefaultsToDailyAndTakesAnOverride(t *testing.T) {
+	for _, tc := range []struct {
+		raw  string
+		want time.Duration
+	}{
+		{"", 24 * time.Hour},
+		{"6", 6 * time.Hour},
+		{"0", 0},
+		{"junk", 24 * time.Hour},
+	} {
+		t.Run(tc.raw, func(t *testing.T) {
+			t.Setenv("XRDB_IMDB_REFRESH_HOURS", tc.raw)
+			if got := Load().IMDbRefresh; got != tc.want {
+				t.Errorf("XRDB_IMDB_REFRESH_HOURS=%q gave %v, want %v", tc.raw, got, tc.want)
 			}
 		})
 	}

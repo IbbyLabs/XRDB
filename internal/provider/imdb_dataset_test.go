@@ -159,3 +159,12 @@ func TestParseRatingsTSV(t *testing.T) {
 		}
 	}
 }
+
+func TestIMDbDatasetAgesAreDailyRatingsWeeklyRanking(t *testing.T) {
+	if imdbDatasetMaxAge != 24*time.Hour {
+		t.Errorf("ratings max age is %v, want 24h", imdbDatasetMaxAge)
+	}
+	if topRatedMaxAge != 7*24*time.Hour {
+		t.Errorf("ranking max age is %v, want 7 days", topRatedMaxAge)
+	}
+}

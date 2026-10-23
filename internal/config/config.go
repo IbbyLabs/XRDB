@@ -683,9 +683,9 @@ func Load() Config {
 			animeMapRefresh = time.Duration(h * float64(time.Hour))
 		}
 	}
-	// Matches the weekly age check the dataset was written with. Zero turns the
-	// background rebuild off and leaves the index as it was at startup.
-	imdbRefresh := 7 * 24 * time.Hour
+	// Matches the ratings file's daily age check. Zero turns the background
+	// rebuild off and leaves the index as it was at startup.
+	imdbRefresh := 24 * time.Hour
 	if raw := os.Getenv("XRDB_IMDB_REFRESH_HOURS"); raw != "" {
 		if h, err := strconv.ParseFloat(raw, 64); err == nil && h >= 0 {
 			imdbRefresh = time.Duration(h * float64(time.Hour))

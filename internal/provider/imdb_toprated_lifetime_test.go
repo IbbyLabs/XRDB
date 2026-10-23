@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -148,4 +150,54 @@ func TestTopRatedDoesNotRetryOnEveryRequest(t *testing.T) {
 	if n := calls.Load(); n != 1 {
 		t.Fatalf("basics fetched %d times, want 1", n)
 	}
+}
+
+// A ratings refresh must not re-stream the basics dataset while the ranking is
+// younger than topRatedMaxAge, and must once it is older.
+func TestARatingsRefreshRebuildsTheRankingOnlyWhenItIsAWeekOld(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write(gzTSV(t, "9.3"))
+	}))
+	defer srv.Close()
+
+	var basics atomic.Int32
+	d := NewIMDbDataset(t.TempDir())
+	d.topRatedEnabled = true
+	d.ratingsURL = srv.URL
+	d.httpClient = &http.Client{Transport: testutil.RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		if strings.HasPrefix(r.URL.String(), srv.URL) {
+			return http.DefaultTransport.RoundTrip(r)
+		}
+		basics.Add(1)
+		return basicsResponse(t, [][2]string{{"tt0111161", "movie"}}), nil
+	})}
+
+	if err := d.refresh(context.Background()); err != nil {
+		t.Fatalf("first refresh: %v", err)
+	}
+	waitFor(t, "the first ranking to build", d.TopRatedReady)
+	if n := basics.Load(); n != 1 {
+		t.Fatalf("basics fetched %d times after the first build, want 1", n)
+	}
+
+	// Six days on: ratings refresh, ranking stays.
+	d.mu.Lock()
+	d.rankBuiltAt = time.Now().Add(-6 * 24 * time.Hour)
+	d.mu.Unlock()
+	if err := d.refresh(context.Background()); err != nil {
+		t.Fatalf("second refresh: %v", err)
+	}
+	time.Sleep(100 * time.Millisecond)
+	if n := basics.Load(); n != 1 {
+		t.Fatalf("basics fetched %d times within a week, want 1", n)
+	}
+
+	// Past a week: the next refresh rebuilds.
+	d.mu.Lock()
+	d.rankBuiltAt = time.Now().Add(-topRatedMaxAge - time.Hour)
+	d.mu.Unlock()
+	if err := d.refresh(context.Background()); err != nil {
+		t.Fatalf("third refresh: %v", err)
+	}
+	waitFor(t, "the stale ranking to rebuild", func() bool { return basics.Load() == 2 })
 }
