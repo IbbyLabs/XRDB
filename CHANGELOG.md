@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.132.0](https://github.com/IbbyLabs/XRDB/compare/v3.131.4...v3.132.0) (2026-10-23)
+
+
+### Added
+
+* **compose:** disc releases on the release status badge (FR-236) ([af11e43](https://github.com/IbbyLabs/XRDB/commit/af11e436854d6198cf7416e534dc0ad839147c02))
+
 ## [3.131.4](https://github.com/IbbyLabs/XRDB/compare/v3.131.3...v3.131.4) (2026-10-20)
 
 
