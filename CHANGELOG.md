@@ -2,6 +2,23 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.136.0](https://github.com/IbbyLabs/XRDB/compare/v3.135.0...v3.136.0) (2026-10-23)
+
+
+### Added
+
+* **thumbnail:** add a safe side inset for apps that crop (FR-237) ([6ed1817](https://github.com/IbbyLabs/XRDB/commit/6ed1817dcdc12dc0deb36071f7674b6a3fd870ea))
+
+
+### Fixed
+
+* **provider:** drop a probed limit once its key has left the ring ([685cb65](https://github.com/IbbyLabs/XRDB/commit/685cb6577f671cc767437ec693884cd7d03cdc74))
+
+
+### Documentation
+
+* **license:** license XRDB under AGPL-3.0 ([1329e2c](https://github.com/IbbyLabs/XRDB/commit/1329e2caa31e6e59eaae76502dd45a6d8ca0ba8c))
+
 ## [3.135.0](https://github.com/IbbyLabs/XRDB/compare/v3.134.0...v3.135.0) (2026-10-23)
 
 
