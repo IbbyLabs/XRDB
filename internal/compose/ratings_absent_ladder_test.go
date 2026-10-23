@@ -110,6 +110,7 @@ func TestAStreakSurvivesARestart(t *testing.T) {
 	restarted.path = path
 	restarted.answering = func(string, string, time.Duration) bool { return true }
 	restarted.load(nil)
+	expire(restarted, key)
 	mustDo(t, restarted, key, titleAge{}, absentFetch)
 	if got := heldFor(restarted, key); got != 24*time.Hour {
 		t.Errorf("the third absence after a restart held %s, want 24h", got)
