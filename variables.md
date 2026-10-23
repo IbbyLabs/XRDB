@@ -138,6 +138,11 @@ day's budget. Short bursts still go straight out; only a sustained flood is
 paced. Once the reserve is reached the rate drops to a floor of 0.2/s rather
 than stopping.
 
+When `XRDB_MDBLIST_API_KEY` holds several keys, XRDB checks each key's daily
+allowance at startup and when a key is added, and keeps the result for a day so
+a restart does not ask again. A key that cannot be checked is counted at the
+smallest allowance seen until it answers.
+
 | Variable | Default | Description |
 |---|---|---|
 | `XRDB_MDBLIST_RESERVE_PCT` | `25` | Percentage of the daily allowance held back as headroom, governing the **rate** every caller is paced at: as the remainder approaches this share, requests slow toward a floor so the allowance lasts the day. On a 100,000/day plan that keeps 25,000 spare. **Not the same as `XRDB_MDBLIST_SWEEP_RESERVE_PCT`**, which holds catalogue sweeps off a share of the allowance and leaves interactive renders at full speed. Set that one if a pre-warm is spending what your renders need. |

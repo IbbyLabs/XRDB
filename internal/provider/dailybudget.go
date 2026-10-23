@@ -65,7 +65,12 @@ type dailyBudget struct {
 	// there are. spent counts every key together, so the limit it is compared
 	// against has to be the whole ring's, not whichever key answered last.
 	observedLimits map[string]int
-	ringSize       int
+	// measuredAt is when each observedLimits entry was last read.
+	measuredAt map[string]time.Time
+	ringSize   int
+	// ringKeys is the fingerprints of the current ring; nil until the provider
+	// has pushed it.
+	ringKeys map[string]struct{}
 	// reservePct scales the reserve with the limit for a source whose limit is
 	// discovered rather than known. Zero keeps reserve as given.
 	reservePct float64
@@ -104,10 +109,17 @@ func (b *dailyBudget) setLimit(key string, limit int) {
 	if key != "" {
 		if b.observedLimits == nil {
 			b.observedLimits = map[string]int{}
+			b.measuredAt = map[string]time.Time{}
 		}
 		b.observedLimits[key] = limit
+		b.measuredAt[key] = b.now()
 	}
-	total := b.ringLimitLocked(limit)
+	b.applyLimitLocked(limit)
+}
+
+// applyLimitLocked recomputes the ring total and logs when it moves.
+func (b *dailyBudget) applyLimitLocked(latest int) {
+	total := b.ringLimitLocked(latest)
 	if b.limit == total {
 		return
 	}
@@ -167,6 +179,91 @@ func (b *dailyBudget) setRingSize(n int) {
 	b.ringSize = n
 }
 
+// setRing records the current credentials by fingerprint and drops any limit
+// held for a credential that is no longer in the ring.
+func (b *dailyBudget) setRing(fingerprints []string) {
+	if b == nil || len(fingerprints) == 0 {
+		return
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.ringSize = len(fingerprints)
+	b.ringKeys = make(map[string]struct{}, len(fingerprints))
+	for _, fp := range fingerprints {
+		b.ringKeys[fp] = struct{}{}
+	}
+	pruned := false
+	for fp := range b.observedLimits {
+		if _, ok := b.ringKeys[fp]; !ok {
+			delete(b.observedLimits, fp)
+			delete(b.measuredAt, fp)
+			pruned = true
+		}
+	}
+	if pruned && len(b.observedLimits) > 0 {
+		b.applyLimitLocked(0)
+	}
+}
+
+// needsProbe reports whether a credential's allowance is unknown or older than
+// dailyLimitFreshFor.
+func (b *dailyBudget) needsProbe(fingerprint string) bool {
+	if b == nil {
+		return false
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	at, ok := b.measuredAt[fingerprint]
+	return !ok || b.now().Sub(at) > dailyLimitFreshFor
+}
+
+// restoreLimits loads persisted limits for credentials still in the ring.
+func (b *dailyBudget) restoreLimits(stored map[string]dailyBudgetLimit) int {
+	if b == nil {
+		return 0
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	n := 0
+	for fp, l := range stored {
+		if l.Limit <= 0 || l.At.IsZero() {
+			continue
+		}
+		if b.ringKeys != nil {
+			if _, ok := b.ringKeys[fp]; !ok {
+				continue
+			}
+		}
+		if b.observedLimits == nil {
+			b.observedLimits = map[string]int{}
+			b.measuredAt = map[string]time.Time{}
+		}
+		b.observedLimits[fp], b.measuredAt[fp] = l.Limit, l.At
+		n++
+	}
+	if n > 0 {
+		b.applyLimitLocked(0)
+	}
+	return n
+}
+
+// snapshotLimits is the limits worth persisting: those of credentials still in
+// the ring.
+func (b *dailyBudget) snapshotLimits() map[string]dailyBudgetLimit {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	out := make(map[string]dailyBudgetLimit, len(b.observedLimits))
+	for fp, limit := range b.observedLimits {
+		if b.ringKeys != nil {
+			if _, ok := b.ringKeys[fp]; !ok {
+				continue
+			}
+		}
+		out[fp] = dailyBudgetLimit{Limit: limit, At: b.measuredAt[fp]}
+	}
+	return out
+}
+
 // noteObservedDailyLimit hands a limit read from a response to the source's
 // budget. Called from the governor, which sees the headers.
 func noteObservedDailyLimit(source, key string, limit int) {
@@ -206,9 +303,13 @@ func keyFingerprint(key string) string {
 	return hex.EncodeToString(sum[:6])
 }
 
-// noteKeyRingSize records how many credentials a source rotates through.
-func noteKeyRingSize(source string, n int) {
-	dailyBudgetFor(source).setRingSize(n)
+// noteKeyRing records the credentials a source rotates through.
+func noteKeyRing(source string, keys []string) {
+	fps := make([]string, len(keys))
+	for i, k := range keys {
+		fps[i] = keyFingerprint(k)
+	}
+	dailyBudgetFor(source).setRing(fps)
 }
 
 func (b *dailyBudget) log() *slog.Logger {
@@ -392,7 +493,19 @@ type dailyBudgetSnapshot struct {
 	// Marks is today's crossings per source, so a restart mid-day does not
 	// forget when the cut-off went.
 	Marks map[string]dailyBudgetMarks `json:"marks,omitempty"`
+	// Limits is each source's per-key allowance and when it was read, so a
+	// restart does not measure again. Additive: older files lack it.
+	Limits map[string]map[string]dailyBudgetLimit `json:"limits,omitempty"`
 }
+
+// dailyBudgetLimit is one credential's allowance, keyed by fingerprint.
+type dailyBudgetLimit struct {
+	Limit int       `json:"limit"`
+	At    time.Time `json:"at"`
+}
+
+// dailyLimitFreshFor is how long a measured allowance is trusted.
+const dailyLimitFreshFor = 24 * time.Hour
 
 // dailyBudgetMarks is when a day passed its thresholds, in UTC hours. Both are
 // absent rather than zero when the day never reached them: an hour of 0 is
@@ -448,6 +561,13 @@ func SetDailyBudgetPath(dir string, logger *slog.Logger) {
 		return
 	}
 
+	// Limits outlive the day: they describe the plan, not the count.
+	for source, stored := range snap.Limits {
+		if n := dailyBudgetFor(source).restoreLimits(stored); n > 0 {
+			logger.Info("Restored a source's measured key allowances", "source", source, "keys", n)
+		}
+	}
+
 	today := time.Now().UTC().Truncate(dailyWindow)
 	if !snap.Day.UTC().Truncate(dailyWindow).Equal(today) {
 		logger.Info("Discarded daily allowance counts from an earlier day",
@@ -484,7 +604,11 @@ func SaveDailyBudgets() error {
 	now := time.Now().UTC().Truncate(dailyWindow)
 	spent := make(map[string]int)
 	marks := make(map[string]dailyBudgetMarks)
+	limits := make(map[string]map[string]dailyBudgetLimit)
 	for source, b := range dailyBudgets() {
+		if l := b.snapshotLimits(); len(l) > 0 {
+			limits[source] = l
+		}
 		b.mu.Lock()
 		b.rollLocked(b.now())
 		spent[source] = b.spent
@@ -496,9 +620,12 @@ func SaveDailyBudgets() error {
 	if len(marks) == 0 {
 		marks = nil
 	}
+	if len(limits) == 0 {
+		limits = nil
+	}
 
 	data, err := json.Marshal(dailyBudgetSnapshot{
-		Shape: dailyBudgetShape, Day: now, Spent: spent, Marks: marks,
+		Shape: dailyBudgetShape, Day: now, Spent: spent, Marks: marks, Limits: limits,
 		History: rollHistory(path, now),
 	})
 	if err != nil {

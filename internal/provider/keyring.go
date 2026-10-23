@@ -180,6 +180,16 @@ func (r *keyRing) set(raw string) {
 	r.cursor, r.served = 0, 0
 }
 
+// all returns a copy of the credentials in the ring.
+func (r *keyRing) all() []string {
+	if r == nil {
+		return nil
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]string(nil), r.keys...)
+}
+
 // size reports how many credentials the ring holds, for the admin surface.
 func (r *keyRing) size() int {
 	if r == nil {

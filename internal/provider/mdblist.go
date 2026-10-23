@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"xrdb_rewrite/internal/logging"
@@ -44,6 +45,9 @@ type MDBList struct {
 	knownType sync.Map // imdb id -> "movie" | "show"
 	// batcher joins sweep lookups into one request; nil when batching is off.
 	batcher *mdblistBatcher
+	// probing is set once startup has loaded the budgets; probeMu serialises runs.
+	probing atomic.Bool
+	probeMu sync.Mutex
 }
 
 // NewMDBList creates an MDBList provider.
@@ -54,7 +58,7 @@ func NewMDBList(apiKey string) *MDBList {
 	}
 	// The budget counts every key's calls together, so it needs to know how many
 	// there are to hold its reserve against the ring rather than one key.
-	noteKeyRingSize("mdblist", m.keys.size())
+	noteKeyRing("mdblist", m.keys.all())
 	if size := mdblistBatchSize(); size > 1 {
 		m.batcher = newMDBListBatcher(m, size, mdblistBatchWindow())
 	}
@@ -69,7 +73,10 @@ func (m *MDBList) UpdateCredentials(apiKey string) {
 	m.mu.Lock()
 	m.keys.set(apiKey)
 	m.mu.Unlock()
-	noteKeyRingSize("mdblist", m.keys.size())
+	noteKeyRing("mdblist", m.keys.all())
+	if m.probing.Load() {
+		go m.probeKeys(context.Background(), dailyBudgetFor("mdblist"))
+	}
 }
 
 // HasCredentials reports whether the provider can make authenticated requests.
