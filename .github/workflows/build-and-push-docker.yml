@@ -187,6 +187,7 @@ jobs:
           images: ${{ needs.version.outputs.image }}
           labels: |
             org.opencontainers.image.title=XRDB
+            org.opencontainers.image.licenses=AGPL-3.0-only
             org.opencontainers.image.description=XRDB generates poster, backdrop, and logo images with ratings overlays on the fly.
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}

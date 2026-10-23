@@ -157,6 +157,10 @@ is unavailable, so XRDB reads each page far less often than once per render.
 
 The bottom fade, bottom blur and bottom logo options were inspired by Posters+ by Umbra.
 
+## Licence
+
+XRDB is licensed under the [GNU Affero General Public License v3.0](LICENSE). If you run a modified version as a network service, you must offer its source to the people using it. Earlier releases were MIT licensed; see [NOTICE](NOTICE).
+
 ---
 
 XRDB by [IbbyLabs](https://github.com/IbbyLabs) ·
