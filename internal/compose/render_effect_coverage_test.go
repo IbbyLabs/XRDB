@@ -74,6 +74,7 @@ func richMeta() provider.MediaMeta {
 		TMDBID:         "27205",
 		ContentRating:  "PG-13",
 		ReleaseStatus:  "digital",
+		Disc:           provider.DiscRelease{Landed: true, Format: "Blu-ray"},
 		Genres:         []string{"Science Fiction", "Drama", "Thriller", "Animation"},
 		IsAnime:        true,
 		PosterTextless: true,

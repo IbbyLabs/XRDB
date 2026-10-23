@@ -1663,10 +1663,14 @@ export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
           )}
         </>
       )}
-      <ToggleField id={`${uid}-release-hide-digital`} label="Hide Digital Release"
+      <ToggleField id={`${uid}-release-hide-digital`} label="Hide once out at home"
         checked={config.releaseStatusHideDigital}
         onChange={v => onUpdate('releaseStatusHideDigital', v)}
-        hint="Show only In Cinemas and upcoming release dates. A title already out on digital gets no badge." />
+        hint="Show only In Cinemas and upcoming release dates. A title already out on digital or disc gets no badge." />
+      <ToggleField id={`${uid}-release-prefer-disc`} label="Prefer disc"
+        checked={config.releaseStatusPreferDisc}
+        onChange={v => onUpdate('releaseStatusPreferDisc', v)}
+        hint="Show the disc release over digital: its date while it is ahead, then On Disc for 180 days." />
       <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
         scaleKey="releaseStatusScale" offXKey="releaseStatusOffsetX" offYKey="releaseStatusOffsetY" />
     </FineGroup>

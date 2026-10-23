@@ -49,12 +49,48 @@ func TestNextReleaseIgnoresPastAndUndatedEntries(t *testing.T) {
 	}
 }
 
-// Physical and TV releases are not states the badge names.
+// TV releases are not a state the badge names.
 func TestNextReleaseIgnoresKindsTheBadgeCannotName(t *testing.T) {
 	now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
 
-	if got := nextRelease([]releaseEntry{{kind: 5, date: at("2026-09-09")}}, now, allBadgeReleaseKinds...); got.Kind != "" {
-		t.Errorf("got %+v, want nothing for a physical release", got)
+	if got := nextRelease([]releaseEntry{{kind: releaseTypeTV, date: at("2026-09-09")}}, now, allBadgeReleaseKinds...); got.Kind != "" {
+		t.Errorf("got %+v, want nothing for a TV release", got)
+	}
+}
+
+// The earliest of digital or physical still ahead wins.
+func TestNextReleaseNamesAPhysicalReleaseAhead(t *testing.T) {
+	now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	entries := []releaseEntry{
+		{kind: releaseTypeDigital, date: at("2026-06-10")},
+		{kind: releaseTypePhysical, date: at("2026-05-20"), note: "4K UHD Blu-ray"},
+	}
+
+	got := nextRelease(entries, now, releaseTypeDigital, releaseTypePhysical)
+	if got.Kind != "physical" || got.Format != "4K" {
+		t.Fatalf("got %+v, want physical 4K", got)
+	}
+	if want := time.Date(2026, 5, 20, 0, 0, 0, 0, time.UTC); !got.Date.Equal(want) {
+		t.Errorf("date = %v, want %v", got.Date, want)
+	}
+	if d := nextRelease(entries[:1], now, releaseTypeDigital, releaseTypePhysical); d.Kind != "digital" || d.Format != "" {
+		t.Errorf("digital only: got %+v", d)
+	}
+}
+
+func TestDiscFormatReadsOnlyKnownFormats(t *testing.T) {
+	for note, want := range map[string]string{
+		"":                    "",
+		"Blu-ray":             "Blu-ray",
+		"bluray + digital":    "Blu-ray",
+		"DVD":                 "DVD",
+		"4K UHD Blu-ray":      "4K",
+		"Steelbook":           "",
+		"Collector's Edition": "",
+	} {
+		if got := discFormat(note); got != want {
+			t.Errorf("discFormat(%q) = %q, want %q", note, got, want)
+		}
 	}
 }
 

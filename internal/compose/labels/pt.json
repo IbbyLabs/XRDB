@@ -10,6 +10,8 @@
     "oscar_winner": "VENCEDOR DO OSCAR",
     "release_cinemas": "LANÇAMENTO NOS CINEMAS",
     "release_digital": "LANÇAMENTO DIGITAL",
+    "release_physical_disc": "DISCO",
+    "release_physical_on": "EM",
     "stinger_both": "CENA EXTRA (STINGER)",
     "stinger_mid": "CENA NO MEIO DOS CRÉDITOS",
     "stinger_post": "CENA PÓS-CRÉDITOS",

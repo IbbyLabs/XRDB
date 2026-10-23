@@ -737,6 +737,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 					Certification string `json:"certification"`
 					Type          int    `json:"type"`         // 2,3 = theatrical; 4 = digital; 5 = physical
 					ReleaseDate   string `json:"release_date"` // ISO 8601
+					Note          string `json:"note"`
 				} `json:"release_dates"`
 			} `json:"results"`
 		} `json:"release_dates"`
@@ -893,10 +894,11 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		var entries []releaseEntry
 		for _, r := range result.ReleaseDates.Results {
 			for _, d := range r.Dates {
-				entries = append(entries, releaseEntry{kind: d.Type, date: d.ReleaseDate})
+				entries = append(entries, releaseEntry{kind: d.Type, date: d.ReleaseDate, note: d.Note})
 			}
 		}
 		meta.ReleaseStatus = resolveReleaseStatus(entries, time.Now())
+		meta.Disc.Landed, meta.Disc.Format = recentDisc(entries, time.Now())
 		// A date is region-scoped where the status is not. A digital date in one
 		// country says nothing to a viewer in another, and a wrong date reads as
 		// authoritative where a missing badge does not.
@@ -907,18 +909,28 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 					continue
 				}
 				for _, d := range r.Dates {
-					regional = append(regional, releaseEntry{kind: d.Type, date: d.ReleaseDate})
+					regional = append(regional, releaseEntry{kind: d.Type, date: d.ReleaseDate, note: d.Note})
 				}
 			}
 			// A title in cinemas has one question left, which is when it reaches
-			// home. A theatrical date still ahead there is another region's or a
-			// re-release and is not that answer.
+			// home, on digital or on disc. A theatrical date still ahead there is
+			// another region's or a re-release and is not that answer.
 			kinds := allBadgeReleaseKinds
 			if meta.ReleaseStatus == "cinemas" {
-				kinds = []int{releaseTypeDigital}
+				kinds = []int{releaseTypeDigital, releaseTypePhysical}
 			}
 			meta.UpcomingRelease = nextRelease(regional, time.Now(), kinds...)
 		}
+		var regionalDisc []releaseEntry
+		for _, r := range result.ReleaseDates.Results {
+			if !strings.EqualFold(r.Iso3166, releaseRegion(opts.WatchProvidersCountry)) {
+				continue
+			}
+			for _, d := range r.Dates {
+				regionalDisc = append(regionalDisc, releaseEntry{kind: d.Type, date: d.ReleaseDate, note: d.Note})
+			}
+		}
+		meta.Disc.Next = nextRelease(regionalDisc, time.Now(), releaseTypePhysical)
 	}
 
 	// Content rating — prefer US certification
@@ -1396,6 +1408,7 @@ const cinemaRunWindow = 180 * 24 * time.Hour
 type releaseEntry struct {
 	kind int
 	date string
+	note string
 }
 
 // releaseLanded reports whether any entry of one of the given kinds has already
@@ -1432,7 +1445,7 @@ func releaseRegion(country string) string {
 }
 
 // allBadgeReleaseKinds are the TMDB release types the badge can name.
-var allBadgeReleaseKinds = []int{releaseTypeTheatricalLimited, releaseTypeTheatrical, releaseTypeDigital}
+var allBadgeReleaseKinds = []int{releaseTypeTheatricalLimited, releaseTypeTheatrical, releaseTypeDigital, releaseTypePhysical}
 
 // nextRelease returns the soonest release still ahead, across the given kinds. An undated entry counts as landed, as it does for the status, so
 // a title TMDB cannot date draws nothing.
@@ -1450,6 +1463,8 @@ func nextRelease(entries []releaseEntry, now time.Time, kinds ...int) UpcomingRe
 		switch e.kind {
 		case releaseTypeDigital:
 			kind = "digital"
+		case releaseTypePhysical:
+			kind = "physical"
 		case releaseTypeTheatricalLimited, releaseTypeTheatrical:
 			kind = "cinemas"
 		default:
@@ -1461,19 +1476,40 @@ func nextRelease(entries []releaseEntry, now time.Time, kinds ...int) UpcomingRe
 		}
 		if out.Date.IsZero() || ts.Before(out.Date) {
 			out = UpcomingRelease{Kind: kind, Date: ts}
+			if kind == "physical" {
+				out.Format = discFormat(e.note)
+			}
 		}
 	}
 	return out
+}
+
+// discFormat names the disc format a physical release's free-text note gives,
+// blank when it names none of 4K, Blu-ray or DVD.
+func discFormat(note string) string {
+	n := strings.ToLower(note)
+	switch {
+	case strings.Contains(n, "4k") || strings.Contains(n, "uhd"):
+		return "4K"
+	case strings.Contains(n, "blu-ray") || strings.Contains(n, "bluray") || strings.Contains(n, "blu ray"):
+		return "Blu-ray"
+	case strings.Contains(n, "dvd"):
+		return "DVD"
+	}
+	return ""
 }
 
 // resolveReleaseStatus picks the badge-worthy release state, preferring digital
 // because a title available at home has moved past its cinema run. In cinemas
 // is dated from the first theatrical release, so a re-release does not count.
 func resolveReleaseStatus(entries []releaseEntry, now time.Time) string {
-	switch {
-	case releaseLanded(entries, now, releaseTypeDigital):
+	if releaseLanded(entries, now, releaseTypeDigital) {
 		return "digital"
-	case releaseLanded(entries, now, releaseTypePhysical, releaseTypeTV):
+	}
+	if landed, _ := recentDisc(entries, now); landed {
+		return "physical"
+	}
+	if releaseLanded(entries, now, releaseTypePhysical, releaseTypeTV) {
 		return ""
 	}
 	first, ok := firstTheatricalDate(entries, now)
@@ -1481,6 +1517,30 @@ func resolveReleaseStatus(entries []releaseEntry, now time.Time) string {
 		return "cinemas"
 	}
 	return ""
+}
+
+// recentDisc reports whether the first disc release landed inside the run
+// window, with the format its note names. An older disc is the title long out
+// at home, which draws nothing.
+func recentDisc(entries []releaseEntry, now time.Time) (bool, string) {
+	var first time.Time
+	var format string
+	for _, e := range entries {
+		if e.kind != releaseTypePhysical {
+			continue
+		}
+		ts, err := time.Parse("2006-01-02T15:04:05.000Z", e.date)
+		if err != nil || ts.After(now) {
+			continue
+		}
+		if first.IsZero() || ts.Before(first) {
+			first, format = ts, discFormat(e.note)
+		}
+	}
+	if first.IsZero() || now.Sub(first) >= cinemaRunWindow {
+		return false, ""
+	}
+	return true, format
 }
 
 // firstTheatricalDate returns the earliest landed theatrical date. An undated

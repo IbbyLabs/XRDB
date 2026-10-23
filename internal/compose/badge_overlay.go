@@ -808,6 +808,26 @@ func releaseStatusLabel(status, lang string) (string, color.NRGBA, bool) {
 	return "", color.NRGBA{}, false
 }
 
+// physicalReleaseAccent marks a disc release, upcoming or landed.
+var physicalReleaseAccent = color.NRGBA{R: 168, G: 85, B: 247, A: 255}
+
+// discReleaseLabel names a landed disc release, "On Disc" or the format its note
+// gave, keeping the format's own spelling outside upper case.
+func discReleaseLabel(format, lang, mode string) (string, color.NRGBA, bool) {
+	on := UIString("release_physical_on", lang, "ON")
+	noun := format
+	if noun == "" {
+		noun = UIString("release_physical_disc", lang, "DISC")
+	}
+	if mode == "upper" {
+		return on + " " + strings.ToUpper(noun), physicalReleaseAccent, true
+	}
+	if format == "" {
+		noun = releaseLabelTitleCase(noun)
+	}
+	return releaseLabelTitleCase(on) + " " + noun, physicalReleaseAccent, true
+}
+
 // upcomingReleaseLabel names a release still ahead of a title. It takes the
 // same accents as the landed states, so one badge reads as one thing.
 func upcomingReleaseLabel(u provider.UpcomingRelease) (string, color.NRGBA, bool) {
@@ -824,6 +844,9 @@ func upcomingReleaseLabelAs(u provider.UpcomingRelease, dateFormat string, norma
 		return "", color.NRGBA{}, false
 	}
 	_, accent, ok := releaseStatusLabel(u.Kind, "")
+	if u.Kind == "physical" {
+		accent, ok = physicalReleaseAccent, true
+	}
 	if !ok {
 		return "", color.NRGBA{}, false
 	}
@@ -832,8 +855,14 @@ func upcomingReleaseLabelAs(u provider.UpcomingRelease, dateFormat string, norma
 		layout = releaseDateLayouts[""]
 	}
 	word := "Cinemas"
-	if u.Kind == "digital" {
+	switch u.Kind {
+	case "digital":
 		word = "Digital"
+	case "physical":
+		word = "Disc"
+		if u.Format != "" {
+			word = u.Format
+		}
 	}
 	label := word + " " + u.Date.Format(layout)
 	if !normal {

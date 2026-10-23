@@ -7,10 +7,19 @@ import (
 	"time"
 )
 
+// DiscRelease is a title's physical release: whether one landed inside the
+// recent window, its format, and the next one still ahead in the region.
+type DiscRelease struct {
+	Landed bool
+	Format string // "4K", "Blu-ray", "DVD" or blank
+	Next   UpcomingRelease
+}
+
 // UpcomingRelease is a release a title has not reached yet.
 type UpcomingRelease struct {
-	Kind string    // "digital" | "cinemas"
-	Date time.Time // in the region the config asked for
+	Kind   string    // "digital" | "cinemas" | "physical"
+	Date   time.Time // in the region the config asked for
+	Format string    // physical only: "4K", "Blu-ray", "DVD" or blank
 }
 
 // WatchProvider is a streaming/rental service that carries a media item.
@@ -77,7 +86,10 @@ type MediaMeta struct {
 	// individual poster or backdrop.
 	Adult         bool
 	ContentRating string // e.g. "TV-MA", "R", "PG-13" (may be empty)
-	ReleaseStatus string // "digital" | "cinemas" (may be empty; movies only)
+	ReleaseStatus string // "digital" | "physical" | "cinemas" (may be empty; movies only)
+	// Disc is the title's disc release, read whatever ReleaseStatus settled on,
+	// for a config that prefers disc over digital.
+	Disc DiscRelease
 	// UpcomingRelease is the next release still ahead of a title, empty once
 	// anything has landed. Scoped to one region: a date from elsewhere reads as
 	// authoritative and is not the viewer's.

@@ -452,7 +452,8 @@ export interface ConfigState {
   releaseStatus: boolean;
   releaseStatusPos: string;
   releaseStatusScale: number;
-  releaseStatusHideDigital: boolean; // draw nothing for a title already out on digital
+  releaseStatusHideDigital: boolean; // draw nothing for a title already out on digital or disc
+  releaseStatusPreferDisc: boolean; // a disc release wins over digital
   releaseStatusLabelColor: string; // "#RRGGBB"; "" = the state's accent
   releaseStatusBackgroundOpacity: number; // 0 = the style's own
   releaseStatusCase: string; // upper | normal | title; "" = normal on pill, upper otherwise
@@ -722,6 +723,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   releaseStatusPos: 'inherit',
   releaseStatusScale: 0,
   releaseStatusHideDigital: false,
+  releaseStatusPreferDisc: false,
   releaseStatusLabelColor: '',
   releaseStatusBackgroundOpacity: 0,
   releaseStatusCase: '',

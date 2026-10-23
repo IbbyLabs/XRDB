@@ -29,7 +29,7 @@ func TestUpcomingReleaseLabelIsEmptyWithoutADate(t *testing.T) {
 		{},
 		{Kind: "cinemas"},
 		{Date: time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC)},
-		{Kind: "physical", Date: time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC)},
+		{Kind: "tv", Date: time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC)},
 	} {
 		if _, _, ok := upcomingReleaseLabel(u); ok {
 			t.Errorf("%+v drew a badge", u)
@@ -62,5 +62,33 @@ func TestUpcomingReleaseLabelFormatsAndCase(t *testing.T) {
 	}
 	if got := releaseLabelInCase("IN CINEMAS", "upper"); got != "IN CINEMAS" {
 		t.Errorf("upper case = %q", got)
+	}
+}
+
+func TestUpcomingPhysicalReleaseNamesItsFormat(t *testing.T) {
+	d := time.Date(2026, 11, 3, 0, 0, 0, 0, time.UTC)
+	for format, want := range map[string]string{"": "DISC 3 NOV 2026", "Blu-ray": "BLU-RAY 3 NOV 2026", "4K": "4K 3 NOV 2026"} {
+		got, accent, ok := upcomingReleaseLabel(provider.UpcomingRelease{Kind: "physical", Date: d, Format: format})
+		if !ok || got != want {
+			t.Errorf("format %q: got %q ok=%v, want %q", format, got, ok, want)
+		}
+		if accent != physicalReleaseAccent {
+			t.Errorf("format %q: accent %v, want %v", format, accent, physicalReleaseAccent)
+		}
+	}
+}
+
+func TestDiscReleaseLabelKeepsTheFormatSpelling(t *testing.T) {
+	for _, tc := range []struct{ format, mode, want string }{
+		{"", "upper", "ON DISC"},
+		{"", "normal", "On Disc"},
+		{"Blu-ray", "upper", "ON BLU-RAY"},
+		{"Blu-ray", "normal", "On Blu-ray"},
+		{"DVD", "title", "On DVD"},
+	} {
+		got, accent, ok := discReleaseLabel(tc.format, "", tc.mode)
+		if !ok || got != tc.want || accent != physicalReleaseAccent {
+			t.Errorf("%q %s: got %q %v ok=%v, want %q", tc.format, tc.mode, got, accent, ok, tc.want)
+		}
 	}
 }

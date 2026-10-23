@@ -203,26 +203,28 @@ type Config struct {
 	ReleaseStatusOffsetX int    `json:"releaseStatusOffsetX,omitempty"`
 	ReleaseStatusOffsetY int    `json:"releaseStatusOffsetY,omitempty"`
 	ReleaseStatusScale   int    `json:"releaseStatusScale,omitempty"`
-	// ReleaseStatusHideDigital draws nothing for a title already out on digital.
-	ReleaseStatusHideDigital bool   `json:"releaseStatusHideDigital,omitempty"`
-	TopRated                 bool   `json:"topRated,omitempty"`
-	TopRatedPos              string `json:"topRatedPos,omitempty"`
-	TopRatedOffsetX          int    `json:"topRatedOffsetX,omitempty"`
-	TopRatedOffsetY          int    `json:"topRatedOffsetY,omitempty"`
-	TopRatedScale            int    `json:"topRatedScale,omitempty"`
-	Awards                   bool   `json:"awards,omitempty"`
-	AwardsPos                string `json:"awardsPos,omitempty"`
-	AwardsOffsetX            int    `json:"awardsOffsetX,omitempty"`
-	AwardsOffsetY            int    `json:"awardsOffsetY,omitempty"`
-	AwardsScale              int    `json:"awardsScale,omitempty"`
-	Stinger                  bool   `json:"stinger,omitempty"`
-	StingerPos               string `json:"stingerPos,omitempty"`
-	StingerOffsetX           int    `json:"stingerOffsetX,omitempty"`
-	StingerOffsetY           int    `json:"stingerOffsetY,omitempty"`
-	StingerScale             int    `json:"stingerScale,omitempty"`
-	Genre                    bool   `json:"genre"`
-	GenrePos                 string `json:"genrePos,omitempty"`
-	Providers                bool   `json:"providers"`
+	// ReleaseStatusHideDigital draws nothing for a title already out at home, on digital or disc.
+	ReleaseStatusHideDigital bool `json:"releaseStatusHideDigital,omitempty"`
+	// ReleaseStatusPreferDisc lets a disc release win over digital, upcoming and landed.
+	ReleaseStatusPreferDisc bool   `json:"releaseStatusPreferDisc,omitempty"`
+	TopRated                bool   `json:"topRated,omitempty"`
+	TopRatedPos             string `json:"topRatedPos,omitempty"`
+	TopRatedOffsetX         int    `json:"topRatedOffsetX,omitempty"`
+	TopRatedOffsetY         int    `json:"topRatedOffsetY,omitempty"`
+	TopRatedScale           int    `json:"topRatedScale,omitempty"`
+	Awards                  bool   `json:"awards,omitempty"`
+	AwardsPos               string `json:"awardsPos,omitempty"`
+	AwardsOffsetX           int    `json:"awardsOffsetX,omitempty"`
+	AwardsOffsetY           int    `json:"awardsOffsetY,omitempty"`
+	AwardsScale             int    `json:"awardsScale,omitempty"`
+	Stinger                 bool   `json:"stinger,omitempty"`
+	StingerPos              string `json:"stingerPos,omitempty"`
+	StingerOffsetX          int    `json:"stingerOffsetX,omitempty"`
+	StingerOffsetY          int    `json:"stingerOffsetY,omitempty"`
+	StingerScale            int    `json:"stingerScale,omitempty"`
+	Genre                   bool   `json:"genre"`
+	GenrePos                string `json:"genrePos,omitempty"`
+	Providers               bool   `json:"providers"`
 	// ProvidersCountry is the country the render is for. It picks the streaming
 	// services shown, the release date on an unreleased title, and which of a
 	// language'''s regional posters is preferred where TMDB has more than one.
@@ -852,6 +854,7 @@ type raw struct {
 	ReleaseStatusOffsetY          *int      `json:"releaseStatusOffsetY"`
 	ReleaseStatusScale            *int      `json:"releaseStatusScale"`
 	ReleaseStatusHideDigital      *bool     `json:"releaseStatusHideDigital"`
+	ReleaseStatusPreferDisc       *bool     `json:"releaseStatusPreferDisc"`
 	TopRated                      *bool     `json:"topRated"`
 	TopRatedPos                   *string   `json:"topRatedPos"`
 	TopRatedOffsetX               *int      `json:"topRatedOffsetX"`
@@ -2165,6 +2168,9 @@ func parseRing(cfg *Config, r *raw) {
 	if r.ReleaseStatusHideDigital != nil {
 		cfg.ReleaseStatusHideDigital = *r.ReleaseStatusHideDigital
 	}
+	if r.ReleaseStatusPreferDisc != nil {
+		cfg.ReleaseStatusPreferDisc = *r.ReleaseStatusPreferDisc
+	}
 	if r.TopRatedOffsetX != nil {
 		cfg.TopRatedOffsetX = clampInt(*r.TopRatedOffsetX, -1200, 1200)
 	}
@@ -2733,6 +2739,7 @@ func CacheKey(cfg Config) string {
 		ReleaseStatusOffsetY          int            `json:"releaseStatusOffsetY,omitempty"`
 		ReleaseStatusScale            int            `json:"releaseStatusScale,omitempty"`
 		ReleaseStatusHideDigital      bool           `json:"releaseStatusHideDigital,omitempty"`
+		ReleaseStatusPreferDisc       bool           `json:"releaseStatusPreferDisc,omitempty"`
 		TopRatedOffsetX               int            `json:"topRatedOffsetX,omitempty"`
 		TopRatedOffsetY               int            `json:"topRatedOffsetY,omitempty"`
 		TopRatedScale                 int            `json:"topRatedScale,omitempty"`
@@ -2865,6 +2872,7 @@ func CacheKey(cfg Config) string {
 		ReleaseStatusOffsetY:          cfg.ReleaseStatusOffsetY,
 		ReleaseStatusScale:            cfg.ReleaseStatusScale,
 		ReleaseStatusHideDigital:      cfg.ReleaseStatusHideDigital,
+		ReleaseStatusPreferDisc:       cfg.ReleaseStatusPreferDisc,
 		TopRatedOffsetX:               cfg.TopRatedOffsetX,
 		TopRatedOffsetY:               cfg.TopRatedOffsetY,
 		TopRatedScale:                 cfg.TopRatedScale,

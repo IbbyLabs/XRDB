@@ -1663,10 +1663,24 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// still ahead answers when it reaches home rather than repeating where
 		// it is now.
 		mode := releaseCase(req.Config)
-		label, accent, ok := upcomingReleaseLabelAs(meta.UpcomingRelease, req.Config.ReleaseStatusDateFormat, mode != "upper")
-		if !ok && (!req.Config.ReleaseStatusHideDigital || meta.ReleaseStatus != "digital") {
-			label, accent, ok = releaseStatusLabel(meta.ReleaseStatus, req.Config.Language)
-			label = releaseLabelInCase(label, mode)
+		upcoming, status := meta.UpcomingRelease, meta.ReleaseStatus
+		if req.Config.ReleaseStatusPreferDisc {
+			if meta.Disc.Next.Kind != "" {
+				upcoming = meta.Disc.Next
+			}
+			if meta.Disc.Landed {
+				status = "physical"
+			}
+		}
+		label, accent, ok := upcomingReleaseLabelAs(upcoming, req.Config.ReleaseStatusDateFormat, mode != "upper")
+		outAtHome := status == "digital" || status == "physical"
+		if !ok && (!req.Config.ReleaseStatusHideDigital || !outAtHome) {
+			if status == "physical" {
+				label, accent, ok = discReleaseLabel(meta.Disc.Format, req.Config.Language, mode)
+			} else {
+				label, accent, ok = releaseStatusLabel(status, req.Config.Language)
+				label = releaseLabelInCase(label, mode)
+			}
 		}
 		if ok {
 			drawReleaseBadge(composed, label, accent, req.Config.ReleaseStatusPos, scale, occ, releaseStatusOptsFromConfig(req.Config))
@@ -2689,6 +2703,7 @@ func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta 
 	if needsRelease {
 		meta.ReleaseStatus = extra.ReleaseStatus
 		meta.UpcomingRelease = extra.UpcomingRelease
+		meta.Disc = extra.Disc
 	}
 	// Carried whenever TMDB was consulted at all, since it is the only source
 	// that knows. This does not reach a render that needs no top-up: an adult

@@ -13,6 +13,8 @@
     "placeholder_show": "SHOW",
     "release_cinemas": "IN CINEMAS",
     "release_digital": "DIGITAL RELEASE",
+    "release_physical_disc": "DISC",
+    "release_physical_on": "ON",
     "stinger_both": "STINGER",
     "stinger_mid": "MID-CREDITS",
     "stinger_post": "POST-CREDITS",
