@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.137.0](https://github.com/IbbyLabs/XRDB/compare/v3.136.0...v3.137.0) (2026-10-23)
+
+
+### Added
+
+* **imdb:** refresh IMDb ratings daily, keep top-rated weekly ([c3ade21](https://github.com/IbbyLabs/XRDB/commit/c3ade21ee745bffd1e267fd2c95040c2712b3c6a))
+
 ## [3.136.0](https://github.com/IbbyLabs/XRDB/compare/v3.135.0...v3.136.0) (2026-10-23)
 
 
