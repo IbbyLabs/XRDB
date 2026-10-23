@@ -10,7 +10,7 @@ simpler configurator.
 | | v2 | v3 |
 |---|---|---|
 | Containers | App (+ optional extras) | **One** — UI and API on one port |
-| Image | `ghcr.io/ibbylabs/xrdb:latest` (v2.x) | `ghcr.io/ibbylabs/xrdb:dev` |
+| Image | `ghcr.io/ibbylabs/xrdb:latest` (v2.x) | `ghcr.io/ibbylabs/xrdb:latest` (v3.x) |
 | Port | `3000` | `8787` (`XRDB_ADDR`) |
 | Data volume | `/app/data` | `/data` (SQLite + render cache) |
 | Render stack | Node.js + Sharp | Pure Go |
@@ -23,7 +23,7 @@ simpler configurator.
    ```yaml
    services:
      xrdb:
-       image: ghcr.io/ibbylabs/xrdb:dev
+       image: ghcr.io/ibbylabs/xrdb:latest
        ports: ["8787:8787"]
        volumes: ["xrdb-data:/data"]
        environment:
