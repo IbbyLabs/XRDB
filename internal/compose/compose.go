@@ -902,7 +902,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		}
 		// The source is refusing on rate-limit grounds. Waiting for it to say so
 		// again costs the render seconds, so take the remembered value instead.
-		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
+		key := ratingsKey(prov.Name(), req.ContentType, req.MediaID)
 		if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
 			p.log().InfoContext(ctx, "A ratings source is held out; serving a remembered rating",
 				"id", logging.RequestID(ctx), "source", prov.Name(),
@@ -929,7 +929,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	// a recorded failure cools the source off for every caller, which is the
 	// outcome the reserve exists to prevent.
 	if !ownerKeyed && provider.TreatedAsBulk(provider.CallerClassFrom(ctx)) && !provider.BulkCallerMayReach(prov.Name()) {
-		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
+		key := ratingsKey(prov.Name(), req.ContentType, req.MediaID)
 		if p.health != nil {
 			if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
 				p.log().InfoContext(ctx, "A ratings source is held out; serving a remembered rating",
@@ -948,7 +948,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		}
 		return nil, false, fmt.Errorf("%s: %w", prov.Name(), provider.ErrBulkAllowanceHeld)
 	}
-	cacheKey := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
+	cacheKey := ratingsKey(prov.Name(), req.ContentType, req.MediaID)
 	// Concurrent renders of one title share a single fetch, so a follower's
 	// elapsed time is the leader's whole round trip and costs the source
 	// nothing. Timed apart from the fetch: the two are the same number to a

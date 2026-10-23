@@ -78,6 +78,18 @@ func (c *ratingsCache) roomForStreakLocked() bool {
 	return len(c.streaks) < absentStreakMax
 }
 
+// typelessRatingSources answer by IMDb id alone, so their answers are keyed
+// without the content type.
+var typelessRatingSources = map[string]bool{"wikidata": true}
+
+// ratingsKey is the cache and health key for one source's answer about a title.
+func ratingsKey(source, contentType, id string) string {
+	if typelessRatingSources[source] {
+		contentType = ""
+	}
+	return provider.GoodKey(source, contentType, id)
+}
+
 // absentHold is the term for the streak-th consecutive absence, counting from 0.
 func absentHold(source string, streak int) time.Duration {
 	if streak < 0 {
@@ -745,9 +757,8 @@ func (c *ratingsCache) Save() error {
 		if !now.Before(e.ExpiresAt) {
 			continue
 		}
-		// A restart starts with no health state, so a loaded absence could not
-		// be believed on arrival anyway.
-		if e.Meta == nil || len(e.Meta.Ratings) == 0 {
+		// An absence is kept too: trusted re-checks the source before it is served.
+		if e.Meta == nil {
 			continue
 		}
 		live[k] = e

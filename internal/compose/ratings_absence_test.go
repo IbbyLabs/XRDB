@@ -131,19 +131,15 @@ func TestAnAbsenceTakesItsOwnTermRatherThanTheAgeScaledOne(t *testing.T) {
 
 // Health starts empty after a restart, so a loaded absence could never be
 // believed on arrival.
-func TestAbsencesAreNotPersisted(t *testing.T) {
+func TestARestoredAbsenceIsServedOnlyWhileTheSourceAnswers(t *testing.T) {
 	dir := t.TempDir()
 	c := newRatingsCache(time.Hour, nil)
 	c.path = dir + "/ratings.json"
 	c.answering = func(string, string, time.Duration) bool { return true }
 
 	absent := provider.GoodKey("wikidata", "poster", "tt1")
-	rated := provider.GoodKey("wikidata", "poster", "tt2")
 	mustDo(t, c, absent, titleAge{}, func(context.Context) (*provider.MediaMeta, bool, error) {
 		return noRatings(), true, nil
-	})
-	mustDo(t, c, rated, titleAge{}, func(context.Context) (*provider.MediaMeta, bool, error) {
-		return oneRating("wikidata"), true, nil
 	})
 	if err := c.Save(); err != nil {
 		t.Fatal(err)
@@ -152,14 +148,41 @@ func TestAbsencesAreNotPersisted(t *testing.T) {
 	reloaded := newRatingsCache(time.Hour, nil)
 	reloaded.path = c.path
 	reloaded.load(slog.Default())
-
 	reloaded.mu.Lock()
-	defer reloaded.mu.Unlock()
-	if _, ok := reloaded.entries[absent]; ok {
-		t.Error("an absence survived the restart")
+	_, kept := reloaded.entries[absent]
+	reloaded.mu.Unlock()
+	if !kept {
+		t.Fatal("an absence did not survive the restart")
 	}
-	if _, ok := reloaded.entries[rated]; !ok {
-		t.Error("control: the rated answer did not survive, so the test proves nothing")
+
+	answering := false
+	reloaded.answering = func(string, string, time.Duration) bool { return answering }
+	var calls atomic.Int32
+	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
+		calls.Add(1)
+		return noRatings(), true, nil
+	}
+	mustDo(t, reloaded, absent, titleAge{}, fetch)
+	if calls.Load() != 1 {
+		t.Errorf("a restored absence was served while the source was quiet: %d fetches, want 1", calls.Load())
+	}
+
+	answering = true
+	reloaded.mu.Lock()
+	reloaded.entries[absent] = c.entries[absent]
+	reloaded.mu.Unlock()
+	mustDo(t, reloaded, absent, titleAge{}, fetch)
+	if calls.Load() != 1 {
+		t.Errorf("a restored absence was not served once the source answered: %d fetches, want 1", calls.Load())
+	}
+}
+
+func TestWikidataAnswersAreKeyedWithoutTheContentType(t *testing.T) {
+	if ratingsKey("wikidata", "movie", "tt1") != ratingsKey("wikidata", "", "tt1") {
+		t.Error("wikidata keys differ by content type")
+	}
+	if ratingsKey("mdblist", "movie", "tt1") == ratingsKey("mdblist", "series", "tt1") {
+		t.Error("mdblist keys lost their content type")
 	}
 }
 
