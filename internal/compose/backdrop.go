@@ -296,9 +296,9 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 	if logoTopY+dstH > usableH {
 		logoTopY = usableH - dstH
 	}
-	// A bottom margin overrides the position and the ratings reserve.
+	// A bottom margin overrides the position, measured from the top of a ratings strip when one is drawn.
 	if opts.bottomMargin > 0 {
-		logoTopY = max(0, baseH-pct(baseH, opts.bottomMargin, 0)-dstH)
+		logoTopY = max(0, baseH-ratingsH-pct(baseH, opts.bottomMargin, 0)-dstH)
 	}
 
 	// The shadow behind the logo, for legibility over bright areas. It follows

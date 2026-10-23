@@ -129,21 +129,24 @@ func TestBottomFadeAndBlurCombine(t *testing.T) {
 func TestLogoBottomMarginPinsTheLowerEdge(t *testing.T) {
 	logo := logoPNG(t)
 	for _, tc := range []struct {
-		name string
-		opts logoOverlayOpts
+		name     string
+		opts     logoOverlayOpts
+		ratingsH int
+		want     int
 	}{
-		{"with a bottom anchor", logoOverlayOpts{anchor: "bottom", posPercent: 40, bottomMargin: 5}},
-		{"without one, over the ratings reserve", logoOverlayOpts{posPercent: 40, bottomMargin: 5}},
+		{"with a bottom anchor", logoOverlayOpts{anchor: "bottom", posPercent: 40, bottomMargin: 5}, 0, 600 - 30},
+		{"without one", logoOverlayOpts{posPercent: 40, bottomMargin: 5}, 0, 600 - 30},
+		{"above a ratings strip", logoOverlayOpts{anchor: "bottom", posPercent: 40, bottomMargin: 5}, 120, 600 - 120 - 30},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			base := posterCanvas()
-			drawBackdropLogoOverlay(base, logo, 120, tc.opts)
+			drawBackdropLogoOverlay(base, logo, tc.ratingsH, tc.opts)
 			box, ok := drawnBox(base)
 			if !ok {
 				t.Fatal("no logo drawn")
 			}
-			if want := 600 - 30; box.Max.Y != want {
-				t.Errorf("lower edge at row %d, want %d (5%% of 600 above the bottom)", box.Max.Y, want)
+			if box.Max.Y != tc.want {
+				t.Errorf("lower edge at row %d, want %d", box.Max.Y, tc.want)
 			}
 		})
 	}
