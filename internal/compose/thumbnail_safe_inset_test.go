@@ -1,9 +1,11 @@
 package compose
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"image"
+	"runtime"
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
@@ -65,6 +67,9 @@ func TestDefaultRendersArePinnedOnPosterAndThumbnail(t *testing.T) {
 	if testing.Short() {
 		t.Skip("full renders: skipped under -short")
 	}
+	if runtime.GOARCH != "arm64" {
+		t.Skip("digests are recorded on arm64; float rounding differs elsewhere")
+	}
 	want := map[string]string{
 		"poster/bottom":        "22cf2ed408791caa960c524b30a5f67b116e5c3cdb193817e6cb3cf37c3b4a7f",
 		"poster/right":         "c4de08dd7cf604e3070396b3ae6df03617b76ca676824a92a5c265a90bff7b79",
@@ -82,6 +87,22 @@ func TestDefaultRendersArePinnedOnPosterAndThumbnail(t *testing.T) {
 			if key := fmt.Sprintf("%s/%s", s, l); got != want[key] {
 				t.Errorf("%s render changed: %s", key, got)
 			}
+		}
+	}
+}
+
+func TestPosterRendersIgnoreTheInset(t *testing.T) {
+	if testing.Short() {
+		t.Skip("full renders: skipped under -short")
+	}
+	p := effectPipeline()
+	for _, l := range []imageconfig.RatingsLayout{imageconfig.LayoutBottom, imageconfig.LayoutRight, imageconfig.LayoutTopBottom} {
+		c := maximalConfig()
+		c.RatingsLayout = l
+		inset := c
+		inset.ThumbnailSafeInset = 22
+		if !bytes.Equal(renderOne(t, p, c, "movie", "poster"), renderOne(t, p, inset, "movie", "poster")) {
+			t.Errorf("poster/%s render changed with the inset set", l)
 		}
 	}
 }
