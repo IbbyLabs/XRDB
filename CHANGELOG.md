@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.134.0](https://github.com/IbbyLabs/XRDB/compare/v3.133.0...v3.134.0) (2026-10-23)
+
+
+### Added
+
+* **provider:** measure each MDBList key's daily allowance (FR-186) ([a0e9e5d](https://github.com/IbbyLabs/XRDB/commit/a0e9e5df323e004c1cec37ba9f3a3d798007dd33))
+
+
+### Fixed
+
+* **compose:** keep absences across restarts and key Wikidata's without type ([e745856](https://github.com/IbbyLabs/XRDB/commit/e745856d7611b2d6aa2a9a7ff9057c77988118e5))
+* **docker:** point the sample compose at releases rather than dev builds ([e450619](https://github.com/IbbyLabs/XRDB/commit/e450619bf7517e0ccd6d063e5f3135f6db94cc85))
+
 ## [3.133.0](https://github.com/IbbyLabs/XRDB/compare/v3.132.0...v3.133.0) (2026-10-23)
 
 
