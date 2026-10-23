@@ -235,3 +235,24 @@ func TestAFileWithoutLimitsStillLoads(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestALimitForAKeyThatLeftTheRingIsDropped(t *testing.T) {
+	b := newDailyBudget("mdblist", 10_000, 0)
+	b.setRing([]string{keyFingerprint("a"), keyFingerprint("b")})
+	b.setLimit(keyFingerprint("a"), 1000)
+	b.setRing([]string{keyFingerprint("a"), keyFingerprint("c")})
+	b.setLimit(keyFingerprint("b"), 1_000_000)
+	b.mu.Lock()
+	_, kept := b.observedLimits[keyFingerprint("b")]
+	b.mu.Unlock()
+	if kept {
+		t.Error("a probe answering after its key left the ring was recorded")
+	}
+	b.setLimit(keyFingerprint("c"), 2000)
+	b.mu.Lock()
+	got := b.observedLimits[keyFingerprint("c")]
+	b.mu.Unlock()
+	if got != 2000 {
+		t.Errorf("a key in the ring was not recorded: got %d", got)
+	}
+}

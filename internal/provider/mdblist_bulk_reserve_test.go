@@ -66,7 +66,7 @@ func TestTheReserveFollowsTheReportedLimit(t *testing.T) {
 func TestARequestsHeaderRecordsTheLimitAgainstItsKey(t *testing.T) {
 	b := mdbBudget(t)
 	b.mu.Lock()
-	b.limit, b.reservePct, b.ringSize, b.observedLimits = 100000, 25, 1, nil
+	b.limit, b.reservePct, b.ringSize, b.observedLimits, b.ringKeys = 100000, 25, 1, nil, nil
 	b.mu.Unlock()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

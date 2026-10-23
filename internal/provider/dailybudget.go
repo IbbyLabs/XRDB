@@ -106,6 +106,12 @@ func (b *dailyBudget) setLimit(key string, limit int) {
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if key != "" && b.ringKeys != nil {
+		// A probe can answer after its key has left the ring.
+		if _, ok := b.ringKeys[key]; !ok {
+			return
+		}
+	}
 	if key != "" {
 		if b.observedLimits == nil {
 			b.observedLimits = map[string]int{}
