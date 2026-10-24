@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.138.0](https://github.com/IbbyLabs/XRDB/compare/v3.137.0...v3.138.0) (2026-10-24)
+
+
+### Added
+
+* **badges:** let rating badge Scale grow posters up to 600 (FR-237) ([3f58032](https://github.com/IbbyLabs/XRDB/commit/3f5803262c155cf4902d6d928c614e1d8c450191))
+
 ## [3.137.0](https://github.com/IbbyLabs/XRDB/compare/v3.136.0...v3.137.0) (2026-10-23)
 
 
