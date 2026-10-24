@@ -3576,7 +3576,7 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 		}
 	}
 	frostRoundedRect(base, image.Rect(cx-outerR, cy-outerR, cx+outerR, cy+outerR), outerR, squareNone, cfg.BadgeFrost)
-	drawProgressRing(base, cx, cy, outerR, progress/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity)
+	drawProgressRing(base, cx, cy, outerR, progress/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity, cfg.RingGlow == nil || *cfg.RingGlow)
 }
 
 // ratingRingSourceValue returns a specific provider's 0-10 value for the ring,
@@ -3745,7 +3745,7 @@ func parseHexColor(s string) (color.NRGBA, error) {
 // accent arc with rounded caps sweeping clockwise from the top, and a dark
 // centre disk holding the value label. sweepFrac is in [0, 1]; near 100% the
 // arc snaps to a seamless full circle so no cap seam shows.
-func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, fillColor color.NRGBA, face font.Face, label string, centerOpacity int) {
+func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, fillColor color.NRGBA, face font.Face, label string, centerOpacity int, glow bool) {
 	size := float64(outerR) * 2
 	stroke := math.Max(7, size*0.11)
 	halfW := stroke / 2
@@ -3820,7 +3820,7 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, 
 			// amplitude sits just under a Gaussian-blurred stroke's edge
 			// intensity (half the peak), keeping the halo subtle and the
 			// arc itself crisp.
-			if edge := dArc - halfW; edge > 0 {
+			if edge := dArc - halfW; glow && edge > 0 {
 				glow := 0.3 * (0.58*math.Exp(-edge*edge/(2*sigmaWide*sigmaWide)) +
 					0.92*math.Exp(-edge*edge/(2*sigmaTight*sigmaTight)))
 				if a := glow * float64(fillColor.A); a >= 1 {

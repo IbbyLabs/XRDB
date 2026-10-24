@@ -13,7 +13,7 @@ import (
 func TestAnInvisibleRingCentreDrawsNoDisc(t *testing.T) {
 	centreAlpha := func(opacity int) uint8 {
 		img := image.NewNRGBA(image.Rect(0, 0, 200, 200))
-		drawProgressRing(img, 100, 100, 60, 0.5, color.NRGBA{R: 240, G: 80, B: 60, A: 255}, basicfont.Face7x13, "7.5", opacity)
+		drawProgressRing(img, 100, 100, 60, 0.5, color.NRGBA{R: 240, G: 80, B: 60, A: 255}, basicfont.Face7x13, "7.5", opacity, true)
 		return img.NRGBAAt(100, 100).A
 	}
 

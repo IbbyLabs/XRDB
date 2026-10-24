@@ -4,17 +4,17 @@ import "testing"
 
 // A large or 4k poster needs more than 200%: at the old cap the provider chips
 // and quality tiles still read as small, which is what FR-37 reported. Rating
-// badges already allowed 400, so the three now share a range.
+// badges go to 600; provider and quality tiles share 400.
 func TestBadgeScalesShareTheSameRange(t *testing.T) {
-	cfg := Parse([]byte(`{"providerBadgeScale":400,"qualityBadgeScale":400,"ratingBadgeScale":400}`))
+	cfg := Parse([]byte(`{"providerBadgeScale":400,"qualityBadgeScale":400,"ratingBadgeScale":600}`))
 	if cfg.ProviderBadgeScale != 400 {
 		t.Errorf("providerBadgeScale = %d, want 400", cfg.ProviderBadgeScale)
 	}
 	if cfg.QualityBadgeScale != 400 {
 		t.Errorf("qualityBadgeScale = %d, want 400", cfg.QualityBadgeScale)
 	}
-	if cfg.RatingBadgeScale != 400 {
-		t.Errorf("ratingBadgeScale = %d, want 400", cfg.RatingBadgeScale)
+	if cfg.RatingBadgeScale != 600 {
+		t.Errorf("ratingBadgeScale = %d, want 600", cfg.RatingBadgeScale)
 	}
 
 	// The ceiling still holds, and the floor is unchanged.
@@ -22,6 +22,10 @@ func TestBadgeScalesShareTheSameRange(t *testing.T) {
 	if over.ProviderBadgeScale != 400 || over.QualityBadgeScale != 400 {
 		t.Errorf("above the range: provider=%d quality=%d, want both clamped to 400",
 			over.ProviderBadgeScale, over.QualityBadgeScale)
+	}
+	overRating := Parse([]byte(`{"ratingBadgeScale":900}`))
+	if overRating.RatingBadgeScale != 600 {
+		t.Errorf("ratingBadgeScale above the range = %d, want 600", overRating.RatingBadgeScale)
 	}
 	under := Parse([]byte(`{"providerBadgeScale":10}`))
 	if under.ProviderBadgeScale != 70 {

@@ -493,7 +493,7 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 // RatingBadgeConfig groups the rating-badge sizing and count controls. Style,
 // theme, layout, and the ratings allow-list remain flat fields on Config.
 type RatingBadgeConfig struct {
-	RatingBadgeScale int `json:"ratingBadgeScale,omitempty"` // percent 70-400; 0 = 100
+	RatingBadgeScale int `json:"ratingBadgeScale,omitempty"` // percent 70-600; 0 = 100
 	// RatingBadgeBorderSourceTint draws each badge's outline in that rating
 	// site's own colour instead of one colour for the row, which is the look v2
 	// paired with the glass style.
@@ -703,6 +703,7 @@ type RatingRingConfig struct {
 	RingCenterOpacity  int    `json:"ringCenterOpacity,omitempty"`  // opacity of the centre disk; -1 = invisible, 0 = default, 1-100 opacity
 	RingValueSource    string `json:"ringValueSource,omitempty"`    // "" / "overall" = average, else a provider (e.g. "imdb")
 	RingProgressSource string `json:"ringProgressSource,omitempty"` // source for the arc fill; same values
+	RingGlow           *bool  `json:"ringGlow,omitempty"`           // halo around the arc; nil = on
 	// RingCriticsPriority and RingAudiencePriority order the sources the
 	// "priority-critics" and "priority-audience" modes walk: the first one with
 	// a score wins. Empty keeps the built-in order.
@@ -1066,6 +1067,7 @@ type rawRing struct {
 	RingCenterOpacity    *int     `json:"ringCenterOpacity"`
 	RingValueSource      *string  `json:"ringValueSource"`
 	RingProgressSource   *string  `json:"ringProgressSource"`
+	RingGlow             *bool    `json:"ringGlow"`
 	RingCriticsPriority  []string `json:"ringCriticsPriority"`
 	RingAudiencePriority []string `json:"ringAudiencePriority"`
 }
@@ -1427,7 +1429,7 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.ProviderBadgeScale != nil && *r.ProviderBadgeScale != 0 {
 		// 200 was not enough on a large or 4k poster, where the chips still read
-		// as small. Rating badges already go to 400.
+		// as small. Rating badges go higher.
 		cfg.ProviderBadgeScale = clampInt(*r.ProviderBadgeScale, 70, 400)
 	}
 	if r.ProviderBadgeOffsetX != nil {
@@ -2011,7 +2013,7 @@ func parseTrending(cfg *Config, r *raw) {
 
 func parseRating(cfg *Config, r *raw) {
 	if r.RatingBadgeScale != nil && *r.RatingBadgeScale != 0 {
-		cfg.RatingBadgeScale = clampInt(*r.RatingBadgeScale, 70, 400)
+		cfg.RatingBadgeScale = clampInt(*r.RatingBadgeScale, 70, 600)
 	}
 	if r.StackedLineHidden != nil {
 		cfg.StackedLineHidden = *r.StackedLineHidden
@@ -2262,6 +2264,10 @@ func parseRing(cfg *Config, r *raw) {
 	}
 	if r.RingProgressSource != nil && strings.TrimSpace(*r.RingProgressSource) != "" {
 		cfg.RingProgressSource = strings.ToLower(strings.TrimSpace(*r.RingProgressSource))
+	}
+	if r.RingGlow != nil {
+		glow := *r.RingGlow
+		cfg.RingGlow = &glow
 	}
 	if v := normalizeSourceOrder(r.RingCriticsPriority); len(v) > 0 {
 		cfg.RingCriticsPriority = v

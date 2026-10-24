@@ -677,6 +677,7 @@ export interface ConfigState {
   ringOffsetY: number;
   ringValueSource: string; // 'overall' | provider id
   ringProgressSource: string;
+  ringGlow: boolean;
   ringCriticsPriority: string[]; // order 'Top critic' walks; [] = built-in
   ringAudiencePriority: string[]; // order 'Top audience' walks; [] = built-in
 }
@@ -934,6 +935,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ringOffsetY: 0,
   ringValueSource: 'overall',
   ringProgressSource: 'overall',
+  ringGlow: true,
   ringCriticsPriority: [],
   ringAudiencePriority: [],
 };

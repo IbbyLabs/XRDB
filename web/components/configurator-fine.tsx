@@ -753,8 +753,8 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
       )}
       {(strip || pills) && (
         <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
-          onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={400} step={5}
-          hint="70–400. Blank keeps the default size." />
+          onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={600} step={5}
+          hint="70–600. Blank keeps the default size." />
       )}
       {strip && (
         <>
@@ -1047,6 +1047,10 @@ export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
         value={config.ringValueSource} onChange={v => onUpdate('ringValueSource', v)} />
       <RingSourceSelect id={`${uid}-ring-prog-src`} label="Fill source"
         value={config.ringProgressSource} onChange={v => onUpdate('ringProgressSource', v)} />
+      <ToggleField id={`${uid}-ring-glow`} label="Glow"
+        checked={config.ringGlow}
+        onChange={v => onUpdate('ringGlow', v)}
+        hint="Soft halo around the progress arc." />
       <details className="adv-details">
         <summary>
           Top critic / top audience order

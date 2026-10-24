@@ -1957,46 +1957,28 @@ func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Con
 }
 
 // Badge dimensions are absolute for a given scale: one badge is 5% of a
-// 780x1170 poster but 31% of a 320x180 thumbnail. Posters and backdrops sit
-// inside both caps.
+// 780x1170 poster but 31% of a 320x180 thumbnail. These base caps apply at 100%.
 const (
 	maxBadgeHeightShare = 0.12
 	maxBadgeWidthShare  = 0.33
-	// Hard ceilings: however large the configured scale, a badge never swallows
-	// the frame. These bound the scale-aware caps below.
+	// Hard ceilings that bound the scale-aware caps below.
 	hardBadgeHeightShare = 0.34
 	hardBadgeWidthShare  = 0.70
 )
 
-// badgeShareCaps grow the frame-share caps with the user's configured badge
-// scale, bounded by the hard ceilings. On a small surface (an episode
-// thumbnail) one badge already meets the base cap at 100%, so without this the
-// scale control is inert there — every value collapses to the same size. Scaling
-// the cap lets a higher percentage still grow the badge, just not past the
-// ceiling. At 100% the caps are unchanged, so posters and backdrops are
-// unaffected.
+// badgeShareCaps grows both frame-share caps with the configured badge scale,
+// bounded by the hard ceilings. At 100% or below the base caps apply.
 func badgeShareCaps(cfg imageconfig.Config, frameW, frameH int) (widthShare, heightShare float64) {
 	widthShare, heightShare = maxBadgeWidthShare, maxBadgeHeightShare
 	if cfg.RatingBadgeScale <= 100 {
 		return widthShare, heightShare
 	}
-	// Relax each axis on its own, because a surface can be small in one dimension
-	// and large in the other. A thumbnail is small both ways; a logo is wide but
-	// short, so only its height binds and only the height cap should grow. A
-	// poster and a backdrop are large both ways and keep the tight base caps, so
-	// large-scale badges stay proportional there.
-	const smallFrameW = 500 // episode thumbnails ~320px wide; posters/backdrops 780+.
-	const smallFrameH = 700 // logos ~200 tall, thumbnails ~180; backdrops 720+.
 	factor := float64(cfg.RatingBadgeScale) / 100
-	if frameW < smallFrameW {
-		if widthShare = maxBadgeWidthShare * factor; widthShare > hardBadgeWidthShare {
-			widthShare = hardBadgeWidthShare
-		}
+	if widthShare = maxBadgeWidthShare * factor; widthShare > hardBadgeWidthShare {
+		widthShare = hardBadgeWidthShare
 	}
-	if frameH < smallFrameH {
-		if heightShare = maxBadgeHeightShare * factor; heightShare > hardBadgeHeightShare {
-			heightShare = hardBadgeHeightShare
-		}
+	if heightShare = maxBadgeHeightShare * factor; heightShare > hardBadgeHeightShare {
+		heightShare = hardBadgeHeightShare
 	}
 	return widthShare, heightShare
 }
@@ -2025,12 +2007,17 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 
 // fitBadgeScaleInset is fitBadgeScale with the sides kept safeX px clear.
 func fitBadgeScaleInset(scale float64, frameW, frameH, safeX int, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) float64 {
+	widthShare, heightShare := badgeShareCaps(cfg, frameW, frameH)
+	return fitBadgeScaleShares(scale, frameW, frameH, safeX, widthShare, heightShare, ratings, cfg, facts)
+}
+
+// fitBadgeScaleShares is fitBadgeScaleInset with explicit frame-share caps.
+func fitBadgeScaleShares(scale float64, frameW, frameH, safeX int, widthShare, heightShare float64, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) float64 {
 	if frameW <= 0 || frameH <= 0 || len(ratings) == 0 {
 		return scale
 	}
 	// A few passes is enough to bring any requested size inside the frame, and
 	// bounds the work.
-	widthShare, heightShare := badgeShareCaps(cfg, frameW, frameH)
 	for i := 0; i < 6; i++ {
 		d := ratingStripDimsFor(scale, cfg)
 		availW := frameW - stripEdgeX(d, scale, cfg, safeX)*2
