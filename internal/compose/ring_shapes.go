@@ -34,10 +34,11 @@ var ringShapeDrawers = map[string]ringShape{
 }
 
 var (
-	ringShapeInk   = color.NRGBA{R: 17, G: 17, B: 17, A: 255}
-	ringShapeWhite = color.NRGBA{R: 248, G: 250, B: 252, A: 255}
-	ringShapeDark  = color.NRGBA{R: 8, G: 11, B: 16, A: 225}
-	ringShapeTrack = color.NRGBA{R: 120, G: 124, B: 132, A: 210}
+	ringShapeInk       = color.NRGBA{R: 17, G: 17, B: 17, A: 255}
+	ringShapeWhite     = color.NRGBA{R: 248, G: 250, B: 252, A: 255}
+	ringShapeDark      = color.NRGBA{R: 8, G: 11, B: 16, A: 225}
+	ringShapeSolidDark = color.NRGBA{R: 8, G: 11, B: 16, A: 255}
+	ringShapeTrack     = color.NRGBA{R: 120, G: 124, B: 132, A: 210}
 )
 
 // ringVerdictWord names a 0-10 score in four bands.
@@ -176,22 +177,24 @@ func hexagonPoly(w, h float64) ptPoly {
 }
 
 func drawRingShapeHexagon(base *image.NRGBA, r image.Rectangle, a ringShapeArt) {
-	fill := shapeFill(a)
-	fillShapeAA(base, r, fill, hexagonPoly(float64(r.Dx()), float64(r.Dy())).inside)
-	drawCentredLabel(base, a.face, r.Min.X+r.Dx()/2, r.Min.Y+r.Dy()/2, inkOn(fill), a.label)
+	w, h := float64(r.Dx()), float64(r.Dy())
+	outer := hexagonPoly(w, h)
+	fillShapeAA(base, r, shapeFill(a), outer.inside)
+	fillShapeAA(base, r, ringShapeSolidDark, outer.shrink(w/2, h/2, 0.82).inside)
+	drawCentredLabel(base, a.face, r.Min.X+r.Dx()/2, r.Min.Y+r.Dy()/2, ringShapeWhite, a.label)
 }
 
 func shieldPoly(w, h float64) ptPoly {
 	p := ptPoly{{x: 0, y: h * 0.1}, {x: w / 2, y: 0}, {x: w, y: h * 0.1}, {x: w, y: h * 0.5}}
-	// The lower edge curves from each side into the point.
+	// The lower edges leave the sides straight down and meet at a point.
 	const steps = 8
 	for i := 1; i <= steps; i++ {
 		t := float64(i) / steps
-		p = append(p, ptf{x: w - (w/2)*t*t, y: h*0.5 + (h*0.5)*(2*t-t*t)})
+		p = append(p, ptf{x: w - (w/2)*t*t, y: h*0.5 + (h*0.5)*t})
 	}
 	for i := steps - 1; i >= 1; i-- {
 		t := float64(i) / steps
-		p = append(p, ptf{x: (w / 2) * t * t, y: h*0.5 + (h*0.5)*(2*t-t*t)})
+		p = append(p, ptf{x: (w / 2) * t * t, y: h*0.5 + (h*0.5)*t})
 	}
 	return append(p, ptf{x: 0, y: h * 0.5})
 }
@@ -200,7 +203,7 @@ func drawRingShapeShield(base *image.NRGBA, r image.Rectangle, a ringShapeArt) {
 	w, h := float64(r.Dx()), float64(r.Dy())
 	outer := shieldPoly(w, h)
 	fillShapeAA(base, r, shapeFill(a), outer.inside)
-	fillShapeAA(base, r, color.NRGBA{R: ringShapeDark.R, G: ringShapeDark.G, B: ringShapeDark.B, A: 255}, outer.shrink(w/2, h*0.45, 0.8).inside)
+	fillShapeAA(base, r, ringShapeSolidDark, outer.shrink(w/2, h*0.45, 0.8).inside)
 	drawCentredLabel(base, a.face, r.Min.X+r.Dx()/2, r.Min.Y+int(h*0.44), ringShapeWhite, a.label)
 }
 
