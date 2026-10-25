@@ -109,7 +109,21 @@ func absentHold(source string, streak int) time.Duration {
 // a content type before an absence from it is believed. It bounds the damage of
 // a scrape breaking: absences are trusted for at most this long past the
 // source's last real answer, whatever term they were stored for.
-const ratingsAnswerFreshness = 15 * time.Minute
+//
+// It must outlast the gap between fetched rated answers; a cache hit never counts as one.
+func ratingsAnswerFreshness(source string) time.Duration {
+	if d, ok := ratingsAnswerFreshnessBySource[source]; ok {
+		return d
+	}
+	return 15 * time.Minute
+}
+
+var ratingsAnswerFreshnessBySource = map[string]time.Duration{"wikidata": 6 * time.Hour}
+
+func keySource(key string) string {
+	source, _, _ := provider.SplitGoodKey(key)
+	return source
+}
 
 // ratingsRefreshAheadFrac is how much of an entry's term is spent in its refresh
 // window. Inside it a render is served the remembered answer and a fetch runs
@@ -237,7 +251,7 @@ func (c *ratingsCache) storable(key string, meta *provider.MediaMeta) bool {
 		return false
 	}
 	source, contentType, _ := provider.SplitGoodKey(key)
-	return c.answering(source, contentType, ratingsAnswerFreshness)
+	return c.answering(source, contentType, ratingsAnswerFreshness(source))
 }
 
 // trusted reports whether a live entry may still be served. A remembered
@@ -380,7 +394,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, age titleAge, fetch r
 	} else if call.err == nil && call.meta != nil && len(call.meta.Ratings) == 0 {
 		c.countAbsenceLocked(key, func(n *absenceCounts) { n.Declined++ })
 		c.log().DebugContext(ctx, "Did not remember an empty ratings answer: the source has not answered with ratings for this content type recently",
-			"key", key, "freshness", ratingsAnswerFreshness)
+			"key", key, "freshness", ratingsAnswerFreshness(keySource(key)))
 	}
 	c.mu.Unlock()
 
@@ -449,7 +463,7 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, age titleAge,
 	} else if call.err == nil && call.meta != nil && len(call.meta.Ratings) == 0 {
 		c.countAbsenceLocked(key, func(n *absenceCounts) { n.Declined++ })
 		c.log().DebugContext(ctx, "Did not remember an empty ratings answer: the source has not answered with ratings for this content type recently",
-			"key", key, "freshness", ratingsAnswerFreshness)
+			"key", key, "freshness", ratingsAnswerFreshness(keySource(key)))
 	}
 	c.mu.Unlock()
 }
