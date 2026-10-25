@@ -3555,6 +3555,19 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	valueFace := valueFaceIn(cfg.RatingBadgeFont, ringScale*ringValueFontScale)
 
 	outerR := int(32*ringScale + 0.5)
+	if shape, ok := ringShapeDrawers[cfg.RingShape]; ok {
+		a := ringShapeArt{fill: fillColor, face: valueFace, label: ringLabel(value, empty, cfg), empty: empty}
+		if empty && !placeholderColoured {
+			a.fill = color.NRGBA{}
+		}
+		if cfg.RingShape == "verdict" && !empty {
+			a.small = valueFaceIn(cfg.RatingBadgeFont, ringScale*ringValueFontScale*0.62)
+			a.word = ringVerdictWord(value, cfg.Language)
+		}
+		w, h := shape.size(outerR, a)
+		shape.draw(base, occ.placeNudged(pos, w, h, edgeX, edgeY, s(8), cfg.RingOffsetX, cfg.RingOffsetY), a)
+		return
+	}
 	// drawProgressRing draws a soft glow pad pixels beyond outerR (matched here),
 	// so the reserved box is the full visual extent. Reserving only outerR*2 let
 	// the glow spill past the canvas edge in a corner, clipping the ring.
@@ -3566,17 +3579,21 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	r := occ.placeNudged(pos, d, d, edgeX, edgeY, s(8), cfg.RingOffsetX, cfg.RingOffsetY)
 	cx := r.Min.X + fullR
 	cy := r.Min.Y + fullR
-	label := strconv.Itoa(int(math.Round(value * 10)))
-	if empty {
-		// The empty circle already reads as no value, so the marker style names
-		// it rather than hatching a ring that has no plate to hatch.
-		label = ""
-		if placeholderIsMarker(cfg) {
-			label = UIString("placeholder_none", cfg.Language, "N/A")
-		}
-	}
+	label := ringLabel(value, empty, cfg)
 	frostRoundedRect(base, image.Rect(cx-outerR, cy-outerR, cx+outerR, cy+outerR), outerR, squareNone, cfg.BadgeFrost)
 	drawProgressRing(base, cx, cy, outerR, progress/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity, cfg.RingGlow == nil || *cfg.RingGlow)
+}
+
+// ringLabel is the ring's centre text: the score out of 100, or for an empty
+// ring nothing, or the placeholder marker.
+func ringLabel(value float64, empty bool, cfg imageconfig.Config) string {
+	if !empty {
+		return strconv.Itoa(int(math.Round(value * 10)))
+	}
+	if placeholderIsMarker(cfg) {
+		return UIString("placeholder_none", cfg.Language, "N/A")
+	}
+	return ""
 }
 
 // ratingRingSourceValue returns a specific provider's 0-10 value for the ring,

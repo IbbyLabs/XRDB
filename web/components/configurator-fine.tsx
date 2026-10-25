@@ -6,7 +6,7 @@ import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
   GENRE_ACCENT_OPTIONS, GENRE_LABEL_OPTIONS, GENRE_BORDER_OPTIONS,
-  GENRE_CASE_OPTIONS, GENRE_COUNT_OPTIONS, RING_CENTER_OPTIONS,
+  GENRE_CASE_OPTIONS, GENRE_COUNT_OPTIONS, RING_CENTER_OPTIONS, RING_SHAPE_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   BADGE_FONT_OPTIONS, RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
   RELEASE_CASE_OPTIONS, RELEASE_DATE_FORMAT_OPTIONS,
@@ -1020,19 +1020,27 @@ function PriorityList({
 }
 
 export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
+  const isRing = !config.ringShape || config.ringShape === 'ring';
   return (
     <FineGroup label="Rating ring">
       <NumField id={`${uid}-ring-scale`} label="Ring size (%)" value={config.ringScale}
         onChange={v => onUpdate('ringScale', v)} min={70} max={250} step={5}
         hint="Size of the ring and the number inside it. Blank keeps the default." />
       <StyleGrid
+        id={`${uid}-ring-shape-label`}
+        label="Shape"
+        options={RING_SHAPE_OPTIONS}
+        value={config.ringShape || 'ring'}
+        onChange={v => onUpdate('ringShape', v)}
+      />
+      {isRing && <StyleGrid
         id={`${uid}-ring-center-mode-label`}
         label="Center disc"
         options={RING_CENTER_OPTIONS}
         value={ringCenterMode(config.ringCenterOpacity)}
         onChange={v => onUpdate('ringCenterOpacity', v === 'invisible' ? -1 : v === 'default' ? 0 : 50)}
-      />
-      {ringCenterMode(config.ringCenterOpacity) === 'custom' && (
+      />}
+      {isRing && ringCenterMode(config.ringCenterOpacity) === 'custom' && (
         <NumField id={`${uid}-ring-center-op`} label="Center opacity (%)" value={config.ringCenterOpacity}
           onChange={v => onUpdate('ringCenterOpacity', v)} min={5} max={100} step={5} zeroIsDefault={false}
           hint="Opacity of the disc behind the ring's number." />
@@ -1047,10 +1055,10 @@ export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
         value={config.ringValueSource} onChange={v => onUpdate('ringValueSource', v)} />
       <RingSourceSelect id={`${uid}-ring-prog-src`} label="Fill source"
         value={config.ringProgressSource} onChange={v => onUpdate('ringProgressSource', v)} />
-      <ToggleField id={`${uid}-ring-glow`} label="Glow"
+      {isRing && <ToggleField id={`${uid}-ring-glow`} label="Glow"
         checked={config.ringGlow}
         onChange={v => onUpdate('ringGlow', v)}
-        hint="Soft halo around the progress arc." />
+        hint="Soft halo around the progress arc." />}
       <details className="adv-details">
         <summary>
           Top critic / top audience order

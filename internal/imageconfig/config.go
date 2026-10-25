@@ -694,6 +694,10 @@ type QualityBadgeConfig struct {
 	QualityBadgesMode string `json:"qualityBadgesMode,omitempty"`
 }
 
+// RingShapes lists the badge shapes the rating ring can take besides the
+// default progress ring.
+var RingShapes = map[string]bool{"disc": true, "chip": true, "hexagon": true, "shield": true, "verdict": true}
+
 // RatingRingConfig groups the compact rating-ring options beyond the existing
 // flat RatingRing/RatingRingPos/RatingRingColor fields.
 type RatingRingConfig struct {
@@ -704,6 +708,7 @@ type RatingRingConfig struct {
 	RingValueSource    string `json:"ringValueSource,omitempty"`    // "" / "overall" = average, else a provider (e.g. "imdb")
 	RingProgressSource string `json:"ringProgressSource,omitempty"` // source for the arc fill; same values
 	RingGlow           *bool  `json:"ringGlow,omitempty"`           // halo around the arc; nil = on
+	RingShape          string `json:"ringShape,omitempty"`          // "" = progress ring; else a key of RingShapes
 	// RingCriticsPriority and RingAudiencePriority order the sources the
 	// "priority-critics" and "priority-audience" modes walk: the first one with
 	// a score wins. Empty keeps the built-in order.
@@ -1068,6 +1073,7 @@ type rawRing struct {
 	RingValueSource      *string  `json:"ringValueSource"`
 	RingProgressSource   *string  `json:"ringProgressSource"`
 	RingGlow             *bool    `json:"ringGlow"`
+	RingShape            *string  `json:"ringShape"`
 	RingCriticsPriority  []string `json:"ringCriticsPriority"`
 	RingAudiencePriority []string `json:"ringAudiencePriority"`
 }
@@ -2268,6 +2274,11 @@ func parseRing(cfg *Config, r *raw) {
 	if r.RingGlow != nil {
 		glow := *r.RingGlow
 		cfg.RingGlow = &glow
+	}
+	if r.RingShape != nil {
+		if v := strings.ToLower(strings.TrimSpace(*r.RingShape)); RingShapes[v] {
+			cfg.RingShape = v
+		}
 	}
 	if v := normalizeSourceOrder(r.RingCriticsPriority); len(v) > 0 {
 		cfg.RingCriticsPriority = v

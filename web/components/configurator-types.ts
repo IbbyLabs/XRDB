@@ -284,6 +284,15 @@ export const GENRE_BORDER_OPTIONS = [
   { id: 'custom',   label: 'Custom' },
 ] as const;
 
+export const RING_SHAPE_OPTIONS = [
+  { id: 'ring',    label: 'Ring' },
+  { id: 'disc',    label: 'Solid disc' },
+  { id: 'chip',    label: 'Chip' },
+  { id: 'hexagon', label: 'Hexagon' },
+  { id: 'shield',  label: 'Shield' },
+  { id: 'verdict', label: 'Verdict pill' },
+] as const;
+
 export const RING_CENTER_OPTIONS = [
   { id: 'default',   label: 'Default' },
   { id: 'invisible', label: 'Invisible' },
@@ -678,6 +687,7 @@ export interface ConfigState {
   ringValueSource: string; // 'overall' | provider id
   ringProgressSource: string;
   ringGlow: boolean;
+  ringShape: string; // 'ring' | a RING_SHAPE_OPTIONS id
   ringCriticsPriority: string[]; // order 'Top critic' walks; [] = built-in
   ringAudiencePriority: string[]; // order 'Top audience' walks; [] = built-in
 }
@@ -936,6 +946,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ringValueSource: 'overall',
   ringProgressSource: 'overall',
   ringGlow: true,
+  ringShape: 'ring',
   ringCriticsPriority: [],
   ringAudiencePriority: [],
 };
