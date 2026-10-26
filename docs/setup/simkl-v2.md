@@ -1,9 +1,9 @@
 # SIMKL v2 client ids
 
-A SIMKL client id registered for auth v2 answers every request without a user
-token with `401 user_token_required`. XRDB can send a token for you once you
-link a SIMKL account. Instances using a v1 client id (`XRDB_SIMKL_CLIENT_ID`)
-need nothing here.
+A SIMKL client id registered for auth v2 works without a user token for
+everything XRDB needs: ratings, and mapping an IMDb id to a SIMKL id. Linking a
+SIMKL account is optional. XRDB sends the account's token once it is linked.
+Instances using a v1 client id (`XRDB_SIMKL_CLIENT_ID`) need nothing here.
 
 ## Configure
 
@@ -17,7 +17,10 @@ The cache directory (`XRDB_CACHE_DIR`) must persist across restarts: the token
 is kept there in `simkl-v2-token.json`, readable only by the XRDB user.
 
 Until the account is linked, XRDB keeps using `XRDB_SIMKL_CLIENT_ID` when it is
-set, and skips SIMKL when it is not. Every other source works as usual.
+set, and sends the v2 id without a token when it is not.
+
+If SIMKL ever refuses a v2 request, the log shows a `Simkl refused a V2 request`
+warning naming the endpoint, at most once an hour for each one.
 
 ## Link
 
@@ -42,5 +45,5 @@ XRDB refreshes the token on its own, a day before it expires or after a 401.
 SIMKL rotates the refresh token on each use and XRDB saves the new pair. If a
 refresh is refused, for example after a long outage or a revoked app, the log
 shows one `Simkl needs relinking` warning, and XRDB falls back to
-`XRDB_SIMKL_CLIENT_ID` (or skips SIMKL without one) until you run the link step
-again.
+`XRDB_SIMKL_CLIENT_ID` (or the v2 id without a token) until you run the link
+step again.

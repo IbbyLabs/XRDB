@@ -81,6 +81,8 @@ type simklAuth struct {
 	warned      bool
 	inflight    *refreshCall
 	pending     bool
+	// refusedAt rate-limits the 401 warning per endpoint path.
+	refusedAt map[string]time.Time
 }
 
 func newSIMKLAuth(clientID, secret, dir string, log *slog.Logger) *simklAuth {
@@ -450,4 +452,29 @@ func oauthErrorCode(code string) string {
 		return code
 	}
 	return "unrecognised_error"
+}
+
+// simklRefusalWarnEvery spaces out the warning for one endpoint.
+const simklRefusalWarnEvery = time.Hour
+
+// noteUnauthorized warns when Simkl answers a V2 request with 401, at most once
+// an hour per endpoint, so a tightened V2 policy shows in the log.
+func (a *simklAuth) noteUnauthorized(resp *http.Response) {
+	if resp == nil || resp.StatusCode != http.StatusUnauthorized || resp.Request == nil {
+		return
+	}
+	path := resp.Request.URL.Path
+	a.mu.Lock()
+	if a.refusedAt == nil {
+		a.refusedAt = map[string]time.Time{}
+	}
+	last, seen := a.refusedAt[path]
+	due := !seen || a.now().Sub(last) >= simklRefusalWarnEvery
+	if due {
+		a.refusedAt[path] = a.now()
+	}
+	a.mu.Unlock()
+	if due {
+		a.log.Warn("Simkl refused a V2 request", "endpoint", path, "status", resp.StatusCode)
+	}
 }

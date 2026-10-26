@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -243,30 +242,53 @@ func TestSIMKLRelinkWarningLoggedOnce(t *testing.T) {
 	buf := &syncBuf{}
 	s := v2ProviderWithV1(t, rs.Server, dir, buf, "")
 	for i := 0; i < 5; i++ {
-		_, err := s.fetchSegment(context.Background(), "movies", "1", "x")
-		if !errors.Is(err, ErrNotApplicable) && i > 0 {
-			t.Fatalf("call %d: err=%v, want a quiet skip", i, err)
-		}
+		_, _ = s.fetchSegment(context.Background(), "movies", "1", "x")
 	}
 	if n := strings.Count(buf.String(), "Simkl needs relinking"); n != 1 {
 		t.Fatalf("warning logged %d times, want 1\n%s", n, buf.String())
 	}
-	if s.HasCredentials() {
-		t.Fatal("a lapsed link must read as no credentials")
+	// The test server refuses requests without a token; the refusal is logged once for the endpoint.
+	if n := strings.Count(buf.String(), "Simkl refused a V2 request"); n != 1 {
+		t.Fatalf("refusal logged %d times, want 1\n%s", n, buf.String())
+	}
+	if !s.HasCredentials() {
+		t.Fatal("a lapsed link still leaves the V2 id usable without a token")
 	}
 	if rs.refreshes.Load() != 1 {
 		t.Fatalf("refresh retried %d times after a refused grant", rs.refreshes.Load())
 	}
 }
 
-func TestSIMKLNotLinkedSkipsQuietly(t *testing.T) {
-	var calls atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { calls.Add(1) }))
+func TestSIMKLUnlinkedV2GoesWithoutAToken(t *testing.T) {
+	var gotAuth, gotClient string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth, gotClient = r.Header.Get("Authorization"), r.URL.Query().Get("client_id")
+		_, _ = w.Write([]byte(simklBody))
+	}))
 	defer srv.Close()
 	s := v2ProviderWithV1(t, srv, t.TempDir(), &syncBuf{}, "")
-	_, err := s.fetchSegment(context.Background(), "movies", "1", "x")
-	if !errors.Is(err, ErrNotApplicable) || calls.Load() != 0 || s.HasCredentials() {
-		t.Fatalf("err=%v calls=%d has=%v", err, calls.Load(), s.HasCredentials())
+	if _, err := s.fetchSegment(context.Background(), "movies", "1", "x"); err != nil {
+		t.Fatal(err)
+	}
+	if gotAuth != "" || gotClient != testV2ID || !s.HasCredentials() {
+		t.Fatalf("auth=%q client=%q has=%v", gotAuth, gotClient, s.HasCredentials())
+	}
+}
+
+func TestSIMKLRefusalIsLoggedOncePerEndpoint(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+	buf := &syncBuf{}
+	s := v2ProviderWithV1(t, srv, t.TempDir(), buf, "")
+	for i := 0; i < 3; i++ {
+		_, _ = s.fetchSegment(context.Background(), "movies", "1", "x")
+		_, _ = s.fetchIDByIMDB(context.Background(), "tt1375666")
+	}
+	out := buf.String()
+	if strings.Count(out, "Simkl refused a V2 request") != 2 || !strings.Contains(out, `"endpoint":"/redirect"`) || !strings.Contains(out, `"endpoint":"/movies/1"`) {
+		t.Fatalf("want one warning per endpoint, got:\n%s", out)
 	}
 }
 

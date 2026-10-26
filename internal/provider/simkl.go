@@ -37,8 +37,8 @@ type SIMKL struct {
 	// map that only grows must not be held whole in a 768 MB process.
 	store       *simklIDStore
 	idCachePath string
-	// auth is set when a V2 client id is configured; V2 ids refuse every
-	// request that lacks a user token. Nil leaves the V1 behaviour untouched.
+	// auth is set when a V2 client id is configured; on a V2 id only /search/id
+	// needs a user token. Nil leaves the V1 behaviour untouched.
 	auth *simklAuth
 	// nowFn is swapped in tests so no test waits on a real clock.
 	nowFn func() time.Time
@@ -83,19 +83,12 @@ func (s *SIMKL) UpdateCredentials(clientID string) {
 
 // HasCredentials reports whether the provider can make authenticated requests.
 func (s *SIMKL) HasCredentials() bool {
-	c := s.cred(context.Background())
-	if c == "" {
-		return false
-	}
-	if s.usesV2(c) {
-		return s.auth.usable()
-	}
-	return true
+	return s.cred(context.Background()) != ""
 }
 
 // ConfigureV2 turns on Simkl's V2 authentication: the client id becomes the
-// server credential and every request carries the linked user's bearer token.
-// Tokens are kept in dir. An empty id leaves V2 off.
+// server credential, and requests carry the linked user's bearer token once an
+// account is linked. Tokens are kept in dir. An empty id leaves V2 off.
 func (s *SIMKL) ConfigureV2(clientID, clientSecret, dir string, log *slog.Logger) {
 	if s == nil || clientID == "" {
 		return
@@ -149,6 +142,12 @@ func (s *SIMKL) getWith(ctx context.Context, client *http.Client, build func(cre
 		return send("")
 	}
 	access, err := s.auth.accessToken(s, ctx)
+	if errors.Is(err, errSIMKLNotLinked) || errors.Is(err, errSIMKLNeedsRelink) {
+		// /redirect and the detail endpoints answer a V2 id without a token.
+		resp, err := send("")
+		s.auth.noteUnauthorized(resp)
+		return resp, err
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +161,9 @@ func (s *SIMKL) getWith(ctx context.Context, client *http.Client, build func(cre
 	if err != nil {
 		return nil, err
 	}
-	return send(access)
+	resp, err = send(access)
+	s.auth.noteUnauthorized(resp)
+	return resp, err
 }
 
 func (s *SIMKL) cred(ctx context.Context) string {
