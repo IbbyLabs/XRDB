@@ -125,6 +125,11 @@ func (s *SIMKL) usesV2(cred string) bool {
 // get sends a GET built by build for the credential in force, adding the bearer
 // token on a V2 request. A 401 refreshes the token once and retries once.
 func (s *SIMKL) get(ctx context.Context, build func(cred string) string) (*http.Response, error) {
+	return s.getWith(ctx, s.httpClient, build)
+}
+
+// getWith is get on a chosen client.
+func (s *SIMKL) getWith(ctx context.Context, client *http.Client, build func(cred string) string) (*http.Response, error) {
 	cred := s.cred(ctx)
 	send := func(access string) (*http.Response, error) {
 		req, err := simklRequest(ctx, build(cred))
@@ -134,7 +139,7 @@ func (s *SIMKL) get(ctx context.Context, build func(cred string) string) (*http.
 		if access != "" {
 			req.Header.Set("Authorization", "Bearer "+access)
 		}
-		resp, err := s.httpClient.Do(req)
+		resp, err := client.Do(req)
 		if err != nil {
 			return nil, redactHTTPErr(err)
 		}
@@ -403,15 +408,22 @@ func (s *SIMKL) rememberID(imdbID, simklID string) {
 	store.remember(imdbID, simklID)
 }
 
+// simklIDPath matches the path /redirect answers with for a title it knows.
+var simklIDPath = regexp.MustCompile(`^/(?:movies|tv|anime)/(\d+)(?:/|$)`)
+
+// /redirect needs no user token on a V2 client id. It answers 301 with the id in
+// Location; an unknown id redirects to the site root.
 func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error) {
 	s.idSearches.Add(1)
 	base := simklBaseURL
 	if s.baseURL != "" {
 		base = s.baseURL
 	}
-	resp, err := s.get(ctx, func(cred string) string {
-		return fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s%s",
-			base, url.QueryEscape(cred), imdbID, simklAppParams())
+	noFollow := *s.httpClient
+	noFollow.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	resp, err := s.getWith(ctx, &noFollow, func(cred string) string {
+		return fmt.Sprintf("%s/redirect?to=simkl&imdb=%s&client_id=%s%s",
+			base, url.QueryEscape(imdbID), url.QueryEscape(cred), simklAppParams())
 	})
 	if err != nil {
 		if errors.Is(err, ErrNotApplicable) {
@@ -419,23 +431,19 @@ func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error
 		}
 		return "", fmt.Errorf("simkl lookup: http get: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<16))
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusMovedPermanently && resp.StatusCode != http.StatusFound {
 		return "", fmt.Errorf("simkl lookup: http %d for imdb id %q", resp.StatusCode, imdbID)
 	}
-
-	var results []struct {
-		IDs struct {
-			Simkl int `json:"simkl"`
-		} `json:"ids"`
+	loc, err := url.Parse(resp.Header.Get("Location"))
+	if err != nil {
+		return "", fmt.Errorf("simkl lookup: bad redirect for imdb id %q: %w", imdbID, err)
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
-		return "", fmt.Errorf("simkl lookup: decode: %w", err)
-	}
-	if len(results) == 0 || results[0].IDs.Simkl == 0 {
+	m := simklIDPath.FindStringSubmatch(loc.Path)
+	if m == nil {
 		s.rememberMiss(imdbID)
 		return "", fmt.Errorf("simkl: no match for imdb id %q: %w", imdbID, errNotFound)
 	}
-
-	return fmt.Sprintf("%d", results[0].IDs.Simkl), nil
+	return m[1], nil
 }

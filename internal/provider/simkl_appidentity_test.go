@@ -26,8 +26,8 @@ func TestEverySIMKLRequestCarriesTheAppIdentity(t *testing.T) {
 		}
 		captured = append(captured, seen{path: r.URL.Path, query: q, userAgent: r.UserAgent()})
 
-		if strings.HasPrefix(r.URL.Path, "/search/id") {
-			_, _ = w.Write([]byte(`[{"ids":{"simkl":12345}}]`))
+		if strings.HasPrefix(r.URL.Path, "/redirect") {
+			simklRedirect(w, "/movies/12345/t")
 			return
 		}
 		_, _ = w.Write([]byte(`{"title":"T","year":2001,"ratings":{"simkl":{"rating":8.1,"votes":10}}}`))
@@ -70,8 +70,8 @@ func TestTheSummaryCallDoesNotAskForExtended(t *testing.T) {
 	var queries []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		queries = append(queries, r.URL.RawQuery)
-		if strings.HasPrefix(r.URL.Path, "/search/id") {
-			_, _ = w.Write([]byte(`[{"ids":{"simkl":12345}}]`))
+		if strings.HasPrefix(r.URL.Path, "/redirect") {
+			simklRedirect(w, "/movies/12345/t")
 			return
 		}
 		_, _ = w.Write([]byte(`{"title":"T","year":2001,"ratings":{"simkl":{"rating":8.1,"votes":10}}}`))

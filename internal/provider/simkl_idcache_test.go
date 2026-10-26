@@ -13,9 +13,9 @@ import (
 func TestTheIMDbLookupHappensOnce(t *testing.T) {
 	lookups := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/search/id") {
+		if strings.HasPrefix(r.URL.Path, "/redirect") {
 			lookups++
-			_, _ = w.Write([]byte(`[{"ids":{"simkl":12345}}]`))
+			simklRedirect(w, "/movies/12345/t")
 			return
 		}
 		_, _ = w.Write([]byte(`{"title":"T","year":2001,"ratings":{"simkl":{"rating":8.1,"votes":10}}}`))
@@ -40,9 +40,9 @@ func TestTheIMDbLookupHappensOnce(t *testing.T) {
 func TestEachTitleGetsItsOwnLookup(t *testing.T) {
 	lookups := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/search/id") {
+		if strings.HasPrefix(r.URL.Path, "/redirect") {
 			lookups++
-			_, _ = w.Write([]byte(`[{"ids":{"simkl":12345}}]`))
+			simklRedirect(w, "/movies/12345/t")
 			return
 		}
 		_, _ = w.Write([]byte(`{"title":"T","year":2001,"ratings":{"simkl":{"rating":8.1,"votes":10}}}`))
@@ -87,7 +87,7 @@ func TestAnOutageIsNotMistakenForANoMatch(t *testing.T) {
 	lookups := 0
 	failing := true
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.URL.Path, "/search/id") {
+		if !strings.HasPrefix(r.URL.Path, "/redirect") {
 			_, _ = w.Write([]byte(`{"title":"T","year":2001,"ratings":{"simkl":{"rating":8.1,"votes":10}}}`))
 			return
 		}
@@ -96,7 +96,7 @@ func TestAnOutageIsNotMistakenForANoMatch(t *testing.T) {
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
-		_, _ = w.Write([]byte(`[{"ids":{"simkl":12345}}]`))
+		simklRedirect(w, "/movies/12345/t")
 	}))
 	defer srv.Close()
 

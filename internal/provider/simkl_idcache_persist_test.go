@@ -24,12 +24,12 @@ func quietLogger() *slog.Logger {
 func simklCountingServer(t *testing.T, known bool, lookups *int) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/search/id") {
+		if strings.HasPrefix(r.URL.Path, "/redirect") {
 			*lookups++
 			if known {
-				_, _ = w.Write([]byte(`[{"ids":{"simkl":12345}}]`))
+				simklRedirect(w, "/movies/12345/t")
 			} else {
-				_, _ = w.Write([]byte(`[]`))
+				simklRedirect(w, "")
 			}
 			return
 		}
