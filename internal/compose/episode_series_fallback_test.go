@@ -224,6 +224,28 @@ func TestAMultiSeasonSeriesDoesNotFallBackToSeasonOne(t *testing.T) {
 	}
 }
 
+// BUG-302. A small season number is a real season TMDB merges into one, so
+// borrowing season 1's episode of the same number would show another
+// episode's rating.
+func TestARealSeasonIsNotFoldedIntoTheOnlySeason(t *testing.T) {
+	var asked []string
+	p := oneSeasonPipeline(t, tmdbOneSeason(t, 1, &asked))
+
+	_, _, _, _, url, err := p.fetchSourceImageAndMeta(context.Background(), Request{
+		MediaType: "thumbnail", ContentType: "series",
+		MediaID: "tt3603454:2:1", Config: imageconfig.Default(),
+	})
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if strings.Contains(url, "the-right-still") {
+		t.Errorf("season 2 episode 1 was answered with season 1's: %q", url)
+	}
+	if strings.Contains(strings.Join(asked, " "), "/season/1/episode/1") {
+		t.Errorf("season 1 episode 1 was asked for: %v", asked)
+	}
+}
+
 // An episode already asking for season 1 must not spend a request asking how
 // many seasons there are, since the retry could only repeat what just failed.
 func TestSeasonOneDoesNotAskForTheCount(t *testing.T) {

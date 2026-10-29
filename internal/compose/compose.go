@@ -1988,6 +1988,11 @@ func (p *Pipeline) locateEpisode(ctx context.Context, series string, season, epi
 	return locator.LocateEpisode(ctx, strings.TrimPrefix(series, "tmdb:"), season, episode)
 }
 
+// minCatalogueSeasonSlot is the smallest season number read as a catalogue id.
+// Below it the number is a real season in a numbering TMDB merges into one
+// (Dandadan: IMDb S2E1 is TMDB S1E13), and the episode is left unplaced.
+const minCatalogueSeasonSlot = 100
+
 // seriesHasOneSeason reports whether TMDB files the series under exactly one
 // season. False when it cannot say, so an unreachable or unknown series leaves
 // the render exactly as it is today.
@@ -2298,7 +2303,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 				}
 			}
 		}
-		if absent && season > 1 {
+		if absent && season >= minCatalogueSeasonSlot {
 			// BUG-286 case 1. Callers outside XRDB put a catalogue id where the
 			// season belongs, and for most of the anime dataset nothing maps it
 			// back, so no conversion is possible. A series TMDB files under one
