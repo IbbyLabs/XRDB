@@ -2,6 +2,22 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.139.0](https://github.com/IbbyLabs/XRDB/compare/v3.138.0...v3.139.0) (2026-10-29)
+
+
+### Added
+
+* **ring:** disc, chip, hexagon, shield and verdict shapes (FR-240) ([5f8f6ea](https://github.com/IbbyLabs/XRDB/commit/5f8f6eaf89f955e00e1a125deb34b7c3d9297e61))
+* **simkl:** use a v2 client id without a linked account ([e6d6316](https://github.com/IbbyLabs/XRDB/commit/e6d631650ac7469e4536dc61bb7d762c09140e5e))
+
+
+### Fixed
+
+* **compose:** keep real seasons out of the one-season fallback (BUG-302) ([a5bf3c4](https://github.com/IbbyLabs/XRDB/commit/a5bf3c428490a74a27cb23424f93ecef2fe50bbd))
+* **ratings:** give wikidata a 6 h answer freshness window ([75a0215](https://github.com/IbbyLabs/XRDB/commit/75a0215a5d94b1cca9bf83e8c3ccfc1dca0ae8d1))
+* **ring:** outlined hexagon and a pointed shield (FR-240) ([85e9fdb](https://github.com/IbbyLabs/XRDB/commit/85e9fdb92ed7896e639391e906c37f742207be48))
+* **simkl:** map IMDb ids through /redirect, which needs no user token ([0f0caa4](https://github.com/IbbyLabs/XRDB/commit/0f0caa492e9191eb83634bc441b19815acd7a1ef))
+
 ## [3.138.0](https://github.com/IbbyLabs/XRDB/compare/v3.137.0...v3.138.0) (2026-10-24)
 
 
