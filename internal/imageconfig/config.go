@@ -709,6 +709,8 @@ type RatingRingConfig struct {
 	RingProgressSource string `json:"ringProgressSource,omitempty"` // source for the arc fill; same values
 	RingGlow           *bool  `json:"ringGlow,omitempty"`           // halo around the arc; nil = on
 	RingShape          string `json:"ringShape,omitempty"`          // "" = progress ring; else a key of RingShapes
+	RingPerSource      bool   `json:"ringPerSource,omitempty"`      // one ring per selected source instead of one combined ring
+	RingLogoPosition   string `json:"ringLogoPosition,omitempty"`   // per-source mark: "" / "below" or "above"
 	// RingCriticsPriority and RingAudiencePriority order the sources the
 	// "priority-critics" and "priority-audience" modes walk: the first one with
 	// a score wins. Empty keeps the built-in order.
@@ -1074,6 +1076,8 @@ type rawRing struct {
 	RingProgressSource   *string  `json:"ringProgressSource"`
 	RingGlow             *bool    `json:"ringGlow"`
 	RingShape            *string  `json:"ringShape"`
+	RingPerSource        *bool    `json:"ringPerSource"`
+	RingLogoPosition     *string  `json:"ringLogoPosition"`
 	RingCriticsPriority  []string `json:"ringCriticsPriority"`
 	RingAudiencePriority []string `json:"ringAudiencePriority"`
 }
@@ -2278,6 +2282,14 @@ func parseRing(cfg *Config, r *raw) {
 	if r.RingShape != nil {
 		if v := strings.ToLower(strings.TrimSpace(*r.RingShape)); RingShapes[v] {
 			cfg.RingShape = v
+		}
+	}
+	if r.RingPerSource != nil {
+		cfg.RingPerSource = *r.RingPerSource
+	}
+	if r.RingLogoPosition != nil {
+		if v := strings.ToLower(strings.TrimSpace(*r.RingLogoPosition)); v == "above" || v == "below" {
+			cfg.RingLogoPosition = v
 		}
 	}
 	if v := normalizeSourceOrder(r.RingCriticsPriority); len(v) > 0 {

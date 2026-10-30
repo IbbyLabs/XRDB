@@ -679,6 +679,8 @@ func keyMutations() map[string]keyOverride {
 		// Rating ring value/progress sources and priority orders.
 		"ringValueSource":      {mut: func(c *imageconfig.Config) { c.RingValueSource = "imdb" }},
 		"ringShape":            {mut: func(c *imageconfig.Config) { c.RingShape = "disc" }},
+		"ringPerSource":        {mut: func(c *imageconfig.Config) { c.RingPerSource = true }},
+		"ringLogoPosition":     {pre: func(c *imageconfig.Config) { c.RingPerSource = true }, mut: func(c *imageconfig.Config) { c.RingLogoPosition = "above" }},
 		"ringProgressSource":   {mut: func(c *imageconfig.Config) { c.RingProgressSource = "imdb" }},
 		"ringCriticsPriority":  {pre: priorityCritics, mut: func(c *imageconfig.Config) { c.RingCriticsPriority = []string{"metacritic", "rt"} }},
 		"ringAudiencePriority": {pre: priorityAudience, mut: func(c *imageconfig.Config) { c.RingAudiencePriority = []string{"tmdb", "imdb"} }},

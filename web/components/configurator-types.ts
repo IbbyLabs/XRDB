@@ -687,6 +687,8 @@ export interface ConfigState {
   ringValueSource: string; // 'overall' | provider id
   ringProgressSource: string;
   ringGlow: boolean;
+  ringPerSource: boolean;
+  ringLogoPosition: 'below' | 'above';
   ringShape: string; // 'ring' | a RING_SHAPE_OPTIONS id
   ringCriticsPriority: string[]; // order 'Top critic' walks; [] = built-in
   ringAudiencePriority: string[]; // order 'Top audience' walks; [] = built-in
@@ -946,6 +948,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   ringValueSource: 'overall',
   ringProgressSource: 'overall',
   ringGlow: true,
+  ringPerSource: false,
+  ringLogoPosition: 'below',
   ringShape: 'ring',
   ringCriticsPriority: [],
   ringAudiencePriority: [],

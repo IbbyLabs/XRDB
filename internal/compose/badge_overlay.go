@@ -3494,6 +3494,9 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	// draws the circle and no value, so it reads as nothing to show rather than
 	// as a score of zero.
 	empty := len(ratings) == 0
+	if cfg.RingPerSource && !empty && drawPerSourceRings(base, ratings, cfg, scale, occ) {
+		return
+	}
 	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
 		empty = true

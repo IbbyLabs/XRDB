@@ -1055,6 +1055,20 @@ export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
         value={config.ringValueSource} onChange={v => onUpdate('ringValueSource', v)} />
       <RingSourceSelect id={`${uid}-ring-prog-src`} label="Fill source"
         value={config.ringProgressSource} onChange={v => onUpdate('ringProgressSource', v)} />
+      <ToggleField id={`${uid}-ring-per-source`} label="One ring per source"
+        checked={config.ringPerSource}
+        onChange={v => onUpdate('ringPerSource', v)}
+        hint="A ring for each selected rating source, coloured by its own score, with the source's logo." />
+      {config.ringPerSource && (
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-ring-logo-pos`}>Logo position</label>
+          <select id={`${uid}-ring-logo-pos`} className="select" value={config.ringLogoPosition}
+            onChange={e => onUpdate('ringLogoPosition', e.target.value as 'below' | 'above')} style={{ maxWidth: '12rem' }}>
+            <option value="below">Below the ring</option>
+            <option value="above">Above the ring</option>
+          </select>
+        </div>
+      )}
       {isRing && <ToggleField id={`${uid}-ring-glow`} label="Glow"
         checked={config.ringGlow}
         onChange={v => onUpdate('ringGlow', v)}
