@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.140.0](https://github.com/IbbyLabs/XRDB/compare/v3.139.1...v3.140.0) (2026-10-30)
+
+
+### Added
+
+* **ring:** one rating ring per source with its logo (FR-238) ([a3b429b](https://github.com/IbbyLabs/XRDB/commit/a3b429b9f61729011a23addd90f7277e4e15a5f6))
+
 ## [3.139.1](https://github.com/IbbyLabs/XRDB/compare/v3.139.0...v3.139.1) (2026-10-30)
 
 
