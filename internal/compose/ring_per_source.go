@@ -59,11 +59,10 @@ func drawPerSourceRings(base *image.NRGBA, ratings []provider.Rating, cfg imagec
 		ringScale *= float64(cfg.RingScale) / 100
 	}
 	// The row shrinks to fit the canvas width rather than spilling off it.
-	// Marks are wide wordmarks, so the mark box spans the ring's width rather than a square.
 	cell := func(rs float64) (outerR, pad, logo, gap int) {
 		outerR = int(26*rs + 0.5)
 		pad = int(math.Max(7, float64(outerR)*2*0.17)) + 1
-		logo = outerR
+		logo = int(float64(outerR)*1.2+0.5) + 2*markPillPad(outerR)
 		gap = int(4*rs + 0.5)
 		return
 	}
@@ -89,6 +88,10 @@ func drawPerSourceRings(base *image.NRGBA, ratings []provider.Rating, cfg imagec
 		logoTop, ringTop = r.Min.Y+pad, r.Min.Y+logo+gap
 	}
 	face := valueFaceIn(cfg.RatingBadgeFont, ringScale*ringValueFontScale)
+	pill := chromeFor(cfg)
+	if pill.bg.A == 0 {
+		pill.bg = color.NRGBA{R: 18, G: 18, B: 20, A: 210}
+	}
 	glow := cfg.RingGlow == nil || *cfg.RingGlow
 	for i, ring := range rings {
 		cx := r.Min.X + i*cellW + cellW/2
@@ -96,9 +99,41 @@ func drawPerSourceRings(base *image.NRGBA, ratings []provider.Rating, cfg imagec
 		fill := ratingRingFillColor(ring.value, cfg.RatingRingColor, cfg.AggregateDynamicStops)
 		frostRoundedRect(base, image.Rect(cx-outerR, cy-outerR, cx+outerR, cy+outerR), outerR, squareNone, cfg.BadgeFrost)
 		drawProgressRing(base, cx, cy, outerR, ring.value/10.0, fill, face, ringLabel(ring.value, false, cfg), cfg.RingCenterOpacity, glow)
-		drawSourceMark(base, ring.source, image.Rect(cx-outerR-pad/2, logoTop, cx+outerR+pad/2, logoTop+logo))
+		drawMarkPill(base, ring.source, cx, logoTop, outerR, cellW, pill)
 	}
 	return true
+}
+
+// markPillPad is the space between a mark and the edge of its pill.
+func markPillPad(outerR int) int { return maxInt(2, outerR/8) }
+
+// drawMarkPill draws a source's mark on a dark pill under or over its ring. Marks
+// are sized by area, so a square icon and a wide wordmark read at a similar weight.
+func drawMarkPill(base *image.NRGBA, source string, cx, top, outerR, cellW int, ch badgeChrome) {
+	icon, ok := ratingIcons[source]
+	if !ok {
+		return
+	}
+	b := icon.Bounds()
+	if b.Dx() <= 0 || b.Dy() <= 0 {
+		return
+	}
+	pad := markPillPad(outerR)
+	side := float64(outerR) * 1.2
+	aspect := float64(b.Dx()) / float64(b.Dy())
+	h := math.Min(side, side/math.Sqrt(aspect))
+	w := h * aspect
+	if maxW := float64(cellW - 2*pad - 2); w > maxW {
+		w, h = maxW, maxW/aspect
+	}
+	iw, ih := int(w+0.5), int(h+0.5)
+	boxH := int(side+0.5) + 2*pad
+	pr := image.Rect(cx-iw/2-pad, top, cx+iw/2+pad, top+boxH)
+	radius := min(pr.Dy(), pr.Dx()) / 2
+	frostRoundedRect(base, pr, radius, squareNone, ch.frost)
+	blendRoundedRect(base, pr, radius, ch.bg)
+	y := top + (boxH-ih)/2
+	drawSourceMark(base, source, image.Rect(cx-iw/2, y, cx-iw/2+iw, y+ih))
 }
 
 // drawSourceMark draws a rating source's mark, in its brand colours when it has
