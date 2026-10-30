@@ -284,6 +284,16 @@ type seriesSeasonCounter interface {
 	SeasonCount(ctx context.Context, seriesID string) (int, bool)
 }
 
+// onlySeasonCounter reads how many episodes a one-season series files under it.
+type onlySeasonCounter interface {
+	OnlySeasonEpisodes(ctx context.Context, seriesID string) (int, bool)
+}
+
+// imdbEpisodeIndex finds an episode by IMDb's own season and episode numbering.
+type imdbEpisodeIndex interface {
+	IMDbEpisode(series string, season, episode int) (id string, absolute int, perSeason []int, ok bool)
+}
+
 // animeStatedSeasonResolver reads a TMDB season an anime id names outright.
 // Separate interface for the same reason as the two above.
 type animeStatedSeasonResolver interface {
@@ -1988,6 +1998,39 @@ func (p *Pipeline) locateEpisode(ctx context.Context, series string, season, epi
 	return locator.LocateEpisode(ctx, strings.TrimPrefix(series, "tmdb:"), season, episode)
 }
 
+func (p *Pipeline) imdbEpisode(series string, season, episode int) (string, int, []int, bool) {
+	index, ok := p.Provider("imdb_local").(imdbEpisodeIndex)
+	if !ok || index == nil {
+		return "", 0, nil, false
+	}
+	return index.IMDbEpisode(series, season, episode)
+}
+
+// coversThrough reports whether IMDb's first seasons, up to at least season,
+// add up to exactly tmdbEpisodes. IMDb lists announced seasons TMDB has not
+// filed yet, so only a prefix has to match.
+func coversThrough(perSeason []int, season, tmdbEpisodes int) bool {
+	sum := 0
+	for i, n := range perSeason {
+		sum += n
+		if i+1 >= season && sum == tmdbEpisodes {
+			return true
+		}
+		if sum > tmdbEpisodes {
+			return false
+		}
+	}
+	return false
+}
+
+func (p *Pipeline) onlySeasonEpisodes(ctx context.Context, series string) (int, bool) {
+	counter, ok := p.providers.Get("tmdb").(onlySeasonCounter)
+	if !ok || counter == nil || series == "" {
+		return 0, false
+	}
+	return counter.OnlySeasonEpisodes(ctx, strings.TrimPrefix(series, "tmdb:"))
+}
+
 // minCatalogueSeasonSlot is the smallest season number read as a catalogue id.
 // Below it the number is a real season in a numbering TMDB merges into one
 // (Dandadan: IMDb S2E1 is TMDB S1E13), and the episode is left unplaced.
@@ -2326,6 +2369,26 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 						"id", logging.RequestID(ctx), "media_id", req.MediaID, "season_slot", season)
 					data, meta, ratingID, stillURL, handled = d2, m2, r2, u2, ok2
 				}
+			}
+		}
+		if absent && season >= 1 && season < minCatalogueSeasonSlot && strings.HasPrefix(series, "tt") {
+			// BUG-302. IMDb splits a series into seasons TMDB merges into one, so
+			// an IMDb-numbered episode is absent from TMDB. IMDb's episode index
+			// names the episode itself, which every IMDb-keyed rating answers for.
+			if epID, absolute, perSeason, found := p.imdbEpisode(series, season, episode); found {
+				ratingID = epID
+				// TMDB's still and score are taken from the merged season only when
+				// IMDb's seasons through this one count the same episodes; otherwise
+				// the offset could land on another episode.
+				n, one := p.onlySeasonEpisodes(ctx, series)
+				if one && coversThrough(perSeason, season, n) {
+					if d2, m2, _, u2, ok2, _ := p.fetchEpisode(ctx, req, series, 1, absolute); ok2 {
+						data, meta, stillURL, handled = d2, m2, u2, ok2
+					}
+				}
+				p.log().InfoContext(ctx, "Placed an episode by IMDb's own numbering",
+					"id", logging.RequestID(ctx), "media_id", req.MediaID, "episode_id", epID,
+					"tmdb_episode", absolute, "imdb_seasons", perSeason, "tmdb_episodes", n, "tmdb_still", handled)
 			}
 		}
 		if handled {

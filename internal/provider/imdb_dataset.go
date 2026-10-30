@@ -52,6 +52,14 @@ type IMDbDataset struct {
 	rankBuilding bool
 	rankAttempt  time.Time
 	rankBuiltAt  time.Time
+
+	// Episode index: series tconst number → packed (season, episode, tconst),
+	// sorted. Built in the background on first lookup.
+	episodes         map[uint32][]uint64
+	episodesURL      string
+	episodesBuilding bool
+	episodesAttempt  time.Time
+	episodesBuiltAt  time.Time
 }
 
 const (

@@ -360,6 +360,34 @@ func (t *TMDB) SeasonCount(ctx context.Context, seriesID string) (int, bool) {
 	return out.NumberOfSeasons, out.NumberOfSeasons > 0
 }
 
+// OnlySeasonEpisodes returns how many episodes TMDB files under season 1 of a
+// series it lists with exactly one season, and false otherwise.
+func (t *TMDB) OnlySeasonEpisodes(ctx context.Context, seriesID string) (int, bool) {
+	if apiKey, readToken := t.credentials(ctx); apiKey == "" && readToken == "" {
+		return 0, false
+	}
+	tmdbID, _, _, _, err := t.resolveID(ctx, "series", seriesID)
+	if err != nil {
+		return 0, false
+	}
+	var out struct {
+		NumberOfSeasons int `json:"number_of_seasons"`
+		Seasons         []struct {
+			SeasonNumber int `json:"season_number"`
+			EpisodeCount int `json:"episode_count"`
+		} `json:"seasons"`
+	}
+	if err := t.get(ctx, t.base()+"/tv/"+url.PathEscape(tmdbID), &out); err != nil || out.NumberOfSeasons != 1 {
+		return 0, false
+	}
+	for _, s := range out.Seasons {
+		if s.SeasonNumber == 1 {
+			return s.EpisodeCount, s.EpisodeCount > 0
+		}
+	}
+	return 0, false
+}
+
 // maxLocateSeasons bounds how many later seasons LocateEpisode reads.
 const maxLocateSeasons = 4
 
