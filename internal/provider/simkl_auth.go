@@ -454,6 +454,20 @@ func oauthErrorCode(code string) string {
 	return "unrecognised_error"
 }
 
+// simklIDSegment matches a path segment naming one title.
+var simklIDSegment = regexp.MustCompile(`^(?:\d+|tt\d+)$`)
+
+// simklEndpoint drops title ids from a path, so refusals are counted per endpoint, not per title.
+func simklEndpoint(path string) string {
+	parts := strings.Split(path, "/")
+	for i, p := range parts {
+		if simklIDSegment.MatchString(p) {
+			parts[i] = ":id"
+		}
+	}
+	return strings.Join(parts, "/")
+}
+
 // simklRefusalWarnEvery spaces out the warning for one endpoint.
 const simklRefusalWarnEvery = time.Hour
 
@@ -463,7 +477,7 @@ func (a *simklAuth) noteUnauthorized(resp *http.Response) {
 	if resp == nil || resp.StatusCode != http.StatusUnauthorized || resp.Request == nil {
 		return
 	}
-	path := resp.Request.URL.Path
+	path := simklEndpoint(resp.Request.URL.Path)
 	a.mu.Lock()
 	if a.refusedAt == nil {
 		a.refusedAt = map[string]time.Time{}

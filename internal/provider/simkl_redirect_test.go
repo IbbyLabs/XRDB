@@ -89,3 +89,27 @@ func TestALookupErrorIsNotANoMatch(t *testing.T) {
 		t.Fatalf("err = %v, want a lookup error that is not errNotFound", err)
 	}
 }
+
+// Misses are shared, so a profile's own key must not be able to record one for everyone.
+func TestAnOwnerKeyMissIsNotRemembered(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		simklRedirect(w, "")
+	}))
+	defer srv.Close()
+	s := NewSIMKL("cid")
+	s.baseURL = srv.URL
+	s.httpClient = srv.Client()
+	owner := WithKeys(context.Background(), map[string]string{KeySIMKL: "junk-key-123"})
+	if _, err := s.fetchIDByIMDB(owner, "tt1375666"); !errors.Is(err, errNotFound) {
+		t.Fatalf("err = %v, want errNotFound", err)
+	}
+	if s.recentlyMissed("tt1375666") {
+		t.Fatal("a miss made with an owner key was recorded for everyone")
+	}
+	if _, err := s.fetchIDByIMDB(context.Background(), "tt1375666"); !errors.Is(err, errNotFound) {
+		t.Fatalf("err = %v, want errNotFound", err)
+	}
+	if !s.recentlyMissed("tt1375666") {
+		t.Fatal("a miss made with the server key was not recorded")
+	}
+}

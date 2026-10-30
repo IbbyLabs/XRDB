@@ -112,6 +112,21 @@ func fillShapeAA(base *image.NRGBA, r image.Rectangle, c color.NRGBA, inside fun
 	b := r.Intersect(base.Bounds())
 	for py := b.Min.Y; py < b.Max.Y; py++ {
 		for px := b.Min.X; px < b.Max.X; px++ {
+			x0, y0 := float64(px-r.Min.X), float64(py-r.Min.Y)
+			// A pixel whose corners and centre agree lies wholly on one side of the edge.
+			probe := 0
+			for _, o := range [5][2]float64{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0.5, 0.5}} {
+				if inside(x0+o[0], y0+o[1]) {
+					probe++
+				}
+			}
+			if probe == 0 {
+				continue
+			}
+			if probe == 5 {
+				blendPixel(base, px, py, c)
+				continue
+			}
 			hits := 0
 			for sy := 0; sy < n; sy++ {
 				for sx := 0; sx < n; sx++ {

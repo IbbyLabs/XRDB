@@ -2388,7 +2388,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 				}
 				p.log().InfoContext(ctx, "Placed an episode by IMDb's own numbering",
 					"id", logging.RequestID(ctx), "media_id", req.MediaID, "episode_id", epID,
-					"tmdb_episode", absolute, "imdb_seasons", perSeason, "tmdb_episodes", n, "tmdb_still", handled)
+					"tmdb_episode", absolute, "imdb_seasons", len(perSeason), "tmdb_episodes", n, "tmdb_still", handled)
 			}
 		}
 		if handled {

@@ -287,7 +287,7 @@ func TestSIMKLRefusalIsLoggedOncePerEndpoint(t *testing.T) {
 		_, _ = s.fetchIDByIMDB(context.Background(), "tt1375666")
 	}
 	out := buf.String()
-	if strings.Count(out, "Simkl refused a V2 request") != 2 || !strings.Contains(out, `"endpoint":"/redirect"`) || !strings.Contains(out, `"endpoint":"/movies/1"`) {
+	if strings.Count(out, "Simkl refused a V2 request") != 2 || !strings.Contains(out, `"endpoint":"/redirect"`) || !strings.Contains(out, `"endpoint":"/movies/:id"`) {
 		t.Fatalf("want one warning per endpoint, got:\n%s", out)
 	}
 }

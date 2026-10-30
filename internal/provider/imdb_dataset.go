@@ -42,6 +42,9 @@ type IMDbDataset struct {
 	// which is not a cost to impose on an operator who does not want the badge.
 	topRatedEnabled bool
 
+	// heavy lets one dataset parse or build run at a time; never taken while holding mu.
+	heavy sync.Mutex
+
 	mu       sync.RWMutex
 	index    map[string]imdbEntry // tconst → entry
 	topRated map[string]int       // tconst → rank, 1-based
@@ -226,10 +229,12 @@ func (d *IMDbDataset) startRankLocked(idx map[string]imdbEntry) {
 }
 
 func (d *IMDbDataset) buildRank(idx map[string]imdbEntry) {
+	d.heavy.Lock()
 	ctx, cancel := context.WithTimeout(context.Background(), topRatedBuildTimeout)
-	defer cancel()
 	started := time.Now()
 	ranks, err := buildTopRated(ctx, d.httpClient, idx)
+	cancel()
+	d.heavy.Unlock()
 
 	d.mu.Lock()
 	d.rankBuilding = false
@@ -268,8 +273,10 @@ func (d *IMDbDataset) refresh(ctx context.Context) error {
 	if fi, err := os.Stat(path); err == nil {
 		size = fi.Size()
 	}
+	d.heavy.Lock()
 	parsed := time.Now()
 	idx, err := parseRatingsTSV(path)
+	d.heavy.Unlock()
 	if err != nil {
 		return fmt.Errorf("parse: %w", err)
 	}
@@ -401,6 +408,9 @@ func (d *IMDbDataset) download(ctx context.Context, dest string) error {
 	return os.Rename(tmp, dest)
 }
 
+// ratingsMaxPlain bounds the decompressed ratings text; the real file is about 30 MB.
+const ratingsMaxPlain = 512 << 20
+
 // parseRatingsTSV reads the compressed TSV and builds the in-memory index.
 // Format: tconst\taverageRating\tnumVotes (header on first line).
 func parseRatingsTSV(path string) (map[string]imdbEntry, error) {
@@ -417,7 +427,7 @@ func parseRatingsTSV(path string) (map[string]imdbEntry, error) {
 	defer gz.Close()
 
 	index := make(map[string]imdbEntry, 600_000)
-	sc := bufio.NewScanner(gz)
+	sc := bufio.NewScanner(&cappedReader{r: gz, max: ratingsMaxPlain})
 	first := true
 	for sc.Scan() {
 		line := sc.Text()

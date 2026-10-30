@@ -443,7 +443,10 @@ func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error
 	}
 	m := simklIDPath.FindStringSubmatch(loc.Path)
 	if m == nil {
-		s.rememberMiss(imdbID)
+		// Misses are shared by every render, so only the server's own credential may record one.
+		if keyFrom(ctx, KeySIMKL) == "" {
+			s.rememberMiss(imdbID)
+		}
 		return "", fmt.Errorf("simkl: no match for imdb id %q: %w", imdbID, errNotFound)
 	}
 	return m[1], nil

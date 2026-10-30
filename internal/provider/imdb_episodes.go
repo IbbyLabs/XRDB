@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -25,7 +26,32 @@ const (
 	episodesMaxAge = 7 * 24 * time.Hour
 	// episodesMaxBytes bounds the streamed read.
 	episodesMaxBytes = 256 << 20
+	// episodesMaxPlain bounds the decompressed text; the real file is about 250 MB.
+	episodesMaxPlain = 1 << 30
+	// episodesMaxRows bounds the parsed rows; the real file has about 9 million.
+	episodesMaxRows = 25_000_000
+	// episodesMaxSeason is the highest season number kept; real series stop well short of it.
+	episodesMaxSeason = 500
 )
+
+// errTooLarge is returned once a capped reader passes its limit.
+var errTooLarge = errors.New("dataset larger than its cap")
+
+// cappedReader fails rather than truncates once more than max bytes are read.
+type cappedReader struct {
+	r   io.Reader
+	max int64
+	n   int64
+}
+
+func (c *cappedReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += int64(n)
+	if c.n > c.max {
+		return n, errTooLarge
+	}
+	return n, err
+}
 
 // An episode packs into one word: season (16 bits), episode (16 bits), episode
 // tconst number (32 bits). Sorting the words sorts by season, then episode.
@@ -106,14 +132,16 @@ func (d *IMDbDataset) startEpisodesLocked() {
 }
 
 func (d *IMDbDataset) buildEpisodes() {
-	ctx, cancel := context.WithTimeout(context.Background(), episodesBuildTimeout)
-	defer cancel()
-	started := time.Now()
 	url := d.episodesURL
 	if url == "" {
 		url = imdbEpisodesURL
 	}
+	d.heavy.Lock()
+	ctx, cancel := context.WithTimeout(context.Background(), episodesBuildTimeout)
+	started := time.Now()
 	idx, err := loadEpisodeIndex(ctx, d.httpClient, url)
+	cancel()
+	d.heavy.Unlock()
 	d.mu.Lock()
 	d.episodesBuilding = false
 	if err == nil {
@@ -147,7 +175,7 @@ func loadEpisodeIndex(ctx context.Context, client *http.Client, url string) (map
 		return nil, fmt.Errorf("gzip: %w", err)
 	}
 	defer gz.Close()
-	return parseEpisodeIndex(gz)
+	return parseEpisodeIndex(&cappedReader{r: gz, max: episodesMaxPlain})
 }
 
 // parseEpisodeIndex reads tconst, parentTconst, seasonNumber, episodeNumber rows.
@@ -157,6 +185,7 @@ func parseEpisodeIndex(r io.Reader) (map[uint32][]uint64, error) {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 64<<10), 1<<20)
 	first := true
+	rows := 0
 	for sc.Scan() {
 		if first {
 			first = false
@@ -170,8 +199,11 @@ func parseEpisodeIndex(r io.Reader) (map[uint32][]uint64, error) {
 		parent, ok2 := ttNumber(f[1])
 		season, err1 := strconv.ParseUint(f[2], 10, 16)
 		number, err2 := strconv.ParseUint(f[3], 10, 16)
-		if !ok1 || !ok2 || err1 != nil || err2 != nil {
+		if !ok1 || !ok2 || err1 != nil || err2 != nil || season > episodesMaxSeason {
 			continue
+		}
+		if rows++; rows > episodesMaxRows {
+			return nil, fmt.Errorf("scan episodes: more than %d rows: %w", episodesMaxRows, errTooLarge)
 		}
 		grow[parent] = append(grow[parent], packEpisode(season, number, uint64(ep)))
 	}

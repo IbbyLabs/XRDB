@@ -1,6 +1,10 @@
 // Command migrate-badge-scale lowers saved ratingBadgeScale values so a profile
 // renders the same badge size under the scale-aware frame caps as it did under
 // the fixed ones.
+//
+// It was applied to production on 24 Oct 2026 and is not idempotent; only --restore
+// is meant to run again. Known limits: a null config or surface panics, the plan is
+// read outside the write transaction, and --restore overwrites later edits.
 package main
 
 import (
