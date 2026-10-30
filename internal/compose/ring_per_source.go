@@ -59,10 +59,11 @@ func drawPerSourceRings(base *image.NRGBA, ratings []provider.Rating, cfg imagec
 		ringScale *= float64(cfg.RingScale) / 100
 	}
 	// The row shrinks to fit the canvas width rather than spilling off it.
+	// Marks are wide wordmarks, so the mark box spans the ring's width rather than a square.
 	cell := func(rs float64) (outerR, pad, logo, gap int) {
 		outerR = int(26*rs + 0.5)
 		pad = int(math.Max(7, float64(outerR)*2*0.17)) + 1
-		logo = int(float64(outerR) * 0.95)
+		logo = outerR
 		gap = int(4*rs + 0.5)
 		return
 	}
@@ -95,7 +96,7 @@ func drawPerSourceRings(base *image.NRGBA, ratings []provider.Rating, cfg imagec
 		fill := ratingRingFillColor(ring.value, cfg.RatingRingColor, cfg.AggregateDynamicStops)
 		frostRoundedRect(base, image.Rect(cx-outerR, cy-outerR, cx+outerR, cy+outerR), outerR, squareNone, cfg.BadgeFrost)
 		drawProgressRing(base, cx, cy, outerR, ring.value/10.0, fill, face, ringLabel(ring.value, false, cfg), cfg.RingCenterOpacity, glow)
-		drawSourceMark(base, ring.source, image.Rect(cx-logo/2, logoTop, cx+logo/2, logoTop+logo))
+		drawSourceMark(base, ring.source, image.Rect(cx-outerR-pad/2, logoTop, cx+outerR+pad/2, logoTop+logo))
 	}
 	return true
 }
