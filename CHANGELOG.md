@@ -2,6 +2,15 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.140.1](https://github.com/IbbyLabs/XRDB/compare/v3.140.0...v3.140.1) (2026-10-30)
+
+
+### Fixed
+
+* bound dataset parses, Simkl misses and ring shape cost ([4b82950](https://github.com/IbbyLabs/XRDB/commit/4b829501055fc2d8b81ae4d6ede8de05e836069a))
+* **ring:** per-source marks sized by area on a dark pill (FR-238) ([63764db](https://github.com/IbbyLabs/XRDB/commit/63764dbf0ed3e27a700b4dcd1a085a423cb1fadb))
+* **ring:** per-source marks span the ring width (FR-238) ([00ee37f](https://github.com/IbbyLabs/XRDB/commit/00ee37f3b04c9ac82c00c1cad759eef7864710ab))
+
 ## [3.140.0](https://github.com/IbbyLabs/XRDB/compare/v3.139.1...v3.140.0) (2026-10-30)
 
 
