@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.139.1](https://github.com/IbbyLabs/XRDB/compare/v3.139.0...v3.139.1) (2026-10-30)
+
+
+### Fixed
+
+* **compose:** place IMDb-numbered episodes TMDB merges (BUG-302) ([744533e](https://github.com/IbbyLabs/XRDB/commit/744533e5f7a57cbbdf5783474b63705bac959045))
+
 ## [3.139.0](https://github.com/IbbyLabs/XRDB/compare/v3.138.0...v3.139.0) (2026-10-29)
 
 
