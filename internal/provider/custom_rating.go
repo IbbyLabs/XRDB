@@ -19,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/publicsuffix"
+
 	"xrdb_rewrite/internal/netguard"
 )
 
@@ -70,6 +72,19 @@ func ValidateCustomRatingTemplate(raw string) error {
 		return errors.New("the custom rating URL must point at a public address")
 	}
 	return nil
+}
+
+// customRatingDomain is the registrable domain the breaker and pacer key on,
+// so subdomains of one site share a turn.
+func customRatingDomain(host string) string {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	if _, err := netip.ParseAddr(host); err == nil {
+		return host
+	}
+	if d, err := publicsuffix.EffectiveTLDPlusOne(host); err == nil {
+		return d
+	}
+	return host
 }
 
 func fillCustomRatingTemplate(tmpl, imdbID, kind string) string {
@@ -149,11 +164,12 @@ func (c *CustomRating) Fetch(ctx context.Context, mediaType, id string) (*MediaM
 		return &MediaMeta{}, nil
 	}
 	host := u.Hostname()
-	if err := c.admit(ctx, host); err != nil {
+	domain := customRatingDomain(host)
+	if err := c.admit(ctx, domain); err != nil {
 		return nil, fmt.Errorf("custom rating endpoint %s: %w", host, err)
 	}
 	rating, ok, err := c.get(ctx, u)
-	c.record(host, err == nil)
+	c.record(domain, err == nil)
 	if err != nil {
 		return nil, fmt.Errorf("custom rating endpoint %s: %w", host, err)
 	}

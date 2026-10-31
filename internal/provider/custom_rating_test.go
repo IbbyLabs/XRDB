@@ -235,3 +235,32 @@ func TestCustomRatingKeyKeepsCommas(t *testing.T) {
 		t.Errorf("ValidateKeys: %v", err)
 	}
 }
+
+func TestCustomRatingSubdomainsShareOneTurn(t *testing.T) {
+	cases := map[string]string{
+		"a.victim.com":      "victim.com",
+		"b.victim.com":      "victim.com",
+		"api.example.co.uk": "example.co.uk",
+		"Example.COM.":      "example.com",
+		"203.0.113.9":       "203.0.113.9",
+	}
+	for host, want := range cases {
+		if got := customRatingDomain(host); got != want {
+			t.Errorf("customRatingDomain(%q) = %q, want %q", host, got, want)
+		}
+	}
+
+	c := newCustomRating(func(netip.AddrPort) bool { return true })
+	now := time.Unix(1_700_000_000, 0)
+	c.now = func() time.Time { return now }
+	c.sleep = func(context.Context, time.Duration) error { return nil }
+	turns := int(customRatingMaxWait/customRatingMinGap) + 1
+	for i := 0; i < turns; i++ {
+		if err := c.admit(context.Background(), customRatingDomain("s"+strconv.Itoa(i)+".victim.com")); err != nil {
+			t.Fatalf("turn %d refused: %v", i, err)
+		}
+	}
+	if err := c.admit(context.Background(), customRatingDomain("another.victim.com")); err != errCustomRatingPaced {
+		t.Fatalf("a fresh subdomain got its own allowance: %v", err)
+	}
+}
