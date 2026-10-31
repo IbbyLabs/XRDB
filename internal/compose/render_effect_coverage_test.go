@@ -97,6 +97,7 @@ func richMeta() provider.MediaMeta {
 			// Four votes: the shape FR-178 exists to hide, and the only rating
 			// here thin enough for a minimum to act on.
 			{Source: "trakt", Value: 8.0, Votes: 4, Label: "8.0"},
+			{Source: "custom", Value: 7.5, Votes: 0, Label: "7.5"},
 		},
 	}
 }
@@ -722,6 +723,10 @@ func keyMutations() map[string]keyOverride {
 		"ratingProviderIconUrl": {mut: func(c *imageconfig.Config) {
 			c.RatingProviderIconURL = map[string]string{c.Ratings[0]: seededMarkURL}
 		}},
+		"customRatingLabel": {
+			pre: func(c *imageconfig.Config) { c.Ratings = append(c.Ratings, "custom") },
+			mut: func(c *imageconfig.Config) { c.CustomRatingLabel = "Mine" },
+		},
 		"customIconKeepRtMarks": {
 			pre: func(c *imageconfig.Config) { c.RatingProviderIconURL = map[string]string{"rt": seededMarkURL} },
 			mut: func(c *imageconfig.Config) { c.CustomIconKeepRTMarks = true },

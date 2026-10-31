@@ -435,6 +435,20 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
             has no rating for that title.
           </span>
 
+          {config.ratings.includes('custom') && (
+            <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
+              <label className="label" htmlFor={`${uid}-custom-label`}>Custom Source Label</label>
+              <input id={`${uid}-custom-label`} className="input" type="text" maxLength={12}
+                value={config.customRatingLabel} placeholder="e.g. My Score" spellCheck={false}
+                onChange={e => onUpdate('customRatingLabel', e.target.value)} />
+              <span className="hint">
+                Shown before the score unless you set a custom icon for it. The endpoint is set in your
+                saved profile, under its keys, so it never appears in a poster link. It is called with the
+                title&apos;s IMDb id and answers with JSON such as {'{'}&quot;score&quot;: 8.1, &quot;max&quot;: 10{'}'}.
+              </span>
+            </div>
+          )}
+
           {config.ratings.length > 1 && (
             <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
               <span className="label" id={`${uid}-order-label`}>Order</span>

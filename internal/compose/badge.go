@@ -1787,6 +1787,9 @@ func ratingBadgeValue(r provider.Rating, mode string, hideNativeScale bool) stri
 // read as "nobody voted".
 func ratingBadgeLabel(r provider.Rating, cfg imageconfig.Config) string {
 	value := ratingBadgeValue(r, cfg.RatingValueMode, cfg.HideNativeScale)
+	if r.Source == provider.CustomRatingSource && cfg.CustomRatingLabel != "" && cfg.RatingProviderIconURL[r.Source] == "" && !r.Unavailable {
+		value = cfg.CustomRatingLabel + " " + value
+	}
 	if !cfg.RatingVoteCounts || r.Votes <= 0 {
 		return value
 	}

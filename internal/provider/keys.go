@@ -34,10 +34,12 @@ const (
 	KeyTrakt   = "trakt"
 	KeySIMKL   = "simkl"
 	KeyPMDB    = "pmdb"
+	// KeyCustomRating holds a URL template rather than a key.
+	KeyCustomRating = "customrating"
 )
 
 // SupportedKeys are the providers that read an owner-supplied credential.
-var SupportedKeys = []string{KeyTMDB, KeyMDBList, KeyMediux, KeyOMDB, KeyFanart, KeyTrakt, KeySIMKL, KeyPMDB}
+var SupportedKeys = []string{KeyTMDB, KeyMDBList, KeyMediux, KeyOMDB, KeyFanart, KeyTrakt, KeySIMKL, KeyPMDB, KeyCustomRating}
 
 // SupportsKey reports whether name is a provider a key can be supplied for.
 func SupportsKey(name string) bool {
@@ -145,7 +147,7 @@ func keyFrom(ctx context.Context, name string) string {
 	}
 	keys, _ := ctx.Value(keysCtxKey{}).(map[string]string)
 	raw := keys[name]
-	if !strings.Contains(raw, ",") {
+	if !strings.Contains(raw, ",") || name == KeyCustomRating {
 		return strings.TrimSpace(raw)
 	}
 	if !rotatesForOwner(name) {

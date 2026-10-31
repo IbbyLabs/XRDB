@@ -85,7 +85,8 @@ const PROVIDER_KEY_FIELDS = [
   { id: 'trakt',   label: 'Trakt client ID' },
   { id: 'simkl',   label: 'SIMKL client ID' },
   { id: 'pmdb',    label: 'PMDB' },
-] as const;
+  { id: 'customrating', label: 'Custom rating URL', placeholder: 'https://…?id={imdb}&key=…' },
+] as const satisfies readonly { id: string; label: string; placeholder?: string }[];
 
 export function ProfilePanel({
   configs, mediaType, mediaId, mediaTitle, loaded, setLoaded, onLoadConfigs, onLoadPreview, flash,
@@ -537,7 +538,7 @@ export function ProfilePanel({
                       type="password"
                       value={providerKeys[f.id] ?? ''}
                       onChange={e => setProviderKeys({ ...providerKeys, [f.id]: e.target.value })}
-                      placeholder={loaded.keysSet?.includes(f.id) ? 'Saved — type to replace' : 'Using the server key'}
+                      placeholder={loaded.keysSet?.includes(f.id) ? 'Saved — type to replace' : ('placeholder' in f ? f.placeholder : 'Using the server key')}
                       spellCheck={false}
                       autoComplete="new-password"
                     />

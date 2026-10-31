@@ -141,6 +141,7 @@ export const RATING_OPTIONS: { id: string; label: string; accent: string; icon: 
   { id: 'allocine',       label: 'AlloCiné',        accent: '#fecc00', icon: '/rating-logos/allocine.svg' },
   { id: 'allocinepress',  label: 'AlloCiné Press',  accent: '#f59e0b', icon: '/rating-logos/allocinepress.svg' },
   { id: 'filmweb',        label: 'Filmweb',         accent: '#ecb014', icon: '/rating-logos/filmweb.png' },
+  { id: 'custom',         label: 'Custom',          accent: '#9ca3af', icon: '/rating-logos/custom.svg' },
   { id: 'mal',            label: 'MyAnimeList',     accent: '#2c6fbb', icon: '/rating-logos/mal.png', group: 'anime' },
   { id: 'anilist',        label: 'AniList',         accent: '#02a9ff', icon: '/rating-logos/anilist.png', group: 'anime' },
   { id: 'kitsu',          label: 'Kitsu',           accent: '#f76e18', icon: '/rating-logos/kitsu.svg', group: 'anime' },
@@ -581,6 +582,7 @@ export interface ConfigState {
   ratingProviderIconScale: Record<string, number>; // source id → icon scale percent 50-150; no entry = 100
   ratingProviderIconUrl: Record<string, string>; // source id → http(s) image URL drawn instead of the bundled mark
   customIconKeepRtMarks: boolean; // with a custom RT icon, keep the bundled Certified Fresh and Rotten marks
+  customRatingLabel: string; // text before the custom source's score when it has no icon
   ratingProviderWeights: Record<string, number>; // source id → weight; no entry = 1, 0 = ignore
   genreBadgeScale: number;
   genreBadgeOffsetX: number;
@@ -842,6 +844,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingProviderIconScale: {},
   ratingProviderIconUrl: {},
   customIconKeepRtMarks: false,
+  customRatingLabel: '',
   ratingProviderWeights: {},
   genreBadgeScale: 0,
   genreBadgeOffsetX: 0,

@@ -159,6 +159,7 @@ func main() {
 	reg.Register(tmdbClient)
 	reg.Register(provider.NewMDBList(cfg.MDBListAPIKey))
 	reg.Register(provider.NewOMDB(cfg.OMDBAPIKey))
+	reg.Register(provider.NewCustomRating())
 	reg.Register(provider.NewFanart(cfg.FanartAPIKey))
 	reg.Register(provider.NewTrakt(cfg.TraktClientID))
 	// SIMKL asks every request to carry the application name, its version and a

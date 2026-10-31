@@ -40,6 +40,8 @@ func ValidateKey(name, key string) error {
 			return nil
 		}
 		return fmt.Errorf("that does not look like a TMDB credential: expected a 32-character API key, or a read access token starting with eyJ")
+	case KeyCustomRating:
+		return ValidateCustomRatingTemplate(key)
 	case KeyMDBList, KeyOMDB, KeyFanart, KeyTrakt, KeySIMKL, KeyPMDB:
 		if opaqueRe.MatchString(key) {
 			return nil
@@ -55,6 +57,12 @@ func ValidateKey(name, key string) error {
 // is still a bad credential.
 func ValidateKeys(keys map[string]string) error {
 	for _, name := range SortedNames(keys) {
+		if name == KeyCustomRating {
+			if err := ValidateCustomRatingTemplate(keys[name]); err != nil {
+				return err
+			}
+			continue
+		}
 		list := splitKeyList(keys[name])
 		if len(list) > 1 && !rotatesForOwner(name) {
 			return fmt.Errorf("%s takes one key", providerLabel(name))
@@ -100,6 +108,8 @@ func providerLabel(name string) string {
 		return "PMDB"
 	case KeyTMDB:
 		return "TMDB"
+	case KeyCustomRating:
+		return "Custom rating"
 	}
 	return name
 }

@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"unicode"
 
 	"xrdb_rewrite/internal/render"
 )
@@ -591,6 +592,9 @@ type RatingBadgeConfig struct {
 	// RatingProviderIconURL maps a provider source to an http(s) image URL
 	// drawn in place of its bundled mark.
 	RatingProviderIconURL map[string]string `json:"ratingProviderIconUrl,omitempty"`
+	// CustomRatingLabel is the text drawn before the custom source's score
+	// when no mark is set for it.
+	CustomRatingLabel string `json:"customRatingLabel,omitempty"`
 	// CustomIconKeepRTMarks keeps the bundled Certified Fresh and Rotten marks
 	// when RT has a custom icon, which then draws only for a plain Fresh score.
 	CustomIconKeepRTMarks bool `json:"customIconKeepRtMarks,omitempty"`
@@ -1114,6 +1118,7 @@ type rawRating struct {
 	RatingProviderOverrides map[string]string  `json:"ratingProviderOverrides"`
 	RatingProviderIconScale map[string]int     `json:"ratingProviderIconScale"`
 	RatingProviderIconURL   map[string]string  `json:"ratingProviderIconUrl"`
+	CustomRatingLabel       *string            `json:"customRatingLabel"`
 	CustomIconKeepRTMarks   *bool              `json:"customIconKeepRtMarks"`
 	RatingProviderWeights   map[string]float64 `json:"ratingProviderWeights"`
 }
@@ -2170,6 +2175,9 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if len(r.RatingProviderIconURL) > 0 {
 		cfg.RatingProviderIconURL = parseIconURLs(r.RatingProviderIconURL)
+	}
+	if r.CustomRatingLabel != nil {
+		cfg.CustomRatingLabel = parseCustomRatingLabel(*r.CustomRatingLabel)
 	}
 	if r.CustomIconKeepRTMarks != nil {
 		cfg.CustomIconKeepRTMarks = *r.CustomIconKeepRTMarks
@@ -3238,4 +3246,23 @@ func parseIconURLs(in map[string]string) map[string]string {
 		m[k] = v
 	}
 	return m
+}
+
+// customRatingLabelMax bounds the label so it fits on one badge.
+const customRatingLabelMax = 12
+
+// parseCustomRatingLabel keeps printable characters, trimmed and capped.
+func parseCustomRatingLabel(raw string) string {
+	var b strings.Builder
+	n := 0
+	for _, r := range strings.TrimSpace(raw) {
+		if n == customRatingLabelMax {
+			break
+		}
+		if unicode.IsPrint(r) {
+			b.WriteRune(r)
+			n++
+		}
+	}
+	return strings.TrimSpace(b.String())
 }

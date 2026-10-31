@@ -9,17 +9,16 @@ import (
 	_ "image/gif" // register GIF decoding for custom rating marks
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
 	"sync"
-	"syscall"
 	"time"
 
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/sync/singleflight"
 	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/netguard"
 	"xrdb_rewrite/internal/provider"
 )
 
@@ -38,37 +37,14 @@ const (
 // decodeSlots bounds how many marks decode at once across all renders.
 var decodeSlots = make(chan struct{}, 3)
 
-var errBlockedAddress = errors.New("address is not a public internet address")
-
-// blockedPrefixes are special-purpose ranges netip's predicates do not cover.
-var blockedPrefixes = []netip.Prefix{
-	netip.MustParsePrefix("100.64.0.0/10"), // carrier-grade NAT
-	netip.MustParsePrefix("192.0.0.0/24"),
-	netip.MustParsePrefix("198.18.0.0/15"),
-	netip.MustParsePrefix("64:ff9b::/96"), // NAT64 can reach IPv4 private space
-	netip.MustParsePrefix("64:ff9b:1::/48"),
-}
-
 // PublicAddress reports whether ip is a public unicast address.
-func PublicAddress(ip netip.Addr) bool { return publicAddress(ip) }
+func PublicAddress(ip netip.Addr) bool { return netguard.PublicAddress(ip) }
 
 // publicDial allows a dial only to a public address.
-func publicDial(ap netip.AddrPort) bool { return publicAddress(ap.Addr()) }
+func publicDial(ap netip.AddrPort) bool { return netguard.PublicDial(ap) }
 
 // publicAddress reports whether ip is a public unicast address.
-func publicAddress(ip netip.Addr) bool {
-	ip = ip.Unmap()
-	if !ip.IsValid() || !ip.IsGlobalUnicast() || ip.IsPrivate() || ip.IsLoopback() ||
-		ip.IsLinkLocalUnicast() || ip.IsUnspecified() || ip.IsMulticast() {
-		return false
-	}
-	for _, p := range blockedPrefixes {
-		if p.Contains(ip) {
-			return false
-		}
-	}
-	return true
-}
+func publicAddress(ip netip.Addr) bool { return netguard.PublicAddress(ip) }
 
 type customMark struct {
 	img     image.Image
@@ -95,40 +71,8 @@ func newCustomMarkStore(logger *slog.Logger, allow func(netip.AddrPort) bool) *c
 	if logger == nil {
 		logger = slog.Default()
 	}
-	dialer := &net.Dialer{
-		Timeout: customMarkTimeout,
-		// Control sees the address actually dialled, after DNS and on every
-		// redirect, so a hostname cannot resolve its way past the check.
-		Control: func(_, address string, _ syscall.RawConn) error {
-			ap, err := netip.ParseAddrPort(address)
-			if err != nil || !allow(ap) {
-				return errBlockedAddress
-			}
-			return nil
-		},
-	}
-	transport := &http.Transport{
-		Proxy:                 nil,
-		DialContext:           dialer.DialContext,
-		TLSHandshakeTimeout:   customMarkTimeout,
-		ResponseHeaderTimeout: customMarkTimeout,
-		MaxIdleConns:          16,
-		IdleConnTimeout:       90 * time.Second,
-	}
 	return &customMarkStore{
-		client: &http.Client{
-			Timeout:   customMarkTimeout,
-			Transport: transport,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				if len(via) >= 3 {
-					return errors.New("too many redirects")
-				}
-				if req.URL.Scheme != "https" && req.URL.Scheme != "http" {
-					return errors.New("redirect to a non-http scheme")
-				}
-				return nil
-			},
-		},
+		client:  netguard.NewClient(allow, netguard.Options{Timeout: customMarkTimeout, MaxRedirects: 3}),
 		logger:  logger,
 		now:     time.Now,
 		entries: make(map[string]customMarkEntry),

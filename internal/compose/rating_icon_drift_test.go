@@ -72,6 +72,7 @@ func TestRatingIconsStayInStepWithTheBrandedSet(t *testing.T) {
 	monochromeMarks := map[string]bool{
 		"allocine": true, "kitsu": true, "simkl": true, "trakt": true, "rt": true, "pmdb": true,
 		"critics-rotten": true,
+		"custom":         true, // a plain outline star, tinted like the other glyph marks
 	}
 	ensureIcons()
 	for name := range render {

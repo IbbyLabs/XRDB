@@ -793,6 +793,17 @@ func providerWanted(p provider.Provider, cfg imageconfig.Config, contentType str
 
 // fetchRatings asks a provider for ratings the way that provider can be asked:
 // by id for most, by title for the ones with no id-based lookup.
+// ratingsCacheID scopes a cached answer to whatever the provider says sets it
+// apart, so answers fetched for one profile's endpoint stay with that profile.
+func ratingsCacheID(ctx context.Context, prov provider.Provider, id string) string {
+	if s, ok := prov.(interface{ RatingsCacheScope(context.Context) string }); ok {
+		if scope := s.RatingsCacheScope(ctx); scope != "" {
+			return id + "@" + scope
+		}
+	}
+	return id
+}
+
 func (p *Pipeline) fetchRatings(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, error) {
 	if ep, ok := prov.(provider.EpisodeRatingProvider); ok && req.episode != nil {
 		tconst := ""
@@ -912,7 +923,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		}
 		// The source is refusing on rate-limit grounds. Waiting for it to say so
 		// again costs the render seconds, so take the remembered value instead.
-		key := ratingsKey(prov.Name(), req.ContentType, req.MediaID)
+		key := ratingsKey(prov.Name(), req.ContentType, ratingsCacheID(ctx, prov, req.MediaID))
 		if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
 			p.log().InfoContext(ctx, "A ratings source is held out; serving a remembered rating",
 				"id", logging.RequestID(ctx), "source", prov.Name(),
@@ -939,7 +950,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	// a recorded failure cools the source off for every caller, which is the
 	// outcome the reserve exists to prevent.
 	if !ownerKeyed && provider.TreatedAsBulk(provider.CallerClassFrom(ctx)) && !provider.BulkCallerMayReach(prov.Name()) {
-		key := ratingsKey(prov.Name(), req.ContentType, req.MediaID)
+		key := ratingsKey(prov.Name(), req.ContentType, ratingsCacheID(ctx, prov, req.MediaID))
 		if p.health != nil {
 			if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
 				p.log().InfoContext(ctx, "A ratings source is held out; serving a remembered rating",
@@ -958,7 +969,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		}
 		return nil, false, fmt.Errorf("%s: %w", prov.Name(), provider.ErrBulkAllowanceHeld)
 	}
-	cacheKey := ratingsKey(prov.Name(), req.ContentType, req.MediaID)
+	cacheKey := ratingsKey(prov.Name(), req.ContentType, ratingsCacheID(ctx, prov, req.MediaID))
 	// Concurrent renders of one title share a single fetch, so a follower's
 	// elapsed time is the leader's whole round trip and costs the source
 	// nothing. Timed apart from the fetch: the two are the same number to a

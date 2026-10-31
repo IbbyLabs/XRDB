@@ -54,6 +54,7 @@ var ratingLabels = []struct{ ID, Label string }{
 	{"allocine", "AlloCiné"},
 	{"allocinepress", "AlloCiné Press"},
 	{"filmweb", "Filmweb"},
+	{"custom", "Custom"},
 	{"mal", "MyAnimeList"},
 	{"anilist", "AniList"},
 	{"kitsu", "Kitsu"},
