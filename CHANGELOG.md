@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.141.0](https://github.com/IbbyLabs/XRDB/compare/v3.140.1...v3.141.0) (2026-11-01)
+
+
+### Added
+
+* **configurator:** preview the image as Nuvio crops it per row (FR-237) ([6d1baa1](https://github.com/IbbyLabs/XRDB/commit/6d1baa103d7006e21dca34ff37a8e6ef9e2c8cbe))
+* **ratings:** custom rating source from the owner's endpoint (FR-239) ([568610c](https://github.com/IbbyLabs/XRDB/commit/568610c3c334f5c0ca5835eba005386796d411c4))
+
+
+### Fixed
+
+* **ratings:** pace custom rating hosts by registrable domain (FR-239) ([f0f9371](https://github.com/IbbyLabs/XRDB/commit/f0f9371f309af5aac3a20310e89645e49173392d))
+
 ## [3.140.1](https://github.com/IbbyLabs/XRDB/compare/v3.140.0...v3.140.1) (2026-10-30)
 
 
