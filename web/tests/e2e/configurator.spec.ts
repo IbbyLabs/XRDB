@@ -39,3 +39,17 @@ test('configurator persists selected media across reload', async ({ page }) => {
   await page.reload();
   await expect(page.locator('.media-current-title')).toHaveText('tt1234567');
 });
+
+test('Nuvio crop preview lists the square episode list first and frames it', async ({ page }) => {
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  await page.route(/\/(poster|backdrop|thumbnail)\//, route => route.fulfill({ status: 200, contentType: 'image/png', body: png }));
+  await page.goto('/configurator');
+  await page.getByRole('tab', { name: /thumbnail/i }).click();
+  const pick = page.getByLabel(/see it in nuvio/i);
+  await expect(pick.locator('option').nth(1)).toHaveText(/episode list \(square\)/i);
+  await pick.selectOption({ index: 1 });
+  const card = page.getByTestId('nuvio-frame-card');
+  const box = await card.boundingBox();
+  expect(Math.abs((box?.width ?? 0) - (box?.height ?? 1))).toBeLessThan(2);
+  await expect(page.getByText('Nuvio shows 56% of the width here.')).toBeVisible();
+});

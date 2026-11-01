@@ -1941,6 +1941,70 @@ textarea.input { min-height: 0; line-height: 1.5; }
   justify-content: center;
 }
 
+/* ── Nuvio crop preview ────────────────────────────────────────────── */
+
+.nuvio-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.nuvio-frame-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  max-width: 24rem;
+}
+.nuvio-frame-label {
+  flex: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--muted);
+}
+.nuvio-frame-view {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.nuvio-frame-card {
+  position: relative;
+  height: 200px;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--bg-base);
+  box-shadow: var(--shadow-1);
+}
+.nuvio-frame-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+.nuvio-frame-tick {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.55);
+  border: 1.5px solid rgb(255 255 255 / 0.85);
+}
+.nuvio-frame-bar {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(to right, rgb(255 255 255 / 0.9) 40%, rgb(0 0 0 / 0.3) 40%);
+}
+
 /* ── Not found ─────────────────────────────────────────────────────── */
 
 .notfound {

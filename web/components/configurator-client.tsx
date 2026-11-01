@@ -21,6 +21,7 @@ import { ProfilePanel, type LoadedProfile } from './profile-panel';
 import { InstallPanel } from './install-panel';
 import { MediaSearch } from './media-search';
 import { tablistKeyNav } from './tablist';
+import { NuvioFrame } from './nuvio-frame';
 import { BRAND_DISCORD_URL } from '@/lib/brand';
 import { useInstanceFeatures } from '@/lib/instance-features';
 
@@ -704,6 +705,8 @@ export function ConfiguratorClient() {
               </button>
             </div>
           )}
+
+          {previewSrc && !imgError && <NuvioFrame mediaType={mediaType} src={previewSrc} />}
 
           <MediaSearch
             mediaId={mediaId}
