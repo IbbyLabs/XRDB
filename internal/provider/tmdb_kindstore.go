@@ -165,7 +165,9 @@ func (t *TMDB) kindStore() *tmdbKindStore {
 //	under both kinds always answered "movie" (BUG-270).
 //
 // 2: asks both and settles a number held under both by popularity.
-const tmdbKindProbeVersion = "2"
+//
+// 3: settles it by vote count, popularity only breaking a tie (BUG-303).
+const tmdbKindProbeVersion = "3"
 
 // discardKindsFromAnOlderProbe empties the kind table when the stored answers
 // came from a different rule. A stored kind has no expiry of its own.
@@ -215,11 +217,13 @@ func (t *TMDB) KindOfTMDBID(ctx context.Context, id string) (string, error) {
 // rules a kind out; every other refusal is returned, so a rate limit is never
 // recorded as a title that does not exist.
 //
-// Both are always asked: a number can hold a complete record under each, and
-// popularity settles that, as it does in findByExternalID.
+// Both are always asked: a number can hold a complete record under each. The
+// one with more votes wins and popularity breaks a tie; popularity alone is a
+// trending score that a minor record can briefly lead.
 func (t *TMDB) identifyTMDBID(ctx context.Context, id string) (string, error) {
 	type candidate struct {
 		kind       string
+		votes      int
 		popularity float64
 	}
 	var hits []candidate
@@ -229,12 +233,13 @@ func (t *TMDB) identifyTMDBID(ctx context.Context, id string) (string, error) {
 	} {
 		var out struct {
 			ID         int     `json:"id"`
+			VoteCount  int     `json:"vote_count"`
 			Popularity float64 `json:"popularity"`
 		}
 		err := t.get(ctx, t.base()+"/"+probe.path+"/"+url.PathEscape(id), &out)
 		if err == nil {
 			if out.ID != 0 {
-				hits = append(hits, candidate{probe.kind, out.Popularity})
+				hits = append(hits, candidate{probe.kind, out.VoteCount, out.Popularity})
 			}
 			continue
 		}
@@ -253,14 +258,15 @@ func (t *TMDB) identifyTMDBID(ctx context.Context, id string) (string, error) {
 		return hits[0].kind, nil
 	}
 	best, other := hits[0], hits[1]
-	if other.popularity > best.popularity {
+	if other.votes > best.votes || (other.votes == best.votes && other.popularity > best.popularity) {
 		best, other = other, best
 	}
 	// Both scores are logged: the gap is usually wide, but two records can sit
 	// within a percent of each other and a near tie is worth finding.
-	t.log().InfoContext(ctx, "A TMDB id holds a record under both kinds and popularity settled it",
+	t.log().InfoContext(ctx, "A TMDB id holds a record under both kinds and vote count settled it",
 		"tmdb_id", id, "kind", best.kind,
-		"popularity", best.popularity, "runner_up", other.popularity,
+		"votes", best.votes, "runner_up_votes", other.votes,
+		"popularity", best.popularity, "runner_up_popularity", other.popularity,
 		"runner_up_kind", other.kind)
 	return best.kind, nil
 }

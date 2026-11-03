@@ -185,3 +185,31 @@ func TestKindsWrittenByAnOlderProbeAreDiscarded(t *testing.T) {
 		t.Errorf("a kind written by the current probe was discarded: %q %v", kind, ok)
 	}
 }
+
+// A number held under both kinds goes to the record more people have rated.
+// Popularity is a trending score: Popeye's series edged My Neighbor Totoro on
+// it while holding a twentieth of the votes (BUG-303).
+func TestABareIDUnderBothKindsGoesToTheMoreRatedRecord(t *testing.T) {
+	cases := []struct {
+		name      string
+		movie, tv string
+		want      string
+	}{
+		{"film with far more votes, lower popularity", `{"id":8392,"popularity":23.6,"vote_count":9221}`, `{"id":8392,"popularity":24.9,"vote_count":432}`, "movie"},
+		{"series with far more votes", `{"id":65942,"popularity":1.9,"vote_count":3}`, `{"id":65942,"popularity":82.9,"vote_count":819}`, "series"},
+		{"film with votes, series trending higher", `{"id":12477,"popularity":0.017,"vote_count":6935}`, `{"id":12477,"popularity":0.27,"vote_count":5}`, "movie"},
+		{"equal votes fall back to popularity", `{"id":7,"popularity":1,"vote_count":10}`, `{"id":7,"popularity":5,"vote_count":10}`, "series"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			tmdb, _ := kindProbe(t, jsonResp(c.movie), jsonResp(c.tv))
+			kind, err := tmdb.KindOfTMDBID(context.Background(), "1")
+			if err != nil {
+				t.Fatalf("resolving: %v", err)
+			}
+			if kind != c.want {
+				t.Errorf("kind %q, want %q", kind, c.want)
+			}
+		})
+	}
+}
