@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.141.1](https://github.com/IbbyLabs/XRDB/compare/v3.141.0...v3.141.1) (2026-11-03)
+
+
+### Fixed
+
+* **tmdb:** settle bare ids under both kinds by vote count (BUG-303) ([32cd54f](https://github.com/IbbyLabs/XRDB/commit/32cd54f9b38f158f9352d8eef9a2759adea2aee3))
+
 ## [3.141.0](https://github.com/IbbyLabs/XRDB/compare/v3.140.1...v3.141.0) (2026-11-01)
 
 
