@@ -359,11 +359,18 @@ type Config struct {
 	BottomFadeColor   string `json:"bottomFadeColor,omitempty"`
 	// The bottom blur softens the same kind of band. Height is % of the artwork
 	// height (0 = off); strength is 1-100 (0 = 50).
-	BottomBlurHeight   int    `json:"bottomBlurHeight,omitempty"`
-	BottomBlurStrength int    `json:"bottomBlurStrength,omitempty"`
-	RatingRing         bool   `json:"ratingRing,omitempty"`
-	RatingRingPos      string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
-	RatingRingColor    string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+	BottomBlurHeight   int `json:"bottomBlurHeight,omitempty"`
+	BottomBlurStrength int `json:"bottomBlurStrength,omitempty"`
+	// Feather is the 0-100 share of the band spent ramping the blur in; nil = 100
+	// (an explicit 100 is stored as nil so it hashes like the default).
+	BottomBlurFeather *int `json:"bottomBlurFeather,omitempty"`
+	// The top blur mirrors the bottom one on the upper edge.
+	TopBlurHeight   int    `json:"topBlurHeight,omitempty"`
+	TopBlurStrength int    `json:"topBlurStrength,omitempty"`
+	TopBlurFeather  *int   `json:"topBlurFeather,omitempty"`
+	RatingRing      bool   `json:"ratingRing,omitempty"`
+	RatingRingPos   string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
+	RatingRingColor string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
 
 	OutputFormat  OutputFormat `json:"outputFormat,omitempty"`
 	OutputQuality int          `json:"outputQuality,omitempty"` // JPEG quality 40-100; 0 = default
@@ -824,6 +831,21 @@ type GenreBadgeConfig struct {
 	GenreBadgeShortNames bool `json:"genreBadgeShortNames,omitempty"`
 }
 
+const blurFeatherDefault = 100
+
+// BottomFeather is the bottom blur's feather as a 0-100 percentage.
+func (c Config) BottomFeather() int { return featherOrDefault(c.BottomBlurFeather) }
+
+// TopFeather is the top blur's feather as a 0-100 percentage.
+func (c Config) TopFeather() int { return featherOrDefault(c.TopBlurFeather) }
+
+func featherOrDefault(p *int) int {
+	if p == nil {
+		return blurFeatherDefault
+	}
+	return *p
+}
+
 // Default returns a Config populated with production defaults.
 func Default() Config {
 	return Config{
@@ -969,6 +991,10 @@ type raw struct {
 	BottomFadeColor               *string   `json:"bottomFadeColor"`
 	BottomBlurHeight              *int      `json:"bottomBlurHeight"`
 	BottomBlurStrength            *int      `json:"bottomBlurStrength"`
+	BottomBlurFeather             *int      `json:"bottomBlurFeather"`
+	TopBlurHeight                 *int      `json:"topBlurHeight"`
+	TopBlurStrength               *int      `json:"topBlurStrength"`
+	TopBlurFeather                *int      `json:"topBlurFeather"`
 	RatingRing                    *bool     `json:"ratingRing"`
 	RatingRingPos                 *string   `json:"ratingRingPos"`
 	RatingRingColor               *string   `json:"ratingRingColor"`
@@ -1633,6 +1659,22 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.BottomBlurStrength != nil && *r.BottomBlurStrength > 0 {
 		cfg.BottomBlurStrength = clampInt(*r.BottomBlurStrength, 1, 100)
+	}
+	if r.BottomBlurFeather != nil {
+		if v := clampInt(*r.BottomBlurFeather, 0, 100); v != blurFeatherDefault {
+			cfg.BottomBlurFeather = &v
+		}
+	}
+	if r.TopBlurHeight != nil && *r.TopBlurHeight > 0 {
+		cfg.TopBlurHeight = clampInt(*r.TopBlurHeight, 1, 100)
+	}
+	if r.TopBlurStrength != nil && *r.TopBlurStrength > 0 {
+		cfg.TopBlurStrength = clampInt(*r.TopBlurStrength, 1, 100)
+	}
+	if r.TopBlurFeather != nil {
+		if v := clampInt(*r.TopBlurFeather, 0, 100); v != blurFeatherDefault {
+			cfg.TopBlurFeather = &v
+		}
 	}
 	if r.LogoPos != nil && *r.LogoPos != 0 {
 		cfg.LogoPos = clampInt(*r.LogoPos, 1, 100)
@@ -2907,6 +2949,10 @@ func CacheKey(cfg Config) string {
 		BottomFadeColor    string        `json:"bottomFadeColor,omitempty"`
 		BottomBlurHeight   int           `json:"bottomBlurHeight,omitempty"`
 		BottomBlurStrength int           `json:"bottomBlurStrength,omitempty"`
+		BottomBlurFeather  *int          `json:"bottomBlurFeather,omitempty"`
+		TopBlurHeight      int           `json:"topBlurHeight,omitempty"`
+		TopBlurStrength    int           `json:"topBlurStrength,omitempty"`
+		TopBlurFeather     *int          `json:"topBlurFeather,omitempty"`
 		RatingRing         bool          `json:"ratingRing"`
 		RatingRingPos      string        `json:"ratingRingPos"`
 		RatingRingColor    string        `json:"ratingRingColor"`
@@ -3040,6 +3086,10 @@ func CacheKey(cfg Config) string {
 		BottomFadeColor:               cfg.BottomFadeColor,
 		BottomBlurHeight:              cfg.BottomBlurHeight,
 		BottomBlurStrength:            cfg.BottomBlurStrength,
+		BottomBlurFeather:             cfg.BottomBlurFeather,
+		TopBlurHeight:                 cfg.TopBlurHeight,
+		TopBlurStrength:               cfg.TopBlurStrength,
+		TopBlurFeather:                cfg.TopBlurFeather,
 		LogoWidth:                     cfg.LogoWidth,
 		LogoHeight:                    cfg.LogoHeight,
 		LogoPos:                       cfg.LogoPos,

@@ -538,6 +538,10 @@ export interface ConfigState {
   bottomFadeColor: string; // "#RRGGBB"; '' = black
   bottomBlurHeight: number; // % of height; 0 = off
   bottomBlurStrength: number; // 1-100; 0 = 50
+  bottomBlurFeather: number; // 0-100 share of the band that ramps the blur in
+  topBlurHeight: number; // % of height; 0 = off
+  topBlurStrength: number; // 1-100; 0 = 50
+  topBlurFeather: number; // 0-100
   logoHeight: number;
   logoPos: number;
   logoAnchor: string; // \'\' = centre on the position | \'bottom\'
@@ -801,6 +805,10 @@ export const DEFAULT_CONFIG: ConfigState = {
   bottomFadeColor: '',
   bottomBlurHeight: 0,
   bottomBlurStrength: 0,
+  bottomBlurFeather: 100,
+  topBlurHeight: 0,
+  topBlurStrength: 0,
+  topBlurFeather: 100,
   logoHeight: 0,
   logoPos: 0,
   logoAnchor: '',

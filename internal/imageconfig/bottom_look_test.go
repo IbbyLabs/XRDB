@@ -43,3 +43,47 @@ func TestBottomLookKeysParseAndClamp(t *testing.T) {
 		t.Error("the bottom look is not off by default")
 	}
 }
+
+func TestBlurFeatherAndTopBlurParse(t *testing.T) {
+	tests := []struct {
+		name                      string
+		json                      string
+		bottomFeather, topFeather int
+		topHeight, topStrength    int
+	}{
+		{"unset", `{}`, 100, 100, 0, 0},
+		{"explicit zero is even", `{"bottomBlurFeather":0,"topBlurFeather":0}`, 0, 0, 0, 0},
+		{"over range clamps to 100", `{"bottomBlurFeather":150,"topBlurFeather":150}`, 100, 100, 0, 0},
+		{"negative clamps to 0", `{"bottomBlurFeather":-5,"topBlurFeather":-5}`, 0, 0, 0, 0},
+		{"mid value", `{"bottomBlurFeather":40,"topBlurFeather":25}`, 40, 25, 0, 0},
+		{"top fields parsed", `{"topBlurHeight":30,"topBlurStrength":70}`, 100, 100, 30, 70},
+		{"top fields clamped", `{"topBlurHeight":500,"topBlurStrength":900}`, 100, 100, 100, 100},
+		{"top off when height not positive", `{"topBlurHeight":-3,"topBlurStrength":-1}`, 100, 100, 0, 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := Parse([]byte(tc.json))
+			if c.BottomFeather() != tc.bottomFeather || c.TopFeather() != tc.topFeather ||
+				c.TopBlurHeight != tc.topHeight || c.TopBlurStrength != tc.topStrength {
+				t.Errorf("got bottomFeather=%d topFeather=%d topHeight=%d topStrength=%d", c.BottomFeather(), c.TopFeather(), c.TopBlurHeight, c.TopBlurStrength)
+			}
+		})
+	}
+}
+
+func TestBlurFeatherAndTopBlurMoveTheCacheKey(t *testing.T) {
+	base := CacheKey(Default())
+	for name, set := range map[string]string{
+		"bottomBlurFeather": `{"bottomBlurFeather":0}`,
+		"topBlurHeight":     `{"topBlurHeight":30}`,
+		"topBlurStrength":   `{"topBlurStrength":30}`,
+		"topBlurFeather":    `{"topBlurFeather":30}`,
+	} {
+		if CacheKey(Parse([]byte(set))) == base {
+			t.Errorf("%s does not move the cache key", name)
+		}
+	}
+	if CacheKey(Parse([]byte(`{"bottomBlurFeather":100}`))) != base {
+		t.Error("an explicit feather of 100 hashes differently from unset")
+	}
+}

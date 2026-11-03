@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"image"
 	"image/png"
+	"math"
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
@@ -233,5 +234,134 @@ func TestBottomLookDoesNotTouchTheLogoSurface(t *testing.T) {
 	cfg.BottomBlurHeight = 50
 	if n, _ := differs(plain, renderPosterImage(t, p, cfg, "logo")); n != 0 {
 		t.Errorf("the logo surface changed by %d pixels", n)
+	}
+}
+
+// legacyBottomBlur is the blur as drawn before the feather and strength curve.
+func legacyBottomBlur(base *image.NRGBA, heightPercent, strength int) {
+	reach := bottomBandRows(base, heightPercent)
+	b := base.Bounds()
+	rad := max(1, int(math.Round(float64(min(strength, 100))/100*float64(b.Dx())*0.02)))
+	f := max(1, reach/2)
+	frostFeatheredRadius(base, image.Rect(b.Min.X-f-1, b.Max.Y-reach+f, b.Max.X+f+1, b.Max.Y+f+1), f, rad)
+}
+
+func intPtr(v int) *int { return &v }
+
+func TestBottomBlurDefaultFeatherMatchesTheOldAlgorithm(t *testing.T) {
+	tests := []struct {
+		name     string
+		height   int
+		strength int
+		feather  *int
+	}{
+		{"unset feather", 30, 40, nil},
+		{"explicit 100", 30, 40, intPtr(100)},
+		{"strength 50", 45, 50, nil},
+		{"thin band", 5, 20, nil},
+		{"full height", 100, 30, nil},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			orig := noiseImage(300, 450)
+			want, got := cloneNRGBA(orig), cloneNRGBA(orig)
+			legacyBottomBlur(want, tc.height, tc.strength)
+			drawBottomBlur(got, tc.height, tc.strength, tc.feather)
+			if !bytes.Equal(want.Pix, got.Pix) {
+				t.Error("pixels differ from the old algorithm")
+			}
+		})
+	}
+}
+
+func TestBottomBlurFeatherShapesTheRamp(t *testing.T) {
+	const w, h, height = 300, 450, 40
+	top := h - h*height/100
+	tests := []struct {
+		name    string
+		feather *int
+		row     int     // band row measured, from the band's top
+		wantMin float64 // roughness as a share of the unblurred roughness
+		wantMax float64
+	}{
+		{"even", intPtr(0), 1, 0, 0.35},
+		{"full ramp", intPtr(100), 0, 0.85, 1.1},
+		{"default", nil, 0, 0.85, 1.1},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			orig := noiseImage(w, h)
+			got := cloneNRGBA(orig)
+			drawBottomBlur(got, height, 80, tc.feather)
+			y := top + tc.row
+			ratio := rowRoughness(got, y, y+1) / rowRoughness(orig, y, y+1)
+			if ratio < tc.wantMin || ratio > tc.wantMax {
+				t.Errorf("band row roughness ratio %.2f, want %.2f to %.2f", ratio, tc.wantMin, tc.wantMax)
+			}
+			if !rowsEqual(orig, got, 0, top-1) {
+				t.Error("rows above the band changed")
+			}
+		})
+	}
+}
+
+func TestBlurRadiusCurve(t *testing.T) {
+	const w = 1000
+	tests := []struct {
+		strength int
+		want     int
+	}{
+		{0, 10},
+		{25, 5},
+		{50, 10},
+		{51, 10},
+		{75, 25},
+		{100, 60},
+		{500, 60},
+	}
+	for _, tc := range tests {
+		if got := blurRadius(tc.strength, w); got != tc.want {
+			t.Errorf("blurRadius(%d) = %d, want %d", tc.strength, got, tc.want)
+		}
+	}
+}
+
+func TestTopBlurBlursTheTopAndLeavesTheBottom(t *testing.T) {
+	tests := []struct {
+		name    string
+		feather *int
+	}{{"default feather", nil}, {"even", intPtr(0)}}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			const w, h, height = 400, 600, 30
+			orig := noiseImage(w, h)
+			got := cloneNRGBA(orig)
+			drawBottomLook(got, bottomLookOpts{topHeight: height, topStrength: 80, topFeather: tc.feather})
+			band := h * height / 100
+			if !rowsEqual(orig, got, band+1, h) {
+				t.Error("the top blur changed rows below its band")
+			}
+			if g, o := rowRoughness(got, 0, 10), rowRoughness(orig, 0, 10); g > o/3 {
+				t.Errorf("top roughness %.1f against %.1f unblurred, want far lower", g, o)
+			}
+		})
+	}
+}
+
+func TestTopBlurEasesIntoTheArtBelow(t *testing.T) {
+	const w, h, height = 400, 600, 30
+	orig := noiseImage(w, h)
+	got := cloneNRGBA(orig)
+	drawTopBlur(got, height, 80, nil)
+	band := h * height / 100
+	if g, o := rowRoughness(got, band-1, band), rowRoughness(orig, band-1, band); g < o*0.85 {
+		t.Errorf("band edge roughness %.1f against %.1f unblurred, want close", g, o)
+	}
+}
+
+func TestBottomLookFromConfigCarriesTheTopBlur(t *testing.T) {
+	o := bottomLookFromConfig(imageconfig.Config{TopBlurHeight: 20, TopBlurStrength: 60, TopBlurFeather: intPtr(10)})
+	if o.topHeight != 20 || o.topStrength != 60 || o.topFeather == nil || *o.topFeather != 10 {
+		t.Errorf("unexpected opts: %+v", o)
 	}
 }

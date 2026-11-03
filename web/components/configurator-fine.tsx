@@ -1764,6 +1764,18 @@ export function TitleLogoFine({ uid, config, onUpdate }: GroupProps) {
       <NumField id={`${uid}-bottom-blur-strength`} label="Bottom blur strength" value={config.bottomBlurStrength}
         onChange={v => onUpdate('bottomBlurStrength', v)} min={1} max={100} step={5}
         hint="How strong the blur is at the bottom edge. Blank keeps 50." />
+      <NumField id={`${uid}-bottom-blur-feather`} label="Bottom blur feather (%)" value={config.bottomBlurFeather}
+        onChange={v => onUpdate('bottomBlurFeather', v)} min={0} max={100} step={5} zeroIsDefault={false}
+        hint="How much of the band the blur eases in over. 0 blurs the whole band evenly; 100 eases in across all of it." />
+      <NumField id={`${uid}-top-blur-height`} label="Top blur height (%)" value={config.topBlurHeight}
+        onChange={v => onUpdate('topBlurHeight', v)} min={1} max={100} step={5}
+        hint="Blurs a band at the top edge, easing into the sharp art below it. Blank turns it off." />
+      <NumField id={`${uid}-top-blur-strength`} label="Top blur strength" value={config.topBlurStrength}
+        onChange={v => onUpdate('topBlurStrength', v)} min={1} max={100} step={5}
+        hint="How strong the blur is at the top edge. Blank keeps 50." />
+      <NumField id={`${uid}-top-blur-feather`} label="Top blur feather (%)" value={config.topBlurFeather}
+        onChange={v => onUpdate('topBlurFeather', v)} min={0} max={100} step={5} zeroIsDefault={false}
+        hint="How much of the band the blur eases in over. 0 blurs the whole band evenly; 100 eases in across all of it." />
     </FineGroup>
   );
 }
