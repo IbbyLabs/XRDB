@@ -284,7 +284,7 @@ func TestBottomBlurFeatherShapesTheRamp(t *testing.T) {
 		wantMin float64 // roughness as a share of the unblurred roughness
 		wantMax float64
 	}{
-		{"even", intPtr(0), 1, 0, 0.35},
+		{"even", intPtr(0), 18, 0, 0.35},
 		{"full ramp", intPtr(100), 0, 0.85, 1.1},
 		{"default", nil, 0, 0.85, 1.1},
 	}

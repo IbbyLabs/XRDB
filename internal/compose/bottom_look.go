@@ -71,11 +71,14 @@ func blurRadius(strength, width int) int {
 	return max(1, int(math.Round(frac*float64(width))))
 }
 
+// blurFeatherFloor is the least share of the band a ramp takes, so feather 0 has no visible seam.
+const blurFeatherFloor = 8
+
 // blurRamp is the half-width of the smoothstep ramp: the feather share of the band, halved.
 func blurRamp(reach int, feather *int) int {
 	pct := 100
 	if feather != nil {
-		pct = min(max(*feather, 0), 100)
+		pct = min(max(*feather, blurFeatherFloor), 100)
 	}
 	return max(1, reach*pct/100/2)
 }
