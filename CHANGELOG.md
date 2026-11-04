@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.142.0](https://github.com/IbbyLabs/XRDB/compare/v3.141.1...v3.142.0) (2026-11-04)
+
+
+### Added
+
+* **compose:** blur feather setting, stronger top end, top blur ([a7183fe](https://github.com/IbbyLabs/XRDB/commit/a7183fe473b435b0e8e777003950611f76f52b11))
+
+
+### Fixed
+
+* **compose:** blur feather keeps an 8% ramp so even has no seam ([03985a6](https://github.com/IbbyLabs/XRDB/commit/03985a64916e3003793e7852b69285d150d1b864))
+* **compose:** strong blur bands use a finer grid, no hard-edged smears ([eb90196](https://github.com/IbbyLabs/XRDB/commit/eb901966bdd00cca914f5dd3c01ebe1ed3fabc2d))
+
 ## [3.141.1](https://github.com/IbbyLabs/XRDB/compare/v3.141.0...v3.141.1) (2026-11-03)
 
 
