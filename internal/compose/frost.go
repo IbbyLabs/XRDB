@@ -131,6 +131,12 @@ func frostFeatheredRect(base *image.NRGBA, r image.Rectangle, feather, strength 
 
 // frostFeatheredRadius is frostFeatheredRect with the box radius given in pixels.
 func frostFeatheredRadius(base *image.NRGBA, r image.Rectangle, feather, rad int) {
+	frostFeatheredGrid(base, r, feather, rad, 1)
+}
+
+// frostFeatheredGrid blurs on a grid rad/fine pixels apart with box passes fine cells wide;
+// fine 1 is the coarse grid, a larger value trades time for a smoother large blur.
+func frostFeatheredGrid(base *image.NRGBA, r image.Rectangle, feather, rad, fine int) {
 	if rad <= 0 || r.Empty() {
 		return
 	}
@@ -150,7 +156,7 @@ func frostFeatheredRadius(base *image.NRGBA, r image.Rectangle, feather, rad int
 		}
 		return 0, 0
 	}
-	frostRegion(base, area, full, rad, func(x, y int) float64 {
+	frostRegionGrid(base, area, full, rad, fine, func(x, y int) float64 {
 		return wx[x-area.Min.X] * wy[y-area.Min.Y]
 	})
 }
@@ -181,13 +187,18 @@ func featherWeights(from, to, lo, hi, feather int) []float64 {
 // row, the half-open span where cov is known to be 1, so those pixels skip the
 // call. The region read extends past area by the reach of the blur.
 func frostRegion(base *image.NRGBA, area image.Rectangle, full func(y int) (int, int), rad int, cov func(x, y int) float64) {
+	frostRegionGrid(base, area, full, rad, 1, cov)
+}
+
+func frostRegionGrid(base *image.NRGBA, area image.Rectangle, full func(y int) (int, int), rad, fine int, cov func(x, y int) float64) {
 	area = area.Intersect(base.Bounds())
 	if area.Empty() || rad <= 0 {
 		return
 	}
 	// The blur runs on a copy shrunk by rad, where each box pass spans a single
 	// pixel, so its cost follows the area and not the radius.
-	step := rad
+	fine = max(1, min(fine, rad))
+	step := max(1, rad/fine)
 	src := area.Inset(-2 * rad).Intersect(base.Bounds())
 	w, h := src.Dx(), src.Dy()
 	sw, sh := (w+step-1)/step, (h+step-1)/step
@@ -198,8 +209,8 @@ func frostRegion(base *image.NRGBA, area image.Rectangle, full func(y int) (int,
 	downsample(base, src, step, a, sw, sh)
 	sums := sc.growInts(sw * 4)
 	for range frostPasses {
-		blurRows(a, b, sw, sh, 1)
-		blurCols(b, a, sw, sh, 1, sums)
+		blurRows(a, b, sw, sh, fine)
+		blurCols(b, a, sw, sh, fine, sums)
 	}
 
 	xs := sc.axis(&sc.xAxis, area.Min.X-src.Min.X, area.Dx(), step, sw)

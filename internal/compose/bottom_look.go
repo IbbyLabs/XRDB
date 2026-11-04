@@ -71,6 +71,15 @@ func blurRadius(strength, width int) int {
 	return max(1, int(math.Round(frac*float64(width))))
 }
 
+// blurGrid is 1 up to strength 50, which keeps those renders as they were, and a finer grid
+// above it, where the coarse one shows as hard-edged smears around high-contrast detail.
+func blurGrid(strength int) int {
+	if strength > 50 {
+		return 3
+	}
+	return 1
+}
+
 // blurFeatherFloor is the least share of the band a ramp takes, so feather 0 has no visible seam.
 const blurFeatherFloor = 8
 
@@ -92,7 +101,7 @@ func drawBottomBlur(base *image.NRGBA, heightPercent, strength int, feather *int
 	rad := blurRadius(strength, b.Dx())
 	f := blurRamp(reach, feather)
 	r := image.Rect(b.Min.X-f-1, b.Max.Y-reach+f, b.Max.X+f+1, b.Max.Y+f+1)
-	frostFeatheredRadius(base, r, f, rad)
+	frostFeatheredGrid(base, r, f, rad, blurGrid(strength))
 }
 
 func drawTopBlur(base *image.NRGBA, heightPercent, strength int, feather *int) {
@@ -104,7 +113,7 @@ func drawTopBlur(base *image.NRGBA, heightPercent, strength int, feather *int) {
 	rad := blurRadius(strength, b.Dx())
 	f := blurRamp(reach, feather)
 	r := image.Rect(b.Min.X-f-1, b.Min.Y-f-1, b.Max.X+f+1, b.Min.Y+reach-f)
-	frostFeatheredRadius(base, r, f, rad)
+	frostFeatheredGrid(base, r, f, rad, blurGrid(strength))
 }
 
 func drawBottomFade(base *image.NRGBA, heightPercent, opacity int, hex string) {
