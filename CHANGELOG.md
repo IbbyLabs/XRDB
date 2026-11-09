@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.143.0](https://github.com/IbbyLabs/XRDB/compare/v3.142.0...v3.143.0) (2026-11-09)
+
+
+### Added
+
+* **compose:** FR-243 awards border width, scaled rating width ([f166739](https://github.com/IbbyLabs/XRDB/commit/f166739d4631586251993f5f46c6709fda75a21a))
+
 ## [3.142.0](https://github.com/IbbyLabs/XRDB/compare/v3.141.1...v3.142.0) (2026-11-04)
 
 
