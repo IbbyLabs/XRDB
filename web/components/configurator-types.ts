@@ -484,6 +484,7 @@ export interface ConfigState {
   awards: boolean;
   awardsPos: string; // 'inherit' | six positions
   awardsScale: number;
+  awardsBorderWidth: number; // px; 0 = hairline, -1 = off
   awardsOffsetX: number;
   awardsOffsetY: number;
   stinger: boolean;
@@ -737,6 +738,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   awards: false,
   awardsPos: 'inherit',
   awardsScale: 0,
+  awardsBorderWidth: 0,
   awardsOffsetX: 0,
   awardsOffsetY: 0,
   stinger: false,

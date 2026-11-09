@@ -9,7 +9,7 @@ import {
   OUTPUT_FORMAT_OPTIONS, TOP_RATED_STYLE_OPTIONS, QUALITY_MODE_OPTIONS, QUALITY_BEST_TIERS,
   suppressedQualityBadges,
 } from './configurator-types';
-import { QualityFine, GenreFine, OutlineFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine, ScaleOffsetFields, hasAnyRatingSource } from './configurator-fine';
+import { QualityFine, GenreFine, OutlineFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine, ScaleOffsetFields, AwardsBorderFields, hasAnyRatingSource } from './configurator-fine';
 
 // TMDB's names for the major services; matching folds variants such as "with Ads".
 const STREAMING_SERVICES = [
@@ -542,8 +542,11 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           )}
 
           {config.awards && fine && (
-            <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
-              scaleKey="awardsScale" offXKey="awardsOffsetX" offYKey="awardsOffsetY" />
+            <>
+              <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
+                scaleKey="awardsScale" offXKey="awardsOffsetX" offYKey="awardsOffsetY" />
+              <AwardsBorderFields uid={uid} config={config} onUpdate={onUpdate} />
+            </>
           )}
 
           <ToggleRow

@@ -207,25 +207,26 @@ type Config struct {
 	// ReleaseStatusHideDigital draws nothing for a title already out at home, on digital or disc.
 	ReleaseStatusHideDigital bool `json:"releaseStatusHideDigital,omitempty"`
 	// ReleaseStatusPreferDisc lets a disc release win over digital, upcoming and landed.
-	ReleaseStatusPreferDisc bool   `json:"releaseStatusPreferDisc,omitempty"`
-	TopRated                bool   `json:"topRated,omitempty"`
-	TopRatedPos             string `json:"topRatedPos,omitempty"`
-	TopRatedOffsetX         int    `json:"topRatedOffsetX,omitempty"`
-	TopRatedOffsetY         int    `json:"topRatedOffsetY,omitempty"`
-	TopRatedScale           int    `json:"topRatedScale,omitempty"`
-	Awards                  bool   `json:"awards,omitempty"`
-	AwardsPos               string `json:"awardsPos,omitempty"`
-	AwardsOffsetX           int    `json:"awardsOffsetX,omitempty"`
-	AwardsOffsetY           int    `json:"awardsOffsetY,omitempty"`
-	AwardsScale             int    `json:"awardsScale,omitempty"`
-	Stinger                 bool   `json:"stinger,omitempty"`
-	StingerPos              string `json:"stingerPos,omitempty"`
-	StingerOffsetX          int    `json:"stingerOffsetX,omitempty"`
-	StingerOffsetY          int    `json:"stingerOffsetY,omitempty"`
-	StingerScale            int    `json:"stingerScale,omitempty"`
-	Genre                   bool   `json:"genre"`
-	GenrePos                string `json:"genrePos,omitempty"`
-	Providers               bool   `json:"providers"`
+	ReleaseStatusPreferDisc bool    `json:"releaseStatusPreferDisc,omitempty"`
+	TopRated                bool    `json:"topRated,omitempty"`
+	TopRatedPos             string  `json:"topRatedPos,omitempty"`
+	TopRatedOffsetX         int     `json:"topRatedOffsetX,omitempty"`
+	TopRatedOffsetY         int     `json:"topRatedOffsetY,omitempty"`
+	TopRatedScale           int     `json:"topRatedScale,omitempty"`
+	Awards                  bool    `json:"awards,omitempty"`
+	AwardsPos               string  `json:"awardsPos,omitempty"`
+	AwardsOffsetX           int     `json:"awardsOffsetX,omitempty"`
+	AwardsOffsetY           int     `json:"awardsOffsetY,omitempty"`
+	AwardsScale             int     `json:"awardsScale,omitempty"`
+	AwardsBorderWidth       float64 `json:"awardsBorderWidth,omitempty"` // px; 0 = hairline, <0 = off
+	Stinger                 bool    `json:"stinger,omitempty"`
+	StingerPos              string  `json:"stingerPos,omitempty"`
+	StingerOffsetX          int     `json:"stingerOffsetX,omitempty"`
+	StingerOffsetY          int     `json:"stingerOffsetY,omitempty"`
+	StingerScale            int     `json:"stingerScale,omitempty"`
+	Genre                   bool    `json:"genre"`
+	GenrePos                string  `json:"genrePos,omitempty"`
+	Providers               bool    `json:"providers"`
 	// ProvidersCountry is the country the render is for. It picks the streaming
 	// services shown, the release date on an unreleased title, and which of a
 	// language'''s regional posters is preferred where TMDB has more than one.
@@ -916,6 +917,7 @@ type raw struct {
 	AwardsOffsetX                 *int      `json:"awardsOffsetX"`
 	AwardsOffsetY                 *int      `json:"awardsOffsetY"`
 	AwardsScale                   *int      `json:"awardsScale"`
+	AwardsBorderWidth             *float64  `json:"awardsBorderWidth"`
 	Stinger                       *bool     `json:"stinger"`
 	StingerPos                    *string   `json:"stingerPos"`
 	StingerOffsetX                *int      `json:"stingerOffsetX"`
@@ -2296,6 +2298,7 @@ func parseRing(cfg *Config, r *raw) {
 	if r.AwardsScale != nil && *r.AwardsScale != 0 {
 		cfg.AwardsScale = clampInt(*r.AwardsScale, 70, 400)
 	}
+	cfg.AwardsBorderWidth = parseBorderWidth(r.AwardsBorderWidth)
 	if r.StingerOffsetX != nil {
 		cfg.StingerOffsetX = clampInt(*r.StingerOffsetX, -1200, 1200)
 	}
@@ -2870,6 +2873,7 @@ func CacheKey(cfg Config) string {
 		AwardsOffsetX                 int            `json:"awardsOffsetX,omitempty"`
 		AwardsOffsetY                 int            `json:"awardsOffsetY,omitempty"`
 		AwardsScale                   int            `json:"awardsScale,omitempty"`
+		AwardsBorderWidth             float64        `json:"awardsBorderWidth,omitempty"`
 		StingerOffsetX                int            `json:"stingerOffsetX,omitempty"`
 		StingerOffsetY                int            `json:"stingerOffsetY,omitempty"`
 		StingerScale                  int            `json:"stingerScale,omitempty"`
@@ -3013,6 +3017,7 @@ func CacheKey(cfg Config) string {
 		AwardsOffsetX:                 cfg.AwardsOffsetX,
 		AwardsOffsetY:                 cfg.AwardsOffsetY,
 		AwardsScale:                   cfg.AwardsScale,
+		AwardsBorderWidth:             cfg.AwardsBorderWidth,
 		StingerOffsetX:                cfg.StingerOffsetX,
 		StingerOffsetY:                cfg.StingerOffsetY,
 		StingerScale:                  cfg.StingerScale,

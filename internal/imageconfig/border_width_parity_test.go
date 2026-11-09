@@ -20,6 +20,7 @@ func TestTheThreeBorderWidthsAgreeOnTheirBounds(t *testing.T) {
 		"ratingBadgeBorderWidth",
 		"genreBadgeBorderWidth",
 		"ageRatingBorderWidth",
+		"awardsBorderWidth",
 	} {
 		t.Run(field, func(t *testing.T) {
 			if off := borderWidthOf(t, field, -1); off != -1 {
@@ -46,6 +47,8 @@ func borderWidthOf(t *testing.T, field string, v int) float64 {
 		return cfg.GenreBadgeBorderWidth
 	case "ageRatingBorderWidth":
 		return cfg.AgeRatingBorderWidth
+	case "awardsBorderWidth":
+		return cfg.AwardsBorderWidth
 	}
 	t.Fatalf("unknown field %q", field)
 	return 0

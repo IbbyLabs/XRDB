@@ -24,10 +24,11 @@ type awardsBadgeOpts struct {
 	offsetX      int
 	offsetY      int
 	frost        int
+	borderWidth  float64 // px before scaling; 0 = hairline, <0 = off
 }
 
 func awardsOptsFromConfig(cfg imageconfig.Config) awardsBadgeOpts {
-	return awardsBadgeOpts{lang: cfg.Language, scalePercent: cfg.AwardsScale, offsetX: cfg.AwardsOffsetX, offsetY: cfg.AwardsOffsetY, frost: cfg.BadgeFrost}
+	return awardsBadgeOpts{lang: cfg.Language, scalePercent: cfg.AwardsScale, offsetX: cfg.AwardsOffsetX, offsetY: cfg.AwardsOffsetY, frost: cfg.BadgeFrost, borderWidth: cfg.AwardsBorderWidth}
 }
 
 func drawAwardsBadge(base *image.NRGBA, a provider.AwardSummary, pos string, scale float64, occ *occupancy, opts awardsBadgeOpts) {
@@ -64,12 +65,14 @@ func drawAwardsBadge(base *image.NRGBA, a provider.AwardSummary, pos string, sca
 	}
 	border := accent
 	border.A = 230
-	drawSoftTile(base, r, s(5), tileChrome{
+	ch := tileChrome{
 		fill:   color.NRGBA{R: 12, G: 12, B: 16, A: 230},
 		border: border,
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
 		frost:  opts.frost,
-	})
+	}
+	ch = pillBorder{width: opts.borderWidth}.apply(ch, scale)
+	drawSoftTile(base, r, s(5), ch)
 	drawText(base, face, tx, ty, accent, label)
 }
 

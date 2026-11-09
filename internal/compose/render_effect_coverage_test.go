@@ -717,6 +717,7 @@ func keyMutations() map[string]keyOverride {
 		"releaseStatusBorderColor":      str(setColor(func(c *imageconfig.Config, v string) { c.ReleaseStatusBorderColor = v })),
 		"releaseStatusBorderOpacity":    {mut: func(c *imageconfig.Config) { c.ReleaseStatusBorderOpacity = 10 }},
 		"releaseStatusBorderWidth":      {mut: func(c *imageconfig.Config) { c.ReleaseStatusBorderWidth = -1 }},
+		"awardsBorderWidth":             {mut: func(c *imageconfig.Config) { c.AwardsBorderWidth = -1 }},
 		"trendingRankBorderColor":       {pre: rankPill, mut: setColor(func(c *imageconfig.Config, v string) { c.TrendingRankBorderColor = v })},
 		"trendingRankBorderOpacity":     {pre: rankPill, mut: func(c *imageconfig.Config) { c.TrendingRankBorderOpacity = 10 }},
 		"trendingRankBorderWidth":       {pre: rankPill, mut: func(c *imageconfig.Config) { c.TrendingRankBorderWidth = -1 }},

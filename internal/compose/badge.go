@@ -1432,6 +1432,9 @@ func drawBadgesInPlace(mediaType string, out *image.NRGBA, ratings []provider.Ra
 
 	innerH := padY*2 + maxInt(valH, iconSize)
 	chrome := chromeFor(cfg)
+	if w := cfg.RatingBadgeBorderWidth; w > 0 {
+		chrome.borderWidth = maxInt(1, int(float64(w)*scale+0.5))
+	}
 	if cfg.RatingsAnchored {
 		chrome.squared = squaredCornersFor(string(cfg.RatingsLayout))
 	}

@@ -1852,6 +1852,24 @@ export function AgeFine({ uid, config, onUpdate }: GroupProps) {
   );
 }
 
+export function AwardsBorderFields({ uid, config, onUpdate }: GroupProps) {
+  return (
+    <>
+      <StyleGrid
+        id={`${uid}-awards-border-mode-label`}
+        label="Awards badge border"
+        options={GENRE_BORDER_OPTIONS}
+        value={genreBorderMode(config.awardsBorderWidth)}
+        onChange={v => onUpdate('awardsBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
+      />
+      {genreBorderMode(config.awardsBorderWidth) === 'custom' && (
+        <NumField id={`${uid}-awards-border`} label="Border width (px)" value={config.awardsBorderWidth}
+          onChange={v => onUpdate('awardsBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
+      )}
+    </>
+  );
+}
+
 export function TrendingFine({ uid, config, onUpdate, rankOnly = false }: GroupProps & { rankOnly?: boolean }) {
   return (
     <FineGroup label={rankOnly ? 'Trending rank' : 'Trending badge'}>
