@@ -96,6 +96,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	// RenderCapPerMinute keeps meaning how many posters a minute. The same move
 	// the concurrency limiter makes above.
 	callerCap := newCallerLimiter(cfg.RenderCapPerMinute * weightUnit)
+	// Thumbnails draw on an allowance of their own, the same size in units, so
+	// a burst of posters cannot leave a season's episode stills refused.
+	thumbCap := newCallerLimiter(cfg.RenderCapPerMinute * weightUnit)
 	sharedAliases := sharedAliasSet(cfg)
 	if cfg.DefaultProfile != "" {
 		// Resolved once here so a name that matches nothing is reported at
@@ -410,7 +413,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// cache read and is not what the queue is made of.
 			ok, over := true, ""
 			if !sweep {
-				ok, over = callerCap.allow(capCost(mediaType), capProfileKey, "ip:"+capAddressKey(clientIP(r, trust)))
+				capFor := callerCap
+				if mediaType == "thumbnail" {
+					capFor = thumbCap
+				}
+				ok, over = capFor.allow(capCost(mediaType), capProfileKey, "ip:"+capAddressKey(clientIP(r, trust)))
 			}
 			if !ok {
 				// The key names which allowance ran out. caller_class is an

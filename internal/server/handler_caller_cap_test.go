@@ -484,3 +484,30 @@ func TestACapRefusalNamesTheSurface(t *testing.T) {
 		t.Error("the cap refusal does not name the size")
 	}
 }
+
+// Posters that spend a caller's allowance leave its thumbnails alone: a season
+// page opened right after a catalogue row still gets its episode stills.
+func TestPostersDoNotSpendTheThumbnailAllowance(t *testing.T) {
+	h, p := capHandler(t, 2)
+	get := func(path string) int {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, path+"?config="+p.ID, nil)
+		req.RemoteAddr = "203.0.113.12:1234"
+		h.ServeHTTP(rr, req)
+		return rr.Code
+	}
+	for i := range 6 {
+		get(fmt.Sprintf("/poster/tt3%05d", i))
+	}
+	if code := get("/poster/tt3999999"); code != http.StatusTooManyRequests {
+		t.Fatalf("the poster allowance was not spent (got %d), so this proves nothing", code)
+	}
+	for i := range 16 {
+		if code := get(fmt.Sprintf("/thumbnail/tt4%05d", i)); code != http.StatusOK {
+			t.Fatalf("thumbnail %d returned %d after posters spent their allowance, want 200", i+1, code)
+		}
+	}
+	if code := get("/thumbnail/tt4999999"); code != http.StatusTooManyRequests {
+		t.Errorf("a thumbnail past its own allowance returned %d, want 429", code)
+	}
+}
