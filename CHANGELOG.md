@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.143.1](https://github.com/IbbyLabs/XRDB/compare/v3.143.0...v3.143.1) (2026-11-11)
+
+
+### Fixed
+
+* **render:** thumbnails draw on their own caller allowance ([bd48130](https://github.com/IbbyLabs/XRDB/commit/bd48130548d536f171e641dd4d81fcc1532564b2))
+
 ## [3.143.0](https://github.com/IbbyLabs/XRDB/compare/v3.142.0...v3.143.0) (2026-11-09)
 
 
