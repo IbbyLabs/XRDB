@@ -7,12 +7,14 @@ import { LayoutGrid, Settings, Github, KeyRound, CircleHelp } from 'lucide-react
 import { BRAND_NAME, BRAND_GITHUB_URL } from '@/lib/brand';
 import { fetchHealth } from '@/lib/api';
 import { ThemeSwitcher } from './theme-switcher';
+import { useT } from '@/lib/i18n';
+import { msg } from '@/lib/i18n-msg';
 
 const NAV_LINKS = [
-  { href: '/configurator', label: 'Configurator', icon: LayoutGrid },
-  { href: '/integrations', label: 'API keys',     icon: KeyRound },
-  { href: '/help',         label: 'Help',         icon: CircleHelp },
-  { href: '/admin',        label: 'Admin',        icon: Settings },
+  { href: '/configurator', label: msg('Configurator'), icon: LayoutGrid },
+  { href: '/integrations', label: msg('API keys'),    icon: KeyRound },
+  { href: '/help',         label: msg('Help'),        icon: CircleHelp },
+  { href: '/admin',        label: msg('Admin'),       icon: Settings },
 ];
 
 const FALLBACK_VERSION = 'v3';
@@ -47,18 +49,19 @@ function useDeploymentVersion(): string {
 }
 
 export function NavBar() {
+  const t = useT();
   const pathname = usePathname();
   const version = useDeploymentVersion();
 
   return (
-    <nav className="nav" aria-label="Main navigation">
-      <Link href="/" className="nav-brand" aria-label={`${BRAND_NAME} home`}>
+    <nav className="nav" aria-label={t('Main navigation')}>
+      <Link href="/" className="nav-brand" aria-label={t('{brand} home', { brand: BRAND_NAME })}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/xrdb-logo.png" alt="" className="nav-logo" aria-hidden="true" width={512} height={512} />
         <span className="nav-word">
           <span className="nav-brand-x">X</span>RDB
         </span>
-        <span className="nav-badge" title={`${BRAND_NAME} deployment version: ${version}`}>
+        <span className="nav-badge" title={t('{brand} deployment version: {version}', { brand: BRAND_NAME, version })}>
           <span className="nav-badge-full">{version}</span>
           <span className="nav-badge-short">{compactVersion(version)}</span>
         </span>
@@ -74,7 +77,7 @@ export function NavBar() {
           aria-current={pathname === href || pathname.startsWith(href + '/') ? 'page' : undefined}
         >
           <Icon size={14} aria-hidden="true" />
-          <span>{label}</span>
+          <span>{t(label)}</span>
         </Link>
       ))}
 
@@ -85,10 +88,10 @@ export function NavBar() {
         target="_blank"
         rel="noreferrer"
         className="nav-link"
-        aria-label="XRDB GitHub repository"
+        aria-label={t('XRDB GitHub repository')}
       >
         <Github size={14} aria-hidden="true" />
-        <span className="sr-only">GitHub</span>
+        <span className="sr-only">{t('GitHub')}</span>
       </a>
     </nav>
   );

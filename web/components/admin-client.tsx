@@ -13,6 +13,8 @@ import {
 import { tablistKeyNav } from './tablist';
 import { IntegrationsClient } from './integrations-client';
 import { SourcesPanel } from './admin-sources';
+import { useT } from '@/lib/i18n';
+import { msg } from '@/lib/i18n-msg';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
 
@@ -27,6 +29,7 @@ function fmtUptime(s: number): string {
 }
 
 function MetricsPanel({ data }: { data: MetricsSnapshot }) {
+  const t = useT();
   const topRoutes = Object.entries(data.byRoute)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
@@ -35,14 +38,14 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
   return (
     <div>
       <div className="admin-section">
-        <h2 className="admin-section-title">Latency</h2>
+        <h2 className="admin-section-title">{t('Latency')}</h2>
         <div className="stat-strip">
           {([
             { label: 'p50', value: fmt(data.p50Ms), unit: 'ms' },
             { label: 'p95', value: fmt(data.p95Ms), unit: 'ms' },
             { label: 'p99', value: fmt(data.p99Ms), unit: 'ms' },
-            { label: 'Total requests', value: data.totalRequests.toLocaleString(), unit: '' },
-            { label: 'Uptime', value: fmtUptime(data.uptimeSeconds), unit: '' },
+            { label: t('Total requests'), value: data.totalRequests.toLocaleString(), unit: '' },
+            { label: t('Uptime'), value: fmtUptime(data.uptimeSeconds), unit: '' },
           ] as { label: string; value: string; unit: string }[]).map(({ label, value, unit }) => (
             <div key={label} className="stat-cell">
               <span className="stat-label">{label}</span>
@@ -54,17 +57,16 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
 
       {data.totalRequests === 0 && (
         <p className="page-sub" style={{ margin: 'var(--sp-3) 0 0' }}>
-          No requests recorded yet — status codes and top routes will appear here once your
-          library starts requesting artwork.
+          {t('No requests recorded yet — status codes and top routes will appear here once your library starts requesting artwork.')}
         </p>
       )}
 
       {statusEntries.length > 0 && (
         <div className="admin-section">
-          <h2 className="admin-section-title">Status codes</h2>
+          <h2 className="admin-section-title">{t('Status codes')}</h2>
           <div className="panel panel-table">
             <table className="table">
-              <thead><tr><th scope="col">Status</th><th scope="col">Requests</th></tr></thead>
+              <thead><tr><th scope="col">{t('Status')}</th><th scope="col">{t('Requests')}</th></tr></thead>
               <tbody>
                 {statusEntries.map(([code, count]) => (
                   <tr key={code}>
@@ -80,10 +82,10 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
 
       {topRoutes.length > 0 && (
         <div className="admin-section">
-          <h2 className="admin-section-title">Top routes</h2>
+          <h2 className="admin-section-title">{t('Top routes')}</h2>
           <div className="panel panel-table">
             <table className="table">
-              <thead><tr><th scope="col">Route</th><th scope="col">Requests</th></tr></thead>
+              <thead><tr><th scope="col">{t('Route')}</th><th scope="col">{t('Requests')}</th></tr></thead>
               <tbody>
                 {topRoutes.map(([route, count]) => (
                   <tr key={route}>
@@ -101,25 +103,25 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
 }
 
 function CachePanel({ data }: { data: CacheStats }) {
+  const t = useT();
   if (data.status) {
     return <div className="notice notice-info" role="status">{data.status}</div>;
   }
   return (
     <div className="admin-section">
       <div className="stat-strip">
-        <div className="stat-cell"><span className="stat-label">Hot entries</span><span className="stat-value">{data.hotEntries}</span></div>
-        <div className="stat-cell"><span className="stat-label">Disk entries</span><span className="stat-value">{data.diskEntries}</span></div>
-        <div className="stat-cell"><span className="stat-label">TTL</span><span className="stat-value stat-value--sm">{data.ttl}</span></div>
+        <div className="stat-cell"><span className="stat-label">{t('Hot entries')}</span><span className="stat-value">{data.hotEntries}</span></div>
+        <div className="stat-cell"><span className="stat-label">{t('Disk entries')}</span><span className="stat-value">{data.diskEntries}</span></div>
+        <div className="stat-cell"><span className="stat-label">{t('TTL')}</span><span className="stat-value stat-value--sm">{data.ttl}</span></div>
       </div>
       <div className="panel">
         <div className="panel-body">
-          <span className="label">Cache directory</span>
+          <span className="label">{t('Cache directory')}</span>
           <span className="mono" style={{ display: 'inline-block', marginTop: 'var(--sp-1)', wordBreak: 'break-all' }}>{data.dir}</span>
         </div>
       </div>
       <p className="page-sub" style={{ margin: 'var(--sp-2) 0 0' }}>
-        These are read-only diagnostics. Per-provider cache lifetimes (TTLs) are configured
-        under the <strong>Runtime</strong> tab.
+        {t('These are read-only diagnostics. Per-provider cache lifetimes (TTLs) are configured under the')} <strong>{t('Runtime')}</strong> {t('tab.')}
       </p>
     </div>
   );
@@ -129,20 +131,21 @@ function CachePanel({ data }: { data: CacheStats }) {
 
 /** How each level reads to an operator deciding what to switch to. */
 const LEVEL_HINTS: Record<string, string> = {
-  debug: 'Every render, provider miss, and cache decision. Noisy; use while diagnosing.',
-  info:  'Lifecycle and one line per request. The normal setting.',
-  warn:  'Degraded paths and fallbacks only.',
-  error: 'Failures only. Quietest; hides the context around a problem.',
+  debug: msg('Every render, provider miss, and cache decision. Noisy; use while diagnosing.'),
+  info:  msg('Lifecycle and one line per request. The normal setting.'),
+  warn:  msg('Degraded paths and fallbacks only.'),
+  error: msg('Failures only. Quietest; hides the context around a problem.'),
 };
 
 /** Plain-English explanation of which layer supplied the level in force. */
 const SOURCE_HINTS: Record<string, string> = {
-  stored:      'Set here, and kept across restarts.',
-  environment: 'From XRDB_LOG_LEVEL. Changing it here overrides it.',
-  default:     'Nothing configured it, so the built-in default applies.',
+  stored:      msg('Set here, and kept across restarts.'),
+  environment: msg('From XRDB_LOG_LEVEL. Changing it here overrides it.'),
+  default:     msg('Nothing configured it, so the built-in default applies.'),
 };
 
 function LogLevelPanel() {
+  const t = useT();
   const [state, setState]   = useState<LogLevelState | null>(null);
   const [busy, setBusy]     = useState<string | null>(null);
   const [error, setError]   = useState<string | null>(null);
@@ -159,14 +162,14 @@ function LogLevelPanel() {
 
   const apply = async (level: string) => {
     setBusy(level); setError(null); setOk(null);
-    try { setState(await setLogLevel(level)); setOk(`Log level set to ${level} on the running server.`); }
+    try { setState(await setLogLevel(level)); setOk(t('Log level set to {level} on the running server.', { level })); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
 
   const revert = async () => {
     setBusy('revert'); setError(null); setOk(null);
-    try { const s = await clearLogLevel(); setState(s); setOk(`Reverted to the environment level (${s.level}).`); }
+    try { const s = await clearLogLevel(); setState(s); setOk(t('Reverted to the environment level ({level}).', { level: s.level })); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
@@ -175,19 +178,18 @@ function LogLevelPanel() {
     return error
       ? <div className="notice notice-error" role="alert"><AlertCircle size={14} aria-hidden />
           <span style={{ flex: 1 }}>{error}</span>
-          <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Try again</button></div>
-      : <div className="skeleton" style={{ height: '9rem' }} aria-label="Loading log level" aria-busy="true" />;
+          <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{t('Try again')}</button></div>
+      : <div className="skeleton" style={{ height: '9rem' }} aria-label={t('Loading log level')} aria-busy="true" />;
   }
 
   return (
     <div className="cfg-fields" style={{ maxWidth: '640px' }}>
       <p className="page-sub" style={{ margin: 0 }}>
-        Verbosity of the JSON logs on stdout. Changes apply to the running server straight
-        away, so you can raise detail on a live problem without restarting and losing it.
+        {t('Verbosity of the JSON logs on stdout. Changes apply to the running server straight away, so you can raise detail on a live problem without restarting and losing it.')}
       </p>
 
       <div className="field">
-        <span className="label" id="log-level-label">Level</span>
+        <span className="label" id="log-level-label">{t('Level')}</span>
         <div role="group" aria-labelledby="log-level-label" className="tabs" style={{ marginTop: 'var(--sp-1)' }}>
           {state.levels.map(level => (
             <button
@@ -197,31 +199,31 @@ function LogLevelPanel() {
               aria-pressed={state.level === level}
               disabled={busy !== null}
               onClick={() => void apply(level)}
-              title={LEVEL_HINTS[level]}
+              title={LEVEL_HINTS[level] ? t(LEVEL_HINTS[level]) : undefined}
             >
               {busy === level ? '…' : level}
             </button>
           ))}
         </div>
         <p className="page-sub" style={{ margin: 'var(--sp-2) 0 0' }}>
-          {LEVEL_HINTS[state.level]}
+          {LEVEL_HINTS[state.level] ? t(LEVEL_HINTS[state.level]) : undefined}
         </p>
       </div>
 
       <div className="panel">
         <div className="panel-body">
-          <span className="label">Source</span>
+          <span className="label">{t('Source')}</span>
           <p style={{ margin: 'var(--sp-1) 0 0' }}>
-            {SOURCE_HINTS[state.source] ?? state.source}
+            {SOURCE_HINTS[state.source] ? t(SOURCE_HINTS[state.source]) : state.source}
           </p>
           {state.env && (
             <p className="page-sub" style={{ margin: 'var(--sp-2) 0 0' }}>
-              XRDB_LOG_LEVEL is <span className="mono">{state.env}</span>
+              {t('XRDB_LOG_LEVEL is')} <span className="mono">{state.env}</span>
             </p>
           )}
           {!state.persisted && (
             <p className="page-sub" style={{ margin: 'var(--sp-2) 0 0' }}>
-              The settings store is unavailable, so a change here lasts only until the next restart.
+              {t('The settings store is unavailable, so a change here lasts only until the next restart.')}
             </p>
           )}
         </div>
@@ -243,7 +245,7 @@ function LogLevelPanel() {
       {state.source === 'stored' && (
         <div>
           <button className="btn btn-ghost" onClick={() => void revert()} disabled={busy !== null}>
-            {busy === 'revert' ? 'Reverting…' : 'Revert to environment'}
+            {busy === 'revert' ? t('Reverting…') : t('Revert to environment')}
           </button>
         </div>
       )}
@@ -254,12 +256,13 @@ function LogLevelPanel() {
 // ── Runtime panel (memory limit + provider TTLs) ──────────────────────────────
 
 const SOURCE_LABEL: Record<string, string> = {
-  stored: 'set here',
-  environment: 'from env var',
-  default: 'default',
+  stored: msg('set here'),
+  environment: msg('from env var'),
+  default: msg('default'),
 };
 
 function RuntimePanel() {
+  const t = useT();
   const [mem, setMem]       = useState<MemoryLimitState | null>(null);
   const [ttls, setTtls]     = useState<TTLEntry[] | null>(null);
   const [memDraft, setMemDraft] = useState('');
@@ -271,8 +274,8 @@ function RuntimePanel() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [m, t] = await Promise.all([fetchMemoryLimit(), fetchTTLs()]);
-      setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : ''); setTtls(t);
+      const [m, entries] = await Promise.all([fetchMemoryLimit(), fetchTTLs()]);
+      setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : ''); setTtls(entries);
     } catch (e) { setError((e as Error).message); }
   }, []);
 
@@ -281,19 +284,19 @@ function RuntimePanel() {
 
   const applyMem = async () => {
     const mb = memDraft.trim() === '' ? 0 : Number(memDraft);
-    if (!Number.isFinite(mb) || mb < 0) { setError('Memory limit must be a non-negative number'); return; }
+    if (!Number.isFinite(mb) || mb < 0) { setError(t('Memory limit must be a non-negative number')); return; }
     const floored = Math.floor(mb);
     // A very low cap can send the live server straight into GC thrash or OOM, so
     // require a second press to confirm an under-128 MiB value.
     if (floored > 0 && floored < 128 && !confirmLowMem) {
-      setError(`${floored} MiB is very low and could thrash GC or OOM the running server. Press Apply again to confirm.`);
+      setError(t('{n} MiB is very low and could thrash GC or OOM the running server. Press Apply again to confirm.', { n: floored }));
       setConfirmLowMem(true);
       return;
     }
     setBusy('mem'); setError(null); setOk(null); setConfirmLowMem(false);
     try {
       const m = await setMemoryLimit(floored); setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : '');
-      setOk(m.limitMb ? `Memory limit set to ${m.limitMb} MiB.` : 'Memory limit cleared — no cap.');
+      setOk(m.limitMb ? t('Memory limit set to {n} MiB.', { n: m.limitMb }) : t('Memory limit cleared — no cap.'));
     }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
@@ -302,7 +305,7 @@ function RuntimePanel() {
     setBusy('mem'); setError(null); setOk(null); setConfirmLowMem(false);
     try {
       const m = await clearMemoryLimit(); setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : '');
-      setOk(`Reverted to the environment memory limit (${m.limitMb ? `${m.limitMb} MiB` : 'no cap'}).`);
+      setOk(t('Reverted to the environment memory limit ({limit}).', { limit: m.limitMb ? t('{n} MiB', { n: m.limitMb }) : t('no cap') }));
     }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
@@ -310,13 +313,13 @@ function RuntimePanel() {
 
   const applyTTL = async (provider: string, hours: number) => {
     setBusy('ttl:' + provider); setError(null); setOk(null);
-    try { setTtls(await setTTL(provider, hours)); setOk(`${provider} cache TTL set to ${hours}h.`); }
+    try { setTtls(await setTTL(provider, hours)); setOk(t('{provider} cache TTL set to {hours}h.', { provider, hours })); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
   const revertTTL = async (provider: string) => {
     setBusy('ttl:' + provider); setError(null); setOk(null);
-    try { setTtls(await clearTTL(provider)); setOk(`${provider} cache TTL reverted to its environment value.`); }
+    try { setTtls(await clearTTL(provider)); setOk(t('{provider} cache TTL reverted to its environment value.', { provider })); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
@@ -325,15 +328,14 @@ function RuntimePanel() {
     return error
       ? <div className="notice notice-error" role="alert"><AlertCircle size={14} aria-hidden />
           <span style={{ flex: 1 }}>{error}</span>
-          <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Try again</button></div>
-      : <div className="skeleton" style={{ height: '12rem' }} aria-label="Loading runtime settings" aria-busy="true" />;
+          <button className="btn btn-ghost btn-sm" onClick={() => void load()}>{t('Try again')}</button></div>
+      : <div className="skeleton" style={{ height: '12rem' }} aria-label={t('Loading runtime settings')} aria-busy="true" />;
   }
 
   return (
     <div className="cfg-fields" style={{ maxWidth: '720px' }}>
       <p className="page-sub" style={{ margin: 0 }}>
-        Operational limits applied to the running server. Changes take effect immediately
-        and persist across restarts; clearing one reverts to its environment value.
+        {t('Operational limits applied to the running server. Changes take effect immediately and persist across restarts; clearing one reverts to its environment value.')}
       </p>
 
       {error && (
@@ -348,44 +350,44 @@ function RuntimePanel() {
       )}
 
       <div className="field">
-        <label className="label" htmlFor="mem-limit">Memory limit (MiB)</label>
+        <label className="label" htmlFor="mem-limit">{t('Memory limit (MiB)')}</label>
         <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             id="mem-limit"
             className="input"
             inputMode="numeric"
             style={{ width: '9rem' }}
-            placeholder="no limit"
+            placeholder={t('no limit')}
             value={memDraft}
             onChange={e => { setMemDraft(e.target.value); setError(null); setConfirmLowMem(false); }}
           />
           <button className="btn btn-primary" onClick={() => void applyMem()} disabled={busy !== null}>
-            {busy === 'mem' ? 'Applying…' : 'Apply'}
+            {busy === 'mem' ? t('Applying…') : t('Apply')}
           </button>
           {mem.source === 'stored' && (
             <button className="btn btn-ghost" onClick={() => void revertMem()} disabled={busy !== null}>
-              Revert
+              {t('Revert')}
             </button>
           )}
           <span className="page-sub" style={{ margin: 0 }}>
-            {mem.limitMb ? `${mem.limitMb} MiB` : 'no limit'} ({SOURCE_LABEL[mem.source] ?? mem.source})
+            {mem.limitMb ? t('{n} MiB', { n: mem.limitMb }) : t('no limit')} ({SOURCE_LABEL[mem.source] ? t(SOURCE_LABEL[mem.source]) : mem.source})
           </span>
         </div>
         <p className="page-sub" style={{ margin: 'var(--sp-1) 0 0' }}>
-          Soft heap cap so the runtime collects garbage before the container is OOM-killed. Empty means no limit.
+          {t('Soft heap cap so the runtime collects garbage before the container is OOM-killed. Empty means no limit.')}
         </p>
       </div>
 
       <div className="field">
-        <span className="label">Provider cache TTLs (hours)</span>
+        <span className="label">{t('Provider cache TTLs (hours)')}</span>
         <p className="page-sub" style={{ margin: '0 0 var(--sp-2)' }}>
-          How long each source&apos;s ratings stay cached. A render caches for the shortest contributing provider&apos;s TTL.
+          {t("How long each source's ratings stay cached. A render caches for the shortest contributing provider's TTL.")}
         </p>
         <div className="panel panel-table">
           <table className="table">
-            <thead><tr><th scope="col">Provider</th><th scope="col">Hours</th><th scope="col">Source</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
+            <thead><tr><th scope="col">{t('Provider')}</th><th scope="col">{t('Hours')}</th><th scope="col">{t('Source')}</th><th scope="col"><span className="sr-only">{t('Actions')}</span></th></tr></thead>
             <tbody>
-              {ttls.map(t => <TTLRow key={`${t.provider}:${t.hours}:${t.source}`} entry={t} busy={busy} onApply={applyTTL} onRevert={revertTTL} />)}
+              {ttls.map(entry => <TTLRow key={`${entry.provider}:${entry.hours}:${entry.source}`} entry={entry} busy={busy} onApply={applyTTL} onRevert={revertTTL} />)}
             </tbody>
           </table>
         </div>
@@ -402,6 +404,7 @@ function TTLRow({ entry, busy, onApply, onRevert }: {
 }) {
   // Seeded from the entry; the parent gives each row a key that includes the
   // value, so a revert or external change remounts the row with a fresh draft.
+  const t = useT();
   const [draft, setDraft] = useState(String(entry.hours));
   const rowBusy = busy === 'ttl:' + entry.provider;
   return (
@@ -414,21 +417,21 @@ function TTLRow({ entry, busy, onApply, onRevert }: {
           style={{ width: '6rem' }}
           value={draft}
           onChange={e => setDraft(e.target.value)}
-          aria-label={`${entry.provider} cache TTL in hours`}
+          aria-label={t('{provider} cache TTL in hours', { provider: entry.provider })}
         />
       </td>
-      <td><span className="page-sub">{SOURCE_LABEL[entry.source] ?? entry.source}</span></td>
+      <td><span className="page-sub">{SOURCE_LABEL[entry.source] ? t(SOURCE_LABEL[entry.source]) : entry.source}</span></td>
       <td style={{ whiteSpace: 'nowrap' }}>
         <button
           className="btn btn-ghost btn-sm"
           onClick={() => { const h = Number(draft); if (Number.isFinite(h) && h >= 0) onApply(entry.provider, h); }}
           disabled={busy !== null}
         >
-          {rowBusy ? '…' : 'Apply'}
+          {rowBusy ? '…' : t('Apply')}
         </button>
         {entry.source === 'stored' && (
           <button className="btn btn-ghost btn-sm" onClick={() => onRevert(entry.provider)} disabled={busy !== null}>
-            Revert
+            {t('Revert')}
           </button>
         )}
       </td>
@@ -439,6 +442,7 @@ function TTLRow({ entry, busy, onApply, onRevert }: {
 // ── Warm panel ────────────────────────────────────────────────────────────────
 
 function WarmPanel() {
+  const t = useT();
   const [ids, setIds]           = useState('');
   const [mediaType, setType]    = useState('poster');
   const [submitting, setSub]    = useState(false);
@@ -447,7 +451,7 @@ function WarmPanel() {
 
   const handleWarm = async () => {
     const list = ids.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
-    if (list.length === 0) { setError('Enter at least one ID'); return; }
+    if (list.length === 0) { setError(t('Enter at least one ID')); return; }
     setSub(true); setError(null); setResult(null);
     try {
       const res = await fetch(`${API_BASE}/api/admin/warm`, {
@@ -460,7 +464,7 @@ function WarmPanel() {
         throw new Error(text || `HTTP ${res.status}`);
       }
       const data = await res.json() as { accepted: number; mediaType: string };
-      setResult(`Warming ${data.accepted} ${data.mediaType}(s) in background.`);
+      setResult(t('Warming {n} {type}(s) in background.', { n: data.accepted, type: data.mediaType }));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -471,11 +475,11 @@ function WarmPanel() {
   return (
     <div className="cfg-fields" style={{ maxWidth: '640px' }}>
       <p className="page-sub" style={{ margin: 0 }}>
-        Pre-render posters into the cache. Accepts IMDb IDs, TMDB IDs, or any ID supported by your configured providers. One per line or comma-separated.
+        {t('Pre-render posters into the cache. Accepts IMDb IDs, TMDB IDs, or any ID supported by your configured providers. One per line or comma-separated.')}
       </p>
 
       <div className="field">
-        <label className="label" htmlFor="warm-ids">Media IDs</label>
+        <label className="label" htmlFor="warm-ids">{t('Media IDs')}</label>
         <textarea
           id="warm-ids"
           className="input"
@@ -488,17 +492,17 @@ function WarmPanel() {
       </div>
 
       <div className="field">
-        <label className="label" htmlFor="warm-type">Media type</label>
+        <label className="label" htmlFor="warm-type">{t('Media type')}</label>
         <select
           id="warm-type"
           className="select"
           value={mediaType}
           onChange={e => setType(e.target.value)}
         >
-          <option value="poster">Poster</option>
-          <option value="backdrop">Backdrop</option>
-          <option value="thumbnail">Thumbnail</option>
-          <option value="logo">Logo</option>
+          <option value="poster">{t('Poster')}</option>
+          <option value="backdrop">{t('Backdrop')}</option>
+          <option value="thumbnail">{t('Thumbnail')}</option>
+          <option value="logo">{t('Logo')}</option>
         </select>
       </div>
 
@@ -521,7 +525,7 @@ function WarmPanel() {
           onClick={handleWarm}
           disabled={submitting || !ids.trim()}
         >
-          {submitting ? 'Queuing…' : 'Warm cache'}
+          {submitting ? t('Queuing…') : t('Warm cache')}
         </button>
       </div>
     </div>
@@ -531,16 +535,17 @@ function WarmPanel() {
 type Tab = 'metrics' | 'sources' | 'cache' | 'logs' | 'runtime' | 'warm' | 'keys';
 
 const TABS: { id: Tab; label: string; icon: typeof Activity }[] = [
-  { id: 'metrics', label: 'Metrics', icon: Activity },
-  { id: 'sources', label: 'Sources', icon: Gauge },
-  { id: 'cache',   label: 'Cache',   icon: HardDrive },
-  { id: 'logs',    label: 'Logs',    icon: ScrollText },
-  { id: 'runtime', label: 'Runtime', icon: SlidersHorizontal },
-  { id: 'warm',    label: 'Warm',    icon: Flame },
-  { id: 'keys',    label: 'Server keys', icon: Plug },
+  { id: 'metrics', label: msg('Metrics'), icon: Activity },
+  { id: 'sources', label: msg('Sources'), icon: Gauge },
+  { id: 'cache',   label: msg('Cache'),   icon: HardDrive },
+  { id: 'logs',    label: msg('Logs'),    icon: ScrollText },
+  { id: 'runtime', label: msg('Runtime'), icon: SlidersHorizontal },
+  { id: 'warm',    label: msg('Warm'),    icon: Flame },
+  { id: 'keys',    label: msg('Server keys'), icon: Plug },
 ];
 
 export function AdminClient() {
+  const t = useT();
   const [tab, setTab]         = useState<Tab>('metrics');
   const [metrics, setMetrics] = useState<MetricsSnapshot | null>(null);
   const [cache, setCache]     = useState<CacheStats | null>(null);
@@ -548,13 +553,13 @@ export function AdminClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
-  const load = useCallback(async (t: Tab) => {
-    if (t === 'warm' || t === 'logs' || t === 'runtime' || t === 'keys') return;
+  const load = useCallback(async (which: Tab) => {
+    if (which === 'warm' || which === 'logs' || which === 'runtime' || which === 'keys') return;
     setLoading(true);
     setError(null);
     try {
-      if (t === 'metrics')      setMetrics(await fetchMetrics());
-      else if (t === 'sources') setSources(await fetchSources());
+      if (which === 'metrics')      setMetrics(await fetchMetrics());
+      else if (which === 'sources') setSources(await fetchSources());
       else                      setCache(await fetchCacheStats());
     } catch (e) {
       setError((e as Error).message);
@@ -567,11 +572,11 @@ export function AdminClient() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load('metrics'); }, [load]);
 
-  const switchTab = (t: Tab) => {
-    setTab(t);
-    if (t === 'warm' || t === 'logs' || t === 'runtime' || t === 'keys') return;
-    if ((t === 'metrics' && !metrics) || (t === 'sources' && !sources) || (t === 'cache' && !cache)) {
-      void load(t);
+  const switchTab = (which: Tab) => {
+    setTab(which);
+    if (which === 'warm' || which === 'logs' || which === 'runtime' || which === 'keys') return;
+    if ((which === 'metrics' && !metrics) || (which === 'sources' && !sources) || (which === 'cache' && !cache)) {
+      void load(which);
     }
   };
 
@@ -579,22 +584,22 @@ export function AdminClient() {
     <div className="page-inner">
       <div className="admin-header">
         <div>
-          <h1 className="page-title">Admin</h1>
-          <p className="page-sub">Runtime metrics, source health, cache diagnostics, and log verbosity.</p>
+          <h1 className="page-title">{t('Admin')}</h1>
+          <p className="page-sub">{t('Runtime metrics, source health, cache diagnostics, and log verbosity.')}</p>
         </div>
         <button
           className="btn btn-ghost"
           onClick={() => void load(tab)}
           disabled={loading || (tab !== 'metrics' && tab !== 'sources' && tab !== 'cache')}
-          aria-label="Refresh data"
-          title={tab === 'metrics' || tab === 'sources' || tab === 'cache' ? 'Refresh this panel' : 'This panel loads on its own'}
+          aria-label={t('Refresh data')}
+          title={tab === 'metrics' || tab === 'sources' || tab === 'cache' ? t('Refresh this panel') : t('This panel loads on its own')}
         >
           <RefreshCw size={13} aria-hidden="true" className={loading ? 'spin' : ''} />
-          Refresh
+          {t('Refresh')}
         </button>
       </div>
 
-      <div role="tablist" aria-label="Admin sections" className="tabs" style={{ marginBottom: 'var(--sp-4)' }} onKeyDown={tablistKeyNav}>
+      <div role="tablist" aria-label={t('Admin sections')} className="tabs" style={{ marginBottom: 'var(--sp-4)' }} onKeyDown={tablistKeyNav}>
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -607,7 +612,7 @@ export function AdminClient() {
             className="tab"
           >
             <Icon size={13} aria-hidden="true" />
-            {label}
+            {t(label)}
           </button>
         ))}
       </div>
@@ -629,7 +634,7 @@ export function AdminClient() {
           className={tab === id ? 'tabpanel-enter' : undefined}
         >
           {loading && tab === id && (
-            <div className="stat-strip" aria-label="Loading data" aria-busy="true" style={{ border: 'none', background: 'transparent', gap: 'var(--sp-3)' }}>
+            <div className="stat-strip" aria-label={t('Loading data')} aria-busy="true" style={{ border: 'none', background: 'transparent', gap: 'var(--sp-3)' }}>
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="skeleton" style={{ height: '5rem', flex: '1 1 9rem' }} />
               ))}

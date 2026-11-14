@@ -4,6 +4,7 @@ import { useState, useId } from 'react';
 import { Check, AlertCircle, KeyRound, FolderOpen, Save } from 'lucide-react';
 import { getProfile, updateProfile, type Profile } from '@/lib/api';
 import { INTEGRATIONS } from './integrations-client';
+import { useT } from '@/lib/i18n';
 
 // Your own API keys, per profile. The server keeps the values and never sends
 // them back, so this page shows which providers have one rather than what it
@@ -17,6 +18,7 @@ interface Loaded {
 }
 
 export function UserKeysClient() {
+  const t = useT();
   const uid = useId();
   const [idInput, setIdInput] = useState('');
   const [pwInput, setPwInput] = useState('');
@@ -33,7 +35,7 @@ export function UserKeysClient() {
       if (!p.hasPassword) {
         setNotice({
           kind: 'err',
-          text: 'Set a password on this profile first. Without one, anyone who knows the ID can read it — and that would include your keys.',
+          text: t('Set a password on this profile first. Without one, anyone who knows the ID can read it — and that would include your keys.'),
         });
         return;
       }
@@ -58,7 +60,7 @@ export function UserKeysClient() {
       );
       setLoaded({ ...loaded, keysSet: updated.keysSet ?? loaded.keysSet });
       setKeys({});
-      setNotice({ kind: 'ok', text: 'Saved. Your renders now use these keys.' });
+      setNotice({ kind: 'ok', text: t('Saved. Your renders now use these keys.') });
     } catch (e) {
       setNotice({ kind: 'err', text: (e as Error).message });
     } finally {
@@ -70,10 +72,9 @@ export function UserKeysClient() {
     <div className="page-inner">
       <div className="admin-header">
         <div>
-          <h1 className="page-title">Your API keys</h1>
+          <h1 className="page-title">{t('Your API keys')}</h1>
           <p className="page-sub">
-            Optional. A key here is used for your profile&rsquo;s renders instead of
-            this server&rsquo;s, which gets you your own rate limits.
+            {t('Optional. A key here is used for your profile’s renders instead of this server’s, which gets you your own rate limits.')}
           </p>
         </div>
       </div>
@@ -89,23 +90,22 @@ export function UserKeysClient() {
         <div className="panel">
           <div className="panel-body cfg-fields">
             <p className="hint" style={{ marginTop: 0 }}>
-              Load the profile you want the keys to apply to. It needs a password —
-              that is what keeps the keys private.
+              {t('Load the profile you want the keys to apply to. It needs a password — that is what keeps the keys private.')}
             </p>
             <div className="field">
-              <label className="label" htmlFor={`${uid}-id`}>Profile ID or alias</label>
+              <label className="label" htmlFor={`${uid}-id`}>{t('Profile ID or alias')}</label>
               <input
                 id={`${uid}-id`}
                 className="input"
                 value={idInput}
                 onChange={e => setIdInput(e.target.value)}
-                placeholder="myposters"
+                placeholder={t('myposters')}
                 spellCheck={false}
                 autoComplete="off"
               />
             </div>
             <div className="field">
-              <label className="label" htmlFor={`${uid}-pw`}>Profile password</label>
+              <label className="label" htmlFor={`${uid}-pw`}>{t('Profile password')}</label>
               <input
                 id={`${uid}-pw`}
                 className="input"
@@ -118,7 +118,7 @@ export function UserKeysClient() {
             </div>
             <button className="btn btn-primary" onClick={() => void load()} disabled={busy || !idInput.trim()}>
               <FolderOpen size={13} aria-hidden />
-              {busy ? 'Loading…' : 'Load profile'}
+              {busy ? t('Loading…') : t('Load profile')}
             </button>
           </div>
         </div>
@@ -127,9 +127,8 @@ export function UserKeysClient() {
           <div className="panel">
             <div className="panel-body cfg-fields">
               <p className="hint" style={{ marginTop: 0 }}>
-                Editing <strong>{loaded.id}</strong>. A saved key is never shown again —
-                leave a field blank to keep what is stored, or clear it to go back to
-                this server&rsquo;s key.
+                {t('Editing')} <strong>{loaded.id}</strong>
+                {t('. A saved key is never shown again — leave a field blank to keep what is stored, or clear it to go back to this server’s key.')}
               </p>
             </div>
           </div>
@@ -142,11 +141,11 @@ export function UserKeysClient() {
                   <div className="field">
                     <label className="label" htmlFor={`${uid}-${provider.id}`}>
                       <span style={{ color: provider.accent }}>●</span> {provider.name}
-                      {isSet && <span className="hint" style={{ marginLeft: 'var(--sp-2)' }}>saved</span>}
+                      {isSet && <span className="hint" style={{ marginLeft: 'var(--sp-2)' }}>{t('saved')}</span>}
                     </label>
                     <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
-                      {provider.description}{' '}
-                      <a href={provider.docsUrl} target="_blank" rel="noreferrer">Where to get one</a>
+                      {t(provider.description)}{' '}
+                      <a href={provider.docsUrl} target="_blank" rel="noreferrer">{t('Where to get one')}</a>
                     </span>
                     <input
                       id={`${uid}-${provider.id}`}
@@ -154,7 +153,7 @@ export function UserKeysClient() {
                       type="password"
                       value={keys[provider.id] ?? ''}
                       onChange={e => setKeys({ ...keys, [provider.id]: e.target.value })}
-                      placeholder={isSet ? 'Saved — type to replace' : 'Using this server’s key'}
+                      placeholder={isSet ? t('Saved — type to replace') : t('Using this server’s key')}
                       spellCheck={false}
                       autoComplete="off"
                     />
@@ -167,11 +166,11 @@ export function UserKeysClient() {
           <div className="cfg-actions" style={{ marginTop: 'var(--sp-4)' }}>
             <button className="btn btn-primary" onClick={() => void save()} disabled={busy || Object.keys(keys).length === 0}>
               <Save size={13} aria-hidden />
-              {busy ? 'Saving…' : 'Save keys'}
+              {busy ? t('Saving…') : t('Save keys')}
             </button>
             <button className="btn btn-ghost" onClick={() => { setLoaded(null); setKeys({}); setNotice(null); }} disabled={busy}>
               <KeyRound size={13} aria-hidden />
-              Close
+              {t('Close')}
             </button>
           </div>
         </>

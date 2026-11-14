@@ -3,6 +3,8 @@
  * a source code in brackets, e.g. "IMDb (IM)", or leads with it, e.g. "TM (TMDB)".
  */
 
+import { msg } from '@/lib/i18n-msg';
+
 const PACK_CODES: Record<string, string> = {
   IM: 'imdb',
   TM: 'tmdb',
@@ -50,7 +52,7 @@ export interface PackImport {
 
 /** Maps a pack's entries to source ids. The first entry for a source wins. */
 export function parseIconPack(data: unknown): PackImport {
-  if (!Array.isArray(data)) throw new Error('The pack is not a JSON list of icons.');
+  if (!Array.isArray(data)) throw new Error(msg('The pack is not a JSON list of icons.'));
   const icons: Record<string, string> = {};
   let skipped = 0;
   for (const entry of data as { name?: unknown; url?: unknown }[]) {
@@ -67,19 +69,19 @@ export function parseIconPack(data: unknown): PackImport {
 }
 
 export async function fetchIconPack(packUrl: string, signal?: AbortSignal): Promise<PackImport> {
-  if (!isIconUrl(packUrl)) throw new Error('Enter an http(s) link to a pack.');
+  if (!isIconUrl(packUrl)) throw new Error(msg('Enter an http(s) link to a pack.'));
   let res: Response;
   try {
     res = await fetch(packUrl, { signal, credentials: 'omit' });
   } catch {
-    throw new Error('The pack could not be fetched. Its host may not allow browser requests.');
+    throw new Error(msg('The pack could not be fetched. Its host may not allow browser requests.'));
   }
   if (!res.ok) throw new Error(`The pack returned HTTP ${res.status}.`);
   let data: unknown;
   try {
     data = await res.json();
   } catch {
-    throw new Error('The pack is not valid JSON.');
+    throw new Error(msg('The pack is not valid JSON.'));
   }
   return parseIconPack(data);
 }

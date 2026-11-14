@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useId, useRef } from 'react';
 import { Check, AlertCircle, X, Plug, Eye, EyeOff, Trash2, ChevronDown, CircleHelp } from 'lucide-react';
 import { fetchSettings, setSetting, deleteSetting } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import { msg } from '@/lib/i18n-msg';
 
 // ── Provider definitions ──────────────────────────────────────────────────────
 
@@ -19,34 +21,34 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: 'tmdb',
     name: 'TMDB',
-    description: 'Artwork, metadata, and ratings — required for most features.',
+    description: msg('Artwork, metadata, and ratings — required for most features.'),
     docsUrl: 'https://developer.themoviedb.org/docs/getting-started',
     accent: '#01b4e4',
     keys: [
       {
         key: 'tmdb_read_token',
-        label: 'Read Access Token',
+        label: msg('Read Access Token'),
         placeholder: 'eyJhbGciOiJIUzI1NiJ9…',
-        hint: 'Preferred — longer token starting with eyJ',
+        hint: msg('Preferred — longer token starting with eyJ'),
       },
       {
         key: 'tmdb_api_key',
-        label: 'API Key (v3)',
+        label: msg('API Key (v3)'),
         placeholder: '8a7bcdef…',
-        hint: 'Legacy key, use the read token when possible',
+        hint: msg('Legacy key, use the read token when possible'),
       },
     ],
   },
   {
     id: 'mdblist',
     name: 'MDBList',
-    description: 'Aggregated ratings from IMDb, RT, Metacritic, Letterboxd, and more.',
+    description: msg('Aggregated ratings from IMDb, RT, Metacritic, Letterboxd, and more.'),
     docsUrl: 'https://mdblist.com/api/',
     accent: '#8b5cf6',
     keys: [
       {
         key: 'mdblist_api_key',
-        label: 'API Key',
+        label: msg('API Key'),
         placeholder: 'ywgmcfc1…',
       },
     ],
@@ -54,13 +56,13 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: 'omdb',
     name: 'OMDB',
-    description: 'Supplemental ratings and data from the Open Movie Database.',
+    description: msg('Supplemental ratings and data from the Open Movie Database.'),
     docsUrl: 'https://www.omdbapi.com/apikey.aspx',
     accent: '#f59e0b',
     keys: [
       {
         key: 'omdb_api_key',
-        label: 'API Key',
+        label: msg('API Key'),
         placeholder: 'abcd1234',
       },
     ],
@@ -68,13 +70,13 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: 'fanart',
     name: 'Fanart.tv',
-    description: 'High-quality fan-made artwork: logos, art posters, and thumbs.',
+    description: msg('High-quality fan-made artwork: logos, art posters, and thumbs.'),
     docsUrl: 'https://fanart.tv/get-an-api-key/',
     accent: '#10b981',
     keys: [
       {
         key: 'fanart_api_key',
-        label: 'API Key',
+        label: msg('API Key'),
         placeholder: 'a1b2c3d4…',
       },
     ],
@@ -82,45 +84,45 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: 'trakt',
     name: 'Trakt',
-    description: 'Direct Trakt community ratings with automatic IMDb ID lookup.',
+    description: msg('Direct Trakt community ratings with automatic IMDb ID lookup.'),
     docsUrl: 'https://trakt.tv/oauth/applications',
     accent: '#ed1c24',
     keys: [
       {
         key: 'trakt_client_id',
-        label: 'Client ID',
+        label: msg('Client ID'),
         placeholder: 'abc123def456…',
-        hint: 'From your Trakt API application',
+        hint: msg('From your Trakt API application'),
       },
     ],
   },
   {
     id: 'simkl',
     name: 'SIMKL',
-    description: 'SIMKL community ratings with automatic IMDb ID lookup.',
+    description: msg('SIMKL community ratings with automatic IMDb ID lookup.'),
     docsUrl: 'https://simkl.com/apps/',
     accent: '#1cb0f6',
     keys: [
       {
         key: 'simkl_client_id',
-        label: 'Client ID',
+        label: msg('Client ID'),
         placeholder: 'abc123…',
-        hint: 'From your SIMKL app registration',
+        hint: msg('From your SIMKL app registration'),
       },
     ],
   },
   {
     id: 'pmdb',
     name: 'PMDB',
-    description: 'PublicMetaDB community ratings.',
+    description: msg('PublicMetaDB community ratings.'),
     docsUrl: 'https://publicmetadb.com',
     accent: '#ebebeb',
     keys: [
       {
         key: 'pmdb_api_key',
-        label: 'API Key',
+        label: msg('API Key'),
         placeholder: 'pm-…',
-        hint: 'From your PMDB account settings',
+        hint: msg('From your PMDB account settings'),
       },
     ],
   },
@@ -131,12 +133,12 @@ const TMDB_ONBOARDING_KEY = 'xrdb-integrations-tmdb-onboarding-v1';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function normalizeError(e: unknown): string {
-  const msg = (e as Error).message ?? 'Unknown error';
-  if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))
-    return 'Could not reach the backend.';
-  if (msg.includes('unauthorized') || msg.includes('401'))
-    return 'Admin key required. Set XRDB_ADMIN_KEY on the server.';
-  return msg;
+  const text = (e as Error).message ?? 'Unknown error';
+  if (text.includes('Failed to fetch') || text.includes('NetworkError'))
+    return msg('Could not reach the backend.');
+  if (text.includes('unauthorized') || text.includes('401'))
+    return msg('Admin key required. Set XRDB_ADMIN_KEY on the server.');
+  return text;
 }
 
 // ── Notice ────────────────────────────────────────────────────────────────────
@@ -144,6 +146,7 @@ function normalizeError(e: unknown): string {
 function Notice({
   type, message, onDismiss, actionLabel, onAction,
 }: { type: 'error' | 'success' | 'info'; message: string; onDismiss?: () => void; actionLabel?: string; onAction?: () => void }) {
+  const t = useT();
   return (
     <div
       className={`notice notice-${type}`}
@@ -158,7 +161,7 @@ function Notice({
         </button>
       )}
       {onDismiss && (
-        <button onClick={onDismiss} className="notice-dismiss" aria-label="Dismiss">
+        <button onClick={onDismiss} className="notice-dismiss" aria-label={t('Dismiss')}>
           <X size={12} aria-hidden />
         </button>
       )}
@@ -177,6 +180,7 @@ function KeyRow({
   onSave: (value: string) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
+  const t = useT();
   const fromEnv = source === 'environment';
   const uid = useId();
   const [value, setValue] = useState('');
@@ -187,14 +191,14 @@ function KeyRow({
   const [localError, setLocalError] = useState('');
 
   const handleSave = async () => {
-    if (!value.trim()) { setLocalError('Enter a value to save'); return; }
+    if (!value.trim()) { setLocalError(t('Enter a value to save')); return; }
     setSaving(true);
     setLocalError('');
     try {
       await onSave(value.trim());
       setValue('');
     } catch (e) {
-      setLocalError(normalizeError(e));
+      setLocalError(t(normalizeError(e)));
     } finally {
       setSaving(false);
     }
@@ -203,10 +207,10 @@ function KeyRow({
   return (
     <div className="field">
       <label className="label" htmlFor={uid}>
-        {keyDef.label}
-        {isSet && <span className="sr-only"> (configured)</span>}
+        {t(keyDef.label)}
+        {isSet && <span className="sr-only"> {t('(configured)')}</span>}
       </label>
-      {keyDef.hint && <span className="hint" style={{ marginTop: 0 }}>{keyDef.hint}</span>}
+      {keyDef.hint && <span className="hint" style={{ marginTop: 0 }}>{t(keyDef.hint)}</span>}
       <div className="key-row" style={{ marginTop: 'var(--sp-1)' }}>
         <div className="key-input-wrap">
           <input
@@ -218,9 +222,9 @@ function KeyRow({
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             placeholder={
               fromEnv
-                ? '••••••••  (set in the environment — saving here overrides it)'
+                ? t('••••••••  (set in the environment — saving here overrides it)')
                 : isSet
-                  ? '••••••••  (set — enter new value to replace)'
+                  ? t('••••••••  (set — enter new value to replace)')
                   : keyDef.placeholder
             }
             autoComplete="off"
@@ -230,7 +234,7 @@ function KeyRow({
             className="key-show-btn"
             type="button"
             onClick={() => setShow(v => !v)}
-            aria-label={show ? 'Hide key' : 'Show key'}
+            aria-label={show ? t('Hide key') : t('Show key')}
           >
             {show ? <EyeOff size={13} aria-hidden /> : <Eye size={13} aria-hidden />}
           </button>
@@ -241,7 +245,7 @@ function KeyRow({
           disabled={saving || !value.trim()}
           style={{ flexShrink: 0 }}
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? t('Saving…') : t('Save')}
         </button>
         {/* Nothing is stored for an environment value, so Remove would report
             success and change nothing. */}
@@ -256,22 +260,21 @@ function KeyRow({
               setDeleting(true);
               setLocalError('');
               try { await onDelete(); setConfirmDelete(false); }
-              catch (e) { setLocalError(normalizeError(e)); }
+              catch (e) { setLocalError(t(normalizeError(e))); }
               finally { setDeleting(false); }
             }}
             disabled={saving || deleting}
-            aria-label={confirmDelete ? `Confirm removing ${keyDef.label}` : `Remove ${keyDef.label}`}
+            aria-label={confirmDelete ? t('Confirm removing {label}', { label: t(keyDef.label) }) : t('Remove {label}', { label: t(keyDef.label) })}
             style={{ flexShrink: 0 }}
           >
             <Trash2 size={13} aria-hidden />
-            {confirmDelete ? ' Confirm' : ''}
+            {confirmDelete ? ` ${t('Confirm')}` : ''}
           </button>
         )}
       </div>
       {fromEnv && (
         <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-          Set in the environment. Change it where the environment is defined, or
-          save a value here to override it.
+          {t('Set in the environment. Change it where the environment is defined, or save a value here to override it.')}
         </span>
       )}
       {localError && (
@@ -295,6 +298,7 @@ function ProviderRow({
   defaultOpen: boolean;
   rowId?: string;
 }) {
+  const t = useT();
   const uid = useId();
   const [open, setOpen] = useState(defaultOpen);
   const anySet = integration.keys.some(k => statuses[k.key]);
@@ -309,16 +313,16 @@ function ProviderRow({
       >
         <span className="provider-dot" style={{ background: integration.accent }} aria-hidden />
         <span className="provider-name">{integration.name}</span>
-        <span className="provider-blurb">{integration.description}</span>
+        <span className="provider-blurb">{t(integration.description)}</span>
         <span
           className={`provider-state${statusKnown && anySet ? ' provider-state--on' : ''}`}
         >
           {!statusKnown ? (
-            <><CircleHelp size={10} aria-hidden /> Status unavailable</>
+            <><CircleHelp size={10} aria-hidden /> {t('Status unavailable')}</>
           ) : anySet ? (
-            <><Check size={10} aria-hidden /> Connected</>
+            <><Check size={10} aria-hidden /> {t('Connected')}</>
           ) : (
-            <><Plug size={10} aria-hidden /> Not connected</>
+            <><Plug size={10} aria-hidden /> {t('Not connected')}</>
           )}
         </span>
         <ChevronDown size={14} className="provider-chevron" aria-hidden />
@@ -330,7 +334,7 @@ function ProviderRow({
       <div className="provider-detail" id={`${uid}-detail`} inert={!open}>
         <div className="provider-detail-inner">
           <div className="provider-detail-pad">
-            <p className="hint provider-desc" style={{ marginTop: 0 }}>{integration.description}</p>
+            <p className="hint provider-desc" style={{ marginTop: 0 }}>{t(integration.description)}</p>
             {integration.keys.map(k => (
               <KeyRow
                 key={k.key}
@@ -347,7 +351,7 @@ function ProviderRow({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Get an API key →
+              {t('Get an API key →')}
             </a>
           </div>
         </div>
@@ -361,6 +365,7 @@ function ProviderRow({
 // embedded drops the page heading and outer width: inside the admin tabs the
 // panel already has both, and a second page title reads as a nested page.
 export function IntegrationsClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const t = useT();
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
   const [sources, setSources] = useState<Record<string, string>>({});
   const [loading, setLoading]   = useState(true);
@@ -384,8 +389,8 @@ export function IntegrationsClient({ embedded = false }: { embedded?: boolean } 
     window.setTimeout(() => input?.focus(), 0);
   }, []);
 
-  const flash = useCallback((type: 'error' | 'success' | 'info', msg: string) => {
-    setNotice({ type, message: msg });
+  const flash = useCallback((type: 'error' | 'success' | 'info', message: string) => {
+    setNotice({ type, message });
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
     if (type !== 'error') {
       noticeTimer.current = setTimeout(() => setNotice(null), 4000);
@@ -407,20 +412,20 @@ export function IntegrationsClient({ embedded = false }: { embedded?: boolean } 
       setSettingsLoadFailed(false);
     } catch (e) {
       // 401 is expected when no admin key is set — show non-blocking info
-      const msg = normalizeError(e);
-      if (msg.includes('Admin key')) {
+      const text = normalizeError(e);
+      if (text.includes('Admin key')) {
         setSettingsUnauthorized(true);
         setSettingsLoadFailed(false);
-        flash('info', 'Admin key required to view/edit integration settings. Set XRDB_ADMIN_KEY in your environment.');
+        flash('info', t('Admin key required to view/edit integration settings. Set XRDB_ADMIN_KEY in your environment.'));
       } else {
         setSettingsUnauthorized(false);
         setSettingsLoadFailed(true);
-        flash('error', msg);
+        flash('error', t(text));
       }
     } finally {
       setLoading(false);
     }
-  }, [flash]);
+  }, [flash, t]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadStatuses(); }, [loadStatuses]);
@@ -460,14 +465,14 @@ export function IntegrationsClient({ embedded = false }: { embedded?: boolean } 
     await setSetting(key, value);
     setStatuses(s => ({ ...s, [key]: true }));
     setSources(s => ({ ...s, [key]: 'stored' }));
-    flash('success', 'Key saved');
+    flash('success', t('Key saved'));
   };
 
   const handleDelete = async (key: string) => {
     await deleteSetting(key);
     setStatuses(s => ({ ...s, [key]: false }));
     setSources(s => { const next = { ...s }; delete next[key]; return next; });
-    flash('success', 'Key removed');
+    flash('success', t('Key removed'));
     // A stored key can be sitting on top of an environment one, and only the
     // server knows what is left underneath it.
     await loadStatuses();
@@ -485,10 +490,10 @@ export function IntegrationsClient({ embedded = false }: { embedded?: boolean } 
     <div className={embedded ? '' : 'page-inner'} style={embedded ? undefined : { maxWidth: '920px' }}>
       {!embedded && (
         <div className="page-head">
-          <h1 className="page-title">Integrations</h1>
+          <h1 className="page-title">{t('Integrations')}</h1>
           <p className="page-sub">
-            Connect third-party services. Keys are stored in the database and override environment variables.
-            {!loading && statusKnown && ` ${connectedCount}/${INTEGRATIONS.length} configured.`}
+            {t('Connect third-party services. Keys are stored in the database and override environment variables.')}
+            {!loading && statusKnown && ` ${t('{connected}/{total} configured.', { connected: connectedCount, total: INTEGRATIONS.length })}`}
           </p>
         </div>
       )}
@@ -497,8 +502,8 @@ export function IntegrationsClient({ embedded = false }: { embedded?: boolean } 
         <div style={{ marginBottom: 'var(--sp-4)' }}>
           <Notice
             type="info"
-            message="Shuffle and search need TMDB. Add that key first so the rest of the app works out of the box."
-            actionLabel="Set up TMDB"
+            message={t('Shuffle and search need TMDB. Add that key first so the rest of the app works out of the box.')}
+            actionLabel={t('Set up TMDB')}
             onAction={focusTmdbRow}
             onDismiss={dismissTmdbPrompt}
           />

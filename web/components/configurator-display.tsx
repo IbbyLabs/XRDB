@@ -2,6 +2,8 @@
 
 import { useId } from 'react';
 import { Check, AlertCircle } from 'lucide-react';
+import { useT } from '@/lib/i18n';
+import type { TFunction } from '@/lib/i18n';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS, ORIGINAL_LANGUAGE,
@@ -20,9 +22,9 @@ const STREAMING_SERVICES = [
 ];
 
 // An unset position falls back to the top right, matching the renderer.
-function qualityPosLabel(pos: string): string {
+function qualityPosLabel(t: TFunction, pos: string): string {
   const id = !pos || pos === 'inherit' ? 'tr' : pos;
-  return `in the ${(SIX_POS_OPTIONS.find(o => o.id === id)?.label ?? 'Top right').toLowerCase()}`;
+  return t('in the {position}', { position: t(SIX_POS_OPTIONS.find(o => o.id === id)?.label ?? 'Top right').toLowerCase() });
 }
 
 // ── Notice ────────────────────────────────────────────────────────────────────
@@ -36,6 +38,7 @@ export function Notice({
   actionLabel?: string;
   onAction?: () => void;
 }) {
+  const t = useT();
   return (
     <div
       className={`notice notice-${type}`}
@@ -52,7 +55,7 @@ export function Notice({
         </button>
       )}
       {onDismiss && (
-        <button onClick={onDismiss} className="notice-dismiss" aria-label="Dismiss">
+        <button onClick={onDismiss} className="notice-dismiss" aria-label={t('Dismiss')}>
           <span aria-hidden>×</span>
         </button>
       )}
@@ -132,6 +135,9 @@ interface DisplayPanelProps {
 }
 
 export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, onReset, fine, features }: DisplayPanelProps) {
+  const t = useT();
+  const tOpt = (text?: string) => (text ? t(text) : undefined);
+  const mediaTypeWord = t(mediaType.charAt(0).toUpperCase() + mediaType.slice(1)).toLowerCase();
   // Greyed only on an explicit false: an older instance omits the key and a
   // failed read leaves the control live. An inline config in a URL carries
   // topRated regardless of what this shows.
@@ -144,11 +150,11 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
     <div className="panel">
       <div className="panel-body cfg-fields">
 
-        <Section title="Artwork">
+        <Section title={t('Artwork')}>
           <Field
-            label="Artwork source"
+            label={t('Artwork source')}
             htmlFor={`${uid}-artwork`}
-            hint={ARTWORK_OPTIONS.find(o => o.id === config.artworkSource)?.desc}
+            hint={tOpt(ARTWORK_OPTIONS.find(o => o.id === config.artworkSource)?.desc)}
           >
             <select
               id={`${uid}-artwork`}
@@ -156,32 +162,32 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               value={config.artworkSource}
               onChange={e => onUpdate('artworkSource', e.target.value)}
             >
-              {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
             </select>
           </Field>
 
           <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'var(--sp-3)', margin: 0 }}>
-            <legend style={{ padding: '0 var(--sp-1)' }}><h4 className="label group-heading">Per type artwork source</h4></legend>
+            <legend style={{ padding: '0 var(--sp-1)' }}><h4 className="label group-heading">{t('Per type artwork source')}</h4></legend>
             <div className="cfg-fields">
-              <Field label="Movies" htmlFor={`${uid}-artwork-movie`} hint="Overrides the artwork source for films.">
+              <Field label={t('Movies')} htmlFor={`${uid}-artwork-movie`} hint={t('Overrides the artwork source for films.')}>
                 <select id={`${uid}-artwork-movie`} className="select" value={config.artworkSourceMovie}
                   onChange={e => onUpdate('artworkSourceMovie', e.target.value)}>
-                  <option value="">Same as default</option>
-                  {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  <option value="">{t('Same as default')}</option>
+                  {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
                 </select>
               </Field>
-              <Field label="Series" htmlFor={`${uid}-artwork-series`} hint="Overrides the artwork source for TV.">
+              <Field label={t('Series')} htmlFor={`${uid}-artwork-series`} hint={t('Overrides the artwork source for TV.')}>
                 <select id={`${uid}-artwork-series`} className="select" value={config.artworkSourceSeries}
                   onChange={e => onUpdate('artworkSourceSeries', e.target.value)}>
-                  <option value="">Same as default</option>
-                  {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  <option value="">{t('Same as default')}</option>
+                  {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
                 </select>
               </Field>
-              <Field label="Anime" htmlFor={`${uid}-artwork-anime`} hint="Overrides the artwork source for anime.">
+              <Field label={t('Anime')} htmlFor={`${uid}-artwork-anime`} hint={t('Overrides the artwork source for anime.')}>
                 <select id={`${uid}-artwork-anime`} className="select" value={config.artworkSourceAnime}
                   onChange={e => onUpdate('artworkSourceAnime', e.target.value)}>
-                  <option value="">Same as default</option>
-                  {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  <option value="">{t('Same as default')}</option>
+                  {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
                 </select>
               </Field>
             </div>
@@ -189,52 +195,52 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
 
           {config.artworkSource === 'random' && (
             <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'var(--sp-3)', margin: 0 }}>
-              <legend style={{ padding: '0 var(--sp-1)' }}><h4 className="label group-heading">Random filters</h4></legend>
+              <legend style={{ padding: '0 var(--sp-1)' }}><h4 className="label group-heading">{t('Random filters')}</h4></legend>
               <div className="cfg-fields">
-                <Field label="Text" htmlFor={`${uid}-rp-text`}>
+                <Field label={t('Text')} htmlFor={`${uid}-rp-text`}>
                   <select id={`${uid}-rp-text`} className="select" value={config.randomPosterText}
                     onChange={e => onUpdate('randomPosterText', e.target.value)} style={{ maxWidth: '10rem' }}>
-                    <option value="any">Any</option>
-                    <option value="text">With text</option>
-                    <option value="textless">Textless</option>
+                    <option value="any">{t('Any')}</option>
+                    <option value="text">{t('With text')}</option>
+                    <option value="textless">{t('Textless')}</option>
                   </select>
                 </Field>
-                <Field label="Language" htmlFor={`${uid}-rp-lang`}>
+                <Field label={t('Language')} htmlFor={`${uid}-rp-lang`}>
                   <select id={`${uid}-rp-lang`} className="select" value={config.randomPosterLanguage}
                     onChange={e => onUpdate('randomPosterLanguage', e.target.value)} style={{ maxWidth: '10rem' }}>
-                    <option value="any">Any</option>
-                    <option value="requested">Requested only</option>
+                    <option value="any">{t('Any')}</option>
+                    <option value="requested">{t('Requested only')}</option>
                   </select>
                 </Field>
                 <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
-                  <Field label="Min votes" htmlFor={`${uid}-rp-vc`}>
+                  <Field label={t('Min votes')} htmlFor={`${uid}-rp-vc`}>
                     <input id={`${uid}-rp-vc`} className="input" type="number" inputMode="numeric" min={0}
                       value={config.randomPosterMinVoteCount || ''} placeholder="0" style={{ maxWidth: '7rem' }}
                       onChange={e => onUpdate('randomPosterMinVoteCount', e.target.value === '' ? 0 : Number(e.target.value))} />
                   </Field>
-                  <Field label="Min score" htmlFor={`${uid}-rp-va`}>
+                  <Field label={t('Min score')} htmlFor={`${uid}-rp-va`}>
                     <input id={`${uid}-rp-va`} className="input" type="number" inputMode="decimal" min={0} max={10} step={0.5}
                       value={config.randomPosterMinVoteAverage || ''} placeholder="0" style={{ maxWidth: '7rem' }}
                       onChange={e => onUpdate('randomPosterMinVoteAverage', e.target.value === '' ? 0 : Number(e.target.value))} />
                   </Field>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
-                  <Field label="Min width" htmlFor={`${uid}-rp-w`}>
+                  <Field label={t('Min width')} htmlFor={`${uid}-rp-w`}>
                     <input id={`${uid}-rp-w`} className="input" type="number" inputMode="numeric" min={0}
                       value={config.randomPosterMinWidth || ''} placeholder="0" style={{ maxWidth: '7rem' }}
                       onChange={e => onUpdate('randomPosterMinWidth', e.target.value === '' ? 0 : Number(e.target.value))} />
                   </Field>
-                  <Field label="Min height" htmlFor={`${uid}-rp-h`}>
+                  <Field label={t('Min height')} htmlFor={`${uid}-rp-h`}>
                     <input id={`${uid}-rp-h`} className="input" type="number" inputMode="numeric" min={0}
                       value={config.randomPosterMinHeight || ''} placeholder="0" style={{ maxWidth: '7rem' }}
                       onChange={e => onUpdate('randomPosterMinHeight', e.target.value === '' ? 0 : Number(e.target.value))} />
                   </Field>
                 </div>
-                <Field label="Fallback" htmlFor={`${uid}-rp-fb`} hint="When nothing passes the filters.">
+                <Field label={t('Fallback')} htmlFor={`${uid}-rp-fb`} hint={t('When nothing passes the filters.')}>
                   <select id={`${uid}-rp-fb`} className="select" value={config.randomPosterFallback}
                     onChange={e => onUpdate('randomPosterFallback', e.target.value)} style={{ maxWidth: '10rem' }}>
-                    <option value="best">Best rated</option>
-                    <option value="original">Original pick</option>
+                    <option value="best">{t('Best rated')}</option>
+                    <option value="original">{t('Original pick')}</option>
                   </select>
                 </Field>
               </div>
@@ -243,9 +249,9 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
 
           {(mediaType === 'thumbnail' || mediaType === 'backdrop') && (
             <Field
-              label="Episode artwork"
+              label={t('Episode artwork')}
               htmlFor={`${uid}-episode-art`}
-              hint="What a TV episode uses: its own still, the series artwork, or the streaming thumbnail."
+              hint={t('What a TV episode uses: its own still, the series artwork, or the streaming thumbnail.')}
             >
               <select
                 id={`${uid}-episode-art`}
@@ -253,21 +259,21 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
                 value={config.episodeArtworkMode}
                 onChange={e => onUpdate('episodeArtworkMode', e.target.value)}
               >
-                <option value="still">Episode still</option>
-                <option value="series">Series artwork</option>
-                <option value="streaming">Streaming thumbnail</option>
+                <option value="still">{t('Episode still')}</option>
+                <option value="series">{t('Series artwork')}</option>
+                <option value="streaming">{t('Streaming thumbnail')}</option>
               </select>
             </Field>
           )}
 
           <Field
-            label="Language"
+            label={t('Language')}
             htmlFor={`${uid}-lang`}
             hint={config.language === ORIGINAL_LANGUAGE
-              ? 'Artwork in whichever language each title was made in'
+              ? t('Artwork in whichever language each title was made in')
               : config.fallbackLanguage
-                ? 'Preferred language for artwork, then the fallback below'
-                : 'Preferred language for artwork, falling back to English'}
+                ? t('Preferred language for artwork, then the fallback below')
+                : t('Preferred language for artwork, falling back to English')}
           >
             <select
               id={`${uid}-lang`}
@@ -280,14 +286,14 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               {!LANG_OPTIONS.some(o => o.id === config.language) && config.language && (
                 <option value={config.language}>{config.language.toUpperCase()}</option>
               )}
-              {LANG_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              {LANG_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
             </select>
           </Field>
 
           <Field
-            label="Fallback language"
+            label={t('Fallback language')}
             htmlFor={`${uid}-fallback-lang`}
-            hint="Tried when a title has no artwork in the language above, before English."
+            hint={t('Tried when a title has no artwork in the language above, before English.')}
           >
             <select
               id={`${uid}-fallback-lang`}
@@ -295,17 +301,17 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               value={config.fallbackLanguage}
               onChange={e => onUpdate('fallbackLanguage', e.target.value)}
             >
-              <option value="">None</option>
+              <option value="">{t('None')}</option>
               {LANG_OPTIONS.filter(o => o.id !== ORIGINAL_LANGUAGE).map(o => (
-                <option key={o.id} value={o.id}>{o.label}</option>
+                <option key={o.id} value={o.id}>{t(o.label)}</option>
               ))}
             </select>
           </Field>
 
           <Field
-            label="Text on poster"
+            label={t('Text on poster')}
             htmlFor={`${uid}-text`}
-            hint={TEXT_PREF_OPTIONS.find(o => o.id === config.textPreference)?.desc}
+            hint={tOpt(TEXT_PREF_OPTIONS.find(o => o.id === config.textPreference)?.desc)}
           >
             <select
               id={`${uid}-text`}
@@ -313,22 +319,22 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               value={config.textPreference}
               onChange={e => onUpdate('textPreference', e.target.value)}
             >
-              {TEXT_PREF_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              {TEXT_PREF_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
             </select>
           </Field>
 
           {mediaType === 'poster' && (
             <ToggleRow
-              label="Use backdrop as poster"
-              hint="Center-crop the backdrop image instead of the standard poster"
+              label={t('Use backdrop as poster')}
+              hint={t('Center-crop the backdrop image instead of the standard poster')}
               checked={config.backdropAsPoster}
               onChange={() => onUpdate('backdropAsPoster', !config.backdropAsPoster)}
             />
           )}
 
           <ToggleRow
-            label="Backdrop logo"
-            hint="Overlay the title logo on the backdrop"
+            label={t('Backdrop logo')}
+            hint={t('Overlay the title logo on the backdrop')}
             checked={config.backdropLogo}
             onChange={() => onUpdate('backdropLogo', !config.backdropLogo)}
           />
@@ -344,9 +350,9 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
 
           {mediaType === 'logo' && (
             <Field
-              label="Logo background"
+              label={t('Logo background')}
               htmlFor={`${uid}-logo-bg`}
-              hint="A dark panel fills the transparent canvas so a light wordmark reads on a pale background."
+              hint={t('A dark panel fills the transparent canvas so a light wordmark reads on a pale background.')}
             >
               <select
                 id={`${uid}-logo-bg`}
@@ -354,18 +360,18 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
                 value={config.logoBackground}
                 onChange={e => onUpdate('logoBackground', e.target.value)}
               >
-                <option value="transparent">Transparent</option>
-                <option value="dark">Dark panel</option>
+                <option value="transparent">{t('Transparent')}</option>
+                <option value="dark">{t('Dark panel')}</option>
               </select>
             </Field>
           )}
         </Section>
 
-        <Section title="Output">
+        <Section title={t('Output')}>
           <Field
-            label="Resolution"
+            label={t('Resolution')}
             htmlFor={`${uid}-size`}
-            hint="Small is the default, and the only tier under Stremio's 100 KB poster limit"
+            hint={t("Small is the default, and the only tier under Stremio's 100 KB poster limit")}
           >
             <select
               id={`${uid}-size`}
@@ -373,53 +379,53 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               value={config.size}
               onChange={e => onUpdate('size', e.target.value)}
             >
-              {SIZE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              {SIZE_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
             </select>
           </Field>
 
-          <Field label="Format" htmlFor={`${uid}-output-format`} hint="Auto picks the best encoding for the artwork.">
+          <Field label={t('Format')} htmlFor={`${uid}-output-format`} hint={t('Auto picks the best encoding for the artwork.')}>
             <select id={`${uid}-output-format`} className="select" value={config.outputFormat}
               onChange={e => onUpdate('outputFormat', e.target.value)} style={{ maxWidth: '10rem' }}>
-              {OUTPUT_FORMAT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              {OUTPUT_FORMAT_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
             </select>
           </Field>
-          <Field label="JPEG quality" htmlFor={`${uid}-output-quality`} hint="40–100. Blank keeps the default.">
+          <Field label={t('JPEG quality')} htmlFor={`${uid}-output-quality`} hint={t('40–100. Blank keeps the default.')}>
             <input id={`${uid}-output-quality`} className="input" type="number" inputMode="numeric" min={40} max={100}
-              value={config.outputQuality || ''} placeholder="default" style={{ maxWidth: '7rem' }}
+              value={config.outputQuality || ''} placeholder={t('default')} style={{ maxWidth: '7rem' }}
               onChange={e => onUpdate('outputQuality', e.target.value === '' ? 0 : Number(e.target.value))} />
           </Field>
         </Section>
 
-        <Section title="Badges">
+        <Section title={t('Badges')}>
           {/* Governs every badge rather than the ones on this tab, so it is gated on
               fine tuning alone. Anything narrower — the badge-style block, say —
               disappears when ratings are off while still governing genre badges. */}
           {fine && (
             <ToggleRow
-              label="Badge drop shadows"
-              hint="Applies to every badge, not just the ones on this tab. Off leaves them flat against the artwork."
+              label={t('Badge drop shadows')}
+              hint={t('Applies to every badge, not just the ones on this tab. Off leaves them flat against the artwork.')}
               checked={config.badgeShadow}
               onChange={() => onUpdate('badgeShadow', !config.badgeShadow)}
             />
           )}
 
           <ToggleRow
-            label="Age rating badge"
-            hint="Show content rating in corner"
+            label={t('Age rating badge')}
+            hint={t('Show content rating in corner')}
             checked={config.ageRating}
             onChange={() => onUpdate('ageRating', !config.ageRating)}
           />
 
           {config.ageRating && (
             <>
-              <Field label="Age badge position" htmlFor={`${uid}-agepos`}>
+              <Field label={t('Age badge position')} htmlFor={`${uid}-agepos`}>
                 <select
                   id={`${uid}-agepos`}
                   className="select"
                   value={config.ageRatingPos}
                   onChange={e => onUpdate('ageRatingPos', e.target.value)}
                 >
-                  {AGE_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  {AGE_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
                 </select>
               </Field>
               {fine && <AgeFine uid={uid} config={config} onUpdate={onUpdate} />}
@@ -427,22 +433,22 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           )}
 
           <ToggleRow
-            label="Genre badge"
-            hint="Show primary genres on the artwork"
+            label={t('Genre badge')}
+            hint={t('Show primary genres on the artwork')}
             checked={config.genre}
             onChange={() => onUpdate('genre', !config.genre)}
           />
 
           {config.genre && (
             <>
-              <Field label="Genre position" htmlFor={`${uid}-genrepos`}>
+              <Field label={t('Genre position')} htmlFor={`${uid}-genrepos`}>
                 <select
                   id={`${uid}-genrepos`}
                   className="select"
                   value={config.genrePos}
                   onChange={e => onUpdate('genrePos', e.target.value)}
                 >
-                  {GENRE_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  {GENRE_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
                 </select>
               </Field>
               {fine && <GenreFine uid={uid} config={config} onUpdate={onUpdate} />}
@@ -450,21 +456,21 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           )}
 
           <ToggleRow
-            label="Release status badge"
-            hint="Mark films that are in cinemas or out on digital"
+            label={t('Release status badge')}
+            hint={t('Mark films that are in cinemas or out on digital')}
             checked={config.releaseStatus}
             onChange={() => onUpdate('releaseStatus', !config.releaseStatus)}
           />
 
           {config.releaseStatus && (
-            <Field label="Release badge position" htmlFor={`${uid}-relpos`}>
+            <Field label={t('Release badge position')} htmlFor={`${uid}-relpos`}>
               <select
                 id={`${uid}-relpos`}
                 className="select"
                 value={config.releaseStatusPos}
                 onChange={e => onUpdate('releaseStatusPos', e.target.value)}
               >
-                {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
               </select>
             </Field>
           )}
@@ -472,41 +478,41 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           {config.releaseStatus && fine && <ReleaseStatusFine uid={uid} config={config} onUpdate={onUpdate} />}
 
           <ToggleRow
-            label="Top rated badge"
-            hint="Mark films in the top-rated ranking. Needs the IMDb dataset with XRDB_IMDB_TOP_RATED enabled on the server."
+            label={t('Top rated badge')}
+            hint={t('Mark films in the top-rated ranking. Needs the IMDb dataset with XRDB_IMDB_TOP_RATED enabled on the server.')}
             checked={config.topRated}
             onChange={() => onUpdate('topRated', !config.topRated)}
             disabled={topRatedOff}
-            note={topRatedOff ? 'Not enabled on this instance. Whoever runs it can switch it on with XRDB_IMDB_TOP_RATED and the IMDb dataset.' : undefined}
+            note={topRatedOff ? t('Not enabled on this instance. Whoever runs it can switch it on with XRDB_IMDB_TOP_RATED and the IMDb dataset.') : undefined}
           />
 
           {config.topRated && !topRatedOff && (
-            <Field label="Top rated badge position" htmlFor={`${uid}-toppos`}>
+            <Field label={t('Top rated badge position')} htmlFor={`${uid}-toppos`}>
               <select
                 id={`${uid}-toppos`}
                 className="select"
                 value={config.topRatedPos}
                 onChange={e => onUpdate('topRatedPos', e.target.value)}
               >
-                {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
               </select>
             </Field>
           )}
 
           {config.topRated && !topRatedOff && fine && (
             <>
-              <Field label="Top rated badge style" htmlFor={`${uid}-topstyle`}>
+              <Field label={t('Top rated badge style')} htmlFor={`${uid}-topstyle`}>
                 <select
                   id={`${uid}-topstyle`}
                   className="select"
                   value={config.topRatedBadgeStyle}
                   onChange={e => onUpdate('topRatedBadgeStyle', e.target.value)}
                 >
-                  {TOP_RATED_STYLE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  {TOP_RATED_STYLE_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
                 </select>
               </Field>
               {config.topRatedBadgeStyle !== 'plain' && (
-                <Field label={config.topRatedBadgeStyle === 'tile' ? 'Top rated tile color' : 'Top rated border color'} htmlFor={`${uid}-toptile`}>
+                <Field label={config.topRatedBadgeStyle === 'tile' ? t('Top rated tile color') : t('Top rated border color')} htmlFor={`${uid}-toptile`}>
                   <input
                     id={`${uid}-toptile`}
                     type="color"
@@ -522,21 +528,21 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           )}
 
           <ToggleRow
-            label="Awards badge"
-            hint="Oscar/Emmy win or nomination"
+            label={t('Awards badge')}
+            hint={t('Oscar/Emmy win or nomination')}
             checked={config.awards}
             onChange={() => onUpdate('awards', !config.awards)}
           />
 
           {config.awards && (
-            <Field label="Awards badge position" htmlFor={`${uid}-awardspos`}>
+            <Field label={t('Awards badge position')} htmlFor={`${uid}-awardspos`}>
               <select
                 id={`${uid}-awardspos`}
                 className="select"
                 value={config.awardsPos}
                 onChange={e => onUpdate('awardsPos', e.target.value)}
               >
-                {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
               </select>
             </Field>
           )}
@@ -550,21 +556,21 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           )}
 
           <ToggleRow
-            label="Stinger badge"
-            hint="After/during-credits scene"
+            label={t('Stinger badge')}
+            hint={t('After/during-credits scene')}
             checked={config.stinger}
             onChange={() => onUpdate('stinger', !config.stinger)}
           />
 
           {config.stinger && (
-            <Field label="Stinger badge position" htmlFor={`${uid}-stingerpos`}>
+            <Field label={t('Stinger badge position')} htmlFor={`${uid}-stingerpos`}>
               <select
                 id={`${uid}-stingerpos`}
                 className="select"
                 value={config.stingerPos}
                 onChange={e => onUpdate('stingerPos', e.target.value)}
               >
-                {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
               </select>
             </Field>
           )}
@@ -575,31 +581,31 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           )}
 
           <ToggleRow
-            label="Trending badge"
-            hint="Show a trending badge in the top-left corner"
+            label={t('Trending badge')}
+            hint={t('Show a trending badge in the top-left corner')}
             checked={config.trending}
             onChange={() => onUpdate('trending', !config.trending)}
           />
           <ToggleRow
-            label="Trending rank"
-            hint="A tab at the top of the artwork with the title's place in today's trending list, like #9 Today. Films not yet out on digital are skipped. No tab when the title is not on the list."
+            label={t('Trending rank')}
+            hint={t("A tab at the top of the artwork with the title's place in today's trending list, like #9 Today. Films not yet out on digital are skipped. No tab when the title is not on the list.")}
             checked={config.trendingRank}
             onChange={() => onUpdate('trendingRank', !config.trendingRank)}
           />
           {config.trendingRank && !config.trending && fine && <TrendingFine uid={uid} config={config} onUpdate={onUpdate} rankOnly />}
           {config.trendingRank && (
-            <Field label="Trending rank position" htmlFor={`${uid}-trending-rank-pos`}>
+            <Field label={t('Trending rank position')} htmlFor={`${uid}-trending-rank-pos`}>
               <select id={`${uid}-trending-rank-pos`} className="select" value={config.trendingRankPos}
                 onChange={e => onUpdate('trendingRankPos', e.target.value)}>
-                {TRENDING_RANK_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                {TRENDING_RANK_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
               </select>
             </Field>
           )}
           {config.trendingRank && (
-            <Field label="Trending rank size (%)" htmlFor={`${uid}-trending-rank-scale`}
-              hint="50–200. At 100 the tab is half the artwork wide; the pill fits its text. Blank keeps the default.">
+            <Field label={t('Trending rank size (%)')} htmlFor={`${uid}-trending-rank-scale`}
+              hint={t('50–200. At 100 the tab is half the artwork wide; the pill fits its text. Blank keeps the default.')}>
               <input id={`${uid}-trending-rank-scale`} className="input" type="number" inputMode="numeric"
-                min={50} max={200} step={5} value={config.trendingRankScale || ''} placeholder="default"
+                min={50} max={200} step={5} value={config.trendingRankScale || ''} placeholder={t('default')}
                 style={{ maxWidth: '7rem' }}
                 onChange={e => onUpdate('trendingRankScale', e.target.value === '' ? 0 : Number(e.target.value))} />
             </Field>
@@ -607,14 +613,14 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
 
           {config.trending && (
             <>
-              <Field label="Trending style" htmlFor={`${uid}-trendstyle`}>
+              <Field label={t('Trending style')} htmlFor={`${uid}-trendstyle`}>
                 <select
                   id={`${uid}-trendstyle`}
                   className="select"
                   value={config.trendingStyle}
                   onChange={e => onUpdate('trendingStyle', e.target.value)}
                 >
-                  {TREND_STYLE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  {TREND_STYLE_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
                 </select>
               </Field>
               {fine && <TrendingFine uid={uid} config={config} onUpdate={onUpdate} />}
@@ -624,49 +630,49 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           {fine && <OutlineFine uid={uid} config={config} onUpdate={onUpdate} />}
         </Section>
 
-        <Section title="Placeholders">
+        <Section title={t('Placeholders')}>
           {config.ageRating && (
             <ToggleRow
-              label="Placeholder certificate"
-              hint="Draw NR where a title has no rating, so a grid keeps its shape"
+              label={t('Placeholder certificate')}
+              hint={t('Draw NR where a title has no rating, so a grid keeps its shape')}
               checked={config.ageRatingPlaceholder}
               onChange={() => onUpdate('ageRatingPlaceholder', !config.ageRatingPlaceholder)}
             />
           )}
 
           <ToggleRow
-            label="Placeholder genre badge"
-            hint="Draw the media type where a title has no genres"
+            label={t('Placeholder genre badge')}
+            hint={t('Draw the media type where a title has no genres')}
             checked={config.genrePlaceholder}
             onChange={() => onUpdate('genrePlaceholder', !config.genrePlaceholder)}
           />
 
           <ToggleRow
-            label="Placeholder rating ring"
-            hint="Draw an empty ring where a title has no ratings"
+            label={t('Placeholder rating ring')}
+            hint={t('Draw an empty ring where a title has no ratings')}
             checked={config.ratingRingPlaceholder}
             onChange={() => onUpdate('ratingRingPlaceholder', !config.ratingRingPlaceholder)}
           />
 
           {(config.genrePlaceholder || config.ageRatingPlaceholder || config.ratingRingPlaceholder) && (
-            <Field label="Placeholder style" htmlFor={`${uid}-phstyle`}>
+            <Field label={t('Placeholder style')} htmlFor={`${uid}-phstyle`}>
               <select
                 id={`${uid}-phstyle`}
                 className="select"
                 value={config.placeholderStyle || 'value'}
                 onChange={e => onUpdate('placeholderStyle', e.target.value)}
               >
-                <option value="value">Fill the gap (ANIME, NR, an empty ring)</option>
-                <option value="marker">Mark it as nothing (hatched N/A)</option>
+                <option value="value">{t('Fill the gap (ANIME, NR, an empty ring)')}</option>
+                <option value="marker">{t('Mark it as nothing (hatched N/A)')}</option>
               </select>
             </Field>
           )}
         </Section>
 
-        <Section title="Ratings">
+        <Section title={t('Ratings')}>
           <ToggleRow
-            label="Hide Cinemeta rating"
-            hint="Serve Cinemeta metadata without its own rating"
+            label={t('Hide Cinemeta rating')}
+            hint={t('Serve Cinemeta metadata without its own rating')}
             checked={config.hideCinemetaRating}
             onChange={() => onUpdate('hideCinemetaRating', !config.hideCinemetaRating)}
           />
@@ -674,23 +680,23 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           {hasAnyRatingSource(config) && (
             <>
               <ToggleRow
-                label="Aggregate bar"
-                hint="Score bar across the image edge"
+                label={t('Aggregate bar')}
+                hint={t('Score bar across the image edge')}
                 checked={config.aggregateBar}
                 onChange={() => onUpdate('aggregateBar', !config.aggregateBar)}
               />
 
               {config.aggregateBar && (
                 <>
-                  <Field label="Bar position" htmlFor={`${uid}-barpos`}>
+                  <Field label={t('Bar position')} htmlFor={`${uid}-barpos`}>
                     <select
                       id={`${uid}-barpos`}
                       className="select"
                       value={config.aggregateBarPos}
                       onChange={e => onUpdate('aggregateBarPos', e.target.value)}
                     >
-                      <option value="bottom">Bottom</option>
-                      <option value="top">Top</option>
+                      <option value="bottom">{t('Bottom')}</option>
+                      <option value="top">{t('Top')}</option>
                     </select>
                   </Field>
                   {fine && <AggregateFine uid={uid} config={config} onUpdate={onUpdate} />}
@@ -700,26 +706,26 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           )}
         </Section>
 
-        <Section title="Where to watch">
+        <Section title={t('Where to watch')}>
           <ToggleRow
-            label="Where to watch"
-            hint="Show streaming provider chips (Netflix, Prime…)"
+            label={t('Where to watch')}
+            hint={t('Show streaming provider chips (Netflix, Prime…)')}
             checked={config.providers}
             onChange={() => onUpdate('providers', !config.providers)}
           />
 
           {(config.providers || config.releaseStatus) && (
             <Field
-              label="Provider country"
+              label={t('Provider country')}
               htmlFor={`${uid}-provider-country`}
-              hint="ISO country code (e.g. US, GB). Picks the streaming services shown, which region's release date the badge reads, and which regional artwork is preferred. Blank uses the default."
+              hint={t("ISO country code (e.g. US, GB). Picks the streaming services shown, which region's release date the badge reads, and which regional artwork is preferred. Blank uses the default.")}
             >
               <input
                 id={`${uid}-provider-country`}
                 className="input"
                 value={config.providersCountry}
                 onChange={e => onUpdate('providersCountry', e.target.value.toUpperCase().slice(0, 2))}
-                placeholder="default"
+                placeholder={t('default')}
                 maxLength={2}
                 style={{ maxWidth: '6rem', textTransform: 'uppercase' }}
               />
@@ -729,7 +735,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           {config.providers && (
             <>
               <div className="field">
-                <span className="label" id={`${uid}-provider-allow`}>Services to show</span>
+                <span className="label" id={`${uid}-provider-allow`}>{t('Services to show')}</span>
                 <div role="group" aria-labelledby={`${uid}-provider-allow`} style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)' }}>
                   {STREAMING_SERVICES.map(name => {
                     const rank = config.providersAllow.indexOf(name);
@@ -749,23 +755,23 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
                   })}
                 </div>
                 <span className="hint">
-                  None picked shows every service. Picked ones show in the order you pick them, so pick the one you care about most first.
+                  {t('None picked shows every service. Picked ones show in the order you pick them, so pick the one you care about most first.')}
                 </span>
               </div>
-              <Field label="Most services shown" htmlFor={`${uid}-provider-max`} hint="1 to 5. Blank shows up to 5.">
+              <Field label={t('Most services shown')} htmlFor={`${uid}-provider-max`} hint={t('1 to 5. Blank shows up to 5.')}>
                 <input id={`${uid}-provider-max`} className="input" type="number" inputMode="numeric"
                   min={1} max={5} step={1} value={config.providersMax || ''} placeholder="5"
                   style={{ maxWidth: '6rem' }}
                   onChange={e => onUpdate('providersMax', e.target.value === '' ? 0 : Math.max(1, Math.min(5, Number(e.target.value))))} />
               </Field>
               <ToggleRow
-                label="Subscriptions only"
-                hint="Leave out services that only rent the title"
+                label={t('Subscriptions only')}
+                hint={t('Leave out services that only rent the title')}
                 checked={config.providersSubscriptionOnly}
                 onChange={() => onUpdate('providersSubscriptionOnly', !config.providersSubscriptionOnly)}
               />
               <div className="field">
-                <label className="label" htmlFor={`${uid}-network-tile`}>Chip tile color</label>
+                <label className="label" htmlFor={`${uid}-network-tile`}>{t('Chip tile color')}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
                   <input
                     id={`${uid}-network-tile`}
@@ -780,7 +786,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
                     aria-pressed={!config.networkTileColor}
                     style={{ flex: 1 }}
                   >
-                    Default
+                    {t('Default')}
                   </button>
                 </div>
               </div>
@@ -791,7 +797,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
 
         <Section
           title={<>
-            Quality badges
+            {t('Quality badges')}
             {config.badges.length > 0 && (
               <span className="count-pill">{config.badges.length}</span>
             )}
@@ -801,12 +807,11 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               source carries it. Checking means asking a stream addon, which the
               instance either has or does not. */}
           <span className="hint" style={{ marginBottom: 'var(--sp-2)' }}>
-            Pick the formats you care about. Each one is drawn on a title only
-            when that title is actually available in it.
+            {t('Pick the formats you care about. Each one is drawn on a title only when that title is actually available in it.')}
           </span>
           <ToggleRow
-            label="Show quality badges"
-            hint="Turn them all off without losing which ones you picked"
+            label={t('Show quality badges')}
+            hint={t('Turn them all off without losing which ones you picked')}
             checked={!config.qualityBadgesHidden}
             onChange={() => onUpdate('qualityBadgesHidden', !config.qualityBadgesHidden)}
           />
@@ -821,14 +826,14 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
                   className={`chip${active ? ' chip--active' : ''}${supersededBy ? ' chip--superseded' : ''}`}
                   onClick={() => onToggleBadge(b.id)}
                   aria-pressed={active}
-                  title={supersededBy ? `${label} already covers ${b.label}, so it is not drawn` : undefined}
+                  title={supersededBy ? t('{covering} already covers {badge}, so it is not drawn', { covering: label ?? '', badge: b.label }) : undefined}
                 >
                   {b.label}
                 </button>
               );
             })}
           </div>
-          <Field label="Show" htmlFor={`${uid}-quality-mode`}>
+          <Field label={t('Show')} htmlFor={`${uid}-quality-mode`}>
             <select
               id={`${uid}-quality-mode`}
               className="select"
@@ -836,30 +841,32 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               onChange={e => {
                 const mode = e.target.value;
                 if (mode === 'best') {
-                  const missing = QUALITY_BEST_TIERS.filter(t => !config.badges.includes(t));
+                  const missing = QUALITY_BEST_TIERS.filter(tier => !config.badges.includes(tier));
                   if (missing.length > 0) onUpdate('badges', [...config.badges, ...missing]);
                 }
                 onUpdate('qualityBadgesMode', mode);
               }}
             >
-              {QUALITY_MODE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              {QUALITY_MODE_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
             </select>
           </Field>
           <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
-            {config.qualityBadgesMode === 'best' && 'Only the highest resolution available is drawn; HDR, Dolby Vision and audio badges still show if picked. CAM appears only when nothing better exists. '}
-            {`Rendered ${qualityPosLabel(config.qualityBadgesPos)}. Corner positions stack into a column; the centre ones form a row.`}
+            {config.qualityBadgesMode === 'best' && `${t('Only the highest resolution available is drawn; HDR, Dolby Vision and audio badges still show if picked. CAM appears only when nothing better exists.')} `}
+            {t('Rendered {position}. Corner positions stack into a column; the centre ones form a row.', { position: qualityPosLabel(t, config.qualityBadgesPos) })}
             {supersededLabels.length > 0 &&
-              ` ${supersededLabels.join(' and ')} ${supersededLabels.length > 1 ? 'are' : 'is'} already covered by a higher format you picked, so ${supersededLabels.length > 1 ? 'they are' : 'it is'} not drawn.`}
+              ` ${supersededLabels.length > 1
+                ? t('{list} are already covered by a higher format you picked, so they are not drawn.', { list: supersededLabels.join(` ${t('and')} `) })
+                : t('{list} is already covered by a higher format you picked, so it is not drawn.', { list: supersededLabels.join(` ${t('and')} `) })}`}
           </span>
           {fine && !config.qualityBadgesHidden && config.badges.length > 0 && (
             <QualityFine uid={uid} config={config} onUpdate={onUpdate} />
           )}
         </Section>
 
-        <Section title="Info line">
+        <Section title={t('Info line')}>
           <ToggleRow
-            label="Info line"
-            hint="Age rating, year and genre on one line at the foot of the artwork"
+            label={t('Info line')}
+            hint={t('Age rating, year and genre on one line at the foot of the artwork')}
             checked={config.metaLine}
             onChange={() => onUpdate('metaLine', !config.metaLine)}
           />
@@ -867,33 +874,33 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           {config.metaLine && (
             <>
               <ToggleRow
-                label="Age rating in the info line"
-                hint="Off leaves the year and genre. Separate from the age rating badge, so the line can carry the certificate instead of a badge."
+                label={t('Age rating in the info line')}
+                hint={t('Off leaves the year and genre. Separate from the age rating badge, so the line can carry the certificate instead of a badge.')}
                 checked={config.metaLineAgeRating}
                 onChange={() => onUpdate('metaLineAgeRating', !config.metaLineAgeRating)}
               />
               <ToggleRow
-                label="Genre in the info line"
-                hint="Off leaves the age rating and year. Separate from the genre badge, so the genre need not show twice."
+                label={t('Genre in the info line')}
+                hint={t('Off leaves the age rating and year. Separate from the genre badge, so the genre need not show twice.')}
                 checked={config.metaLineGenre}
                 onChange={() => onUpdate('metaLineGenre', !config.metaLineGenre)}
               />
-              <Field label="Info line scale (%)" htmlFor={`${uid}-metaline-scale`}
-                hint="60–200. Blank keeps the default size.">
+              <Field label={t('Info line scale (%)')} htmlFor={`${uid}-metaline-scale`}
+                hint={t('60–200. Blank keeps the default size.')}>
                 <input id={`${uid}-metaline-scale`} className="input" type="number" inputMode="numeric"
-                  min={60} max={200} step={5} value={config.metaLineScale || ''} placeholder="default"
+                  min={60} max={200} step={5} value={config.metaLineScale || ''} placeholder={t('default')}
                   style={{ maxWidth: '7rem' }}
                   onChange={e => onUpdate('metaLineScale', e.target.value === '' ? 0 : Number(e.target.value))} />
               </Field>
-              <Field label="Info line offset X" htmlFor={`${uid}-metaline-ox`}
-                hint="-1200 to 1200. Blank stays centred.">
+              <Field label={t('Info line offset X')} htmlFor={`${uid}-metaline-ox`}
+                hint={t('-1200 to 1200. Blank stays centred.')}>
                 <input id={`${uid}-metaline-ox`} className="input" type="number" inputMode="numeric"
                   min={-1200} max={1200} value={config.metaLineOffsetX || ''} placeholder="0"
                   style={{ maxWidth: '7rem' }}
                   onChange={e => onUpdate('metaLineOffsetX', e.target.value === '' ? 0 : Number(e.target.value))} />
               </Field>
-              <Field label="Info line offset Y" htmlFor={`${uid}-metaline-oy`}
-                hint="-1200 to 1200. Blank stays at the foot.">
+              <Field label={t('Info line offset Y')} htmlFor={`${uid}-metaline-oy`}
+                hint={t('-1200 to 1200. Blank stays at the foot.')}>
                 <input id={`${uid}-metaline-oy`} className="input" type="number" inputMode="numeric"
                   min={-1200} max={1200} value={config.metaLineOffsetY || ''} placeholder="0"
                   style={{ maxWidth: '7rem' }}
@@ -908,12 +915,12 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             className="btn btn-ghost btn-sm"
             style={{ alignSelf: 'flex-start' }}
             onClick={onReset}
-            title={`Reset every setting for the ${mediaType} surface, including ratings and fine tuning`}
+            title={t('Reset every setting for the {type} surface, including ratings and fine tuning', { type: mediaTypeWord })}
           >
-            Reset {mediaType} to defaults
+            {t('Reset {type} to defaults', { type: mediaTypeWord })}
           </button>
           <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
-            Resets all {mediaType} settings, including anything set under fine tuning. Undoable with Ctrl/Cmd+Z.
+            {t('Resets all {type} settings, including anything set under fine tuning. Undoable with Ctrl/Cmd+Z.', { type: mediaTypeWord })}
           </span>
         </div>
       </div>

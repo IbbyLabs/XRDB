@@ -24,6 +24,8 @@ import { tablistKeyNav } from './tablist';
 import { NuvioFrame } from './nuvio-frame';
 import { BRAND_DISCORD_URL } from '@/lib/brand';
 import { useInstanceFeatures } from '@/lib/instance-features';
+import { useT } from '@/lib/i18n';
+import { msg } from '@/lib/i18n-msg';
 
 // A media id that already names a season and episode.
 const EPISODE_ID_RE = /:\d+:\d+$/;
@@ -39,13 +41,13 @@ const FINE_KEY = 'xrdb-fine-tuning';
 // Two kinds of destination share one tab row: the first two style the surface
 // being previewed, the last two act on the whole saved config.
 const SURFACE_TABS = [
-  { id: 'display', label: 'Display', icon: <Settings2 size={13} aria-hidden /> },
-  { id: 'ratings', label: 'Ratings', icon: <Star      size={13} aria-hidden /> },
+  { id: 'display', label: msg('Display'), icon: <Settings2 size={13} aria-hidden /> },
+  { id: 'ratings', label: msg('Ratings'), icon: <Star      size={13} aria-hidden /> },
 ] as const;
 
 const CONFIG_TABS = [
-  { id: 'profile', label: 'Profile', icon: <Film   size={13} aria-hidden /> },
-  { id: 'install', label: 'Install', icon: <Rocket size={13} aria-hidden /> },
+  { id: 'profile', label: msg('Profile'), icon: <Film   size={13} aria-hidden /> },
+  { id: 'install', label: msg('Install'), icon: <Rocket size={13} aria-hidden /> },
 ] as const;
 
 type TabId = (typeof SURFACE_TABS)[number]['id'] | (typeof CONFIG_TABS)[number]['id'];
@@ -69,6 +71,7 @@ function sameConfigValue(a: unknown, b: unknown): boolean {
 }
 
 export function ConfiguratorClient() {
+  const t = useT();
   const uid = useId();
 
   const [mediaType, setMediaType] = useState<MediaType>('poster');
@@ -290,11 +293,13 @@ export function ConfiguratorClient() {
 
   const aspect = MEDIA_TYPES.find(t => t.id === mediaType)?.aspect ?? '2/3';
 
+  const mediaTypeLabel = t(MEDIA_TYPES.find(m => m.id === mediaType)?.label ?? mediaType);
+
   const otherSurfaceLabels = useMemo(() => {
-    const names = MEDIA_TYPES.filter(t => t.id !== mediaType).map(t => t.label);
+    const names = MEDIA_TYPES.filter(m => m.id !== mediaType).map(m => t(m.label));
     if (names.length < 2) return names.join('');
-    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-  }, [mediaType]);
+    return t('{list} and {last}', { list: names.slice(0, -1).join(', '), last: names[names.length - 1] });
+  }, [mediaType, t]);
 
   const flash = useCallback((type: 'error' | 'success' | 'info', message: string, opts?: { persist?: boolean }) => {
     setNotice({ type, message });
@@ -406,7 +411,7 @@ export function ConfiguratorClient() {
       onClick={() => setActiveTab(tab.id)}
     >
       {tab.icon}
-      {tab.label}
+      {t(tab.label)}
     </button>
   );
 
@@ -422,13 +427,13 @@ export function ConfiguratorClient() {
     });
   };
 
-  const applyTemplate = (t: Template) => {
-    const parsed = t.config as Partial<ConfigState>;
+  const applyTemplate = (tpl: Template) => {
+    const parsed = tpl.config as Partial<ConfigState>;
     lastEditRef.current = null;
     pushHistory(configs);
     setConfigs(cs => ({ ...cs, [mediaType]: { ...cs[mediaType], ...parsed } }));
-    setAppliedTemplate(t.id);
-    flash('info', `Template "${t.name}" applied to ${mediaType}`);
+    setAppliedTemplate(tpl.id);
+    flash('info', t('Template "{name}" applied to {type}', { name: tpl.name, type: mediaTypeLabel.toLowerCase() }));
   };
 
   // A profile carries the title it was last worked on. Only fields it actually
@@ -464,7 +469,7 @@ export function ConfiguratorClient() {
     pushHistory(configs);
     setAppliedTemplate(null);
     setConfigs(cs => cloneToAllSurfaces(cs[mediaType]));
-    flash('success', `Applied ${mediaType} settings to every surface`);
+    flash('success', t('Applied {type} settings to every surface', { type: mediaTypeLabel.toLowerCase() }));
   };
 
   // Cmd/Ctrl+Z undoes the last config change — but not while typing in a field,
@@ -527,30 +532,30 @@ export function ConfiguratorClient() {
     if (shareTimer.current) clearTimeout(shareTimer.current);
     shareTimer.current = setTimeout(() => setShareState('idle'), 2000);
     if (ok) {
-      flash('success', 'Share link copied — anyone who opens it sees this exact look');
+      flash('success', t('Share link copied — anyone who opens it sees this exact look'));
     } else {
-      flash('error', 'Could not copy the link — your browser blocked clipboard access');
+      flash('error', t('Could not copy the link — your browser blocked clipboard access'));
     }
   };
 
   return (
     <div className="page-inner">
       <div className="page-head">
-        <h1 className="page-title">Configurator</h1>
-        <p className="page-sub">Pick a template, watch the preview update live, copy the URL.</p>
+        <h1 className="page-title">{t('Configurator')}</h1>
+        <p className="page-sub">{t('Pick a template, watch the preview update live, copy the URL.')}</p>
       </div>
 
       <details className="cfg-help">
-        <summary>New to XRDB? How this works</summary>
+        <summary>{t('New to XRDB? How this works')}</summary>
         <ol className="cfg-help-steps">
-          <li>Find a title — search by name, or paste an IMDb / TMDB ID.</li>
-          <li>Adjust the controls; the preview updates live. Undo any change with Ctrl/Cmd+Z.</li>
-          <li>Each surface (poster, backdrop, thumbnail, logo) is styled on its own — use <strong>Copy to all surfaces</strong> to match them.</li>
-          <li>Save a profile to get a config key, then open <strong>Install</strong> to use it in your media setup.</li>
+          <li>{t('Find a title — search by name, or paste an IMDb / TMDB ID.')}</li>
+          <li>{t('Adjust the controls; the preview updates live. Undo any change with Ctrl/Cmd+Z.')}</li>
+          <li>{t('Each surface (poster, backdrop, thumbnail, logo) is styled on its own — use')} <strong>{t('Copy to all surfaces')}</strong> {t('to match them.')}</li>
+          <li>{t('Save a profile to get a config key, then open')} <strong>{t('Install')}</strong> {t('to use it in your media setup.')}</li>
         </ol>
         <p className="hint" style={{ marginTop: 0 }}>
-          Full guide in <a href="/help">Help</a>. Stuck?{' '}
-          <a href={BRAND_DISCORD_URL} target="_blank" rel="noreferrer">Ask in the Discord</a>.
+          {t('Full guide in')} <a href="/help">{t('Help')}</a>{t('. Stuck?')}{' '}
+          <a href={BRAND_DISCORD_URL} target="_blank" rel="noreferrer">{t('Ask in the Discord')}</a>.
         </p>
       </details>
 
@@ -559,7 +564,7 @@ export function ConfiguratorClient() {
           <Notice
             {...notice}
             onDismiss={() => setNotice(null)}
-            actionLabel={canUndo && notice.type === 'info' ? 'Undo' : undefined}
+            actionLabel={canUndo && notice.type === 'info' ? t('Undo') : undefined}
             onAction={canUndo && notice.type === 'info' ? undo : undefined}
           />
         </div>
@@ -571,17 +576,17 @@ export function ConfiguratorClient() {
 
         {/* ── Preview column ───────────────────────────────────────── */}
         <div className="cfg-col cfg-col-preview">
-          <div ref={mediaTabsRef} role="tablist" aria-label="Media type" className="seg" onKeyDown={tablistKeyNav}>
-            {MEDIA_TYPES.map(t => (
+          <div ref={mediaTabsRef} role="tablist" aria-label={t('Media type')} className="seg" onKeyDown={tablistKeyNav}>
+            {MEDIA_TYPES.map(m => (
               <button
-                key={t.id}
+                key={m.id}
                 role="tab"
-                aria-selected={mediaType === t.id}
-                tabIndex={mediaType === t.id ? 0 : -1}
+                aria-selected={mediaType === m.id}
+                tabIndex={mediaType === m.id ? 0 : -1}
                 className="seg-item"
-                onClick={() => setMediaType(t.id)}
+                onClick={() => setMediaType(m.id)}
               >
-                {t.label}
+                {t(m.label)}
               </button>
             ))}
           </div>
@@ -597,22 +602,22 @@ export function ConfiguratorClient() {
             }}
           >
             {previewPending && !imgError && (
-              <span className="preview-status" aria-hidden="true">Updating…</span>
+              <span className="preview-status" aria-hidden="true">{t('Updating…')}</span>
             )}
             {imgError ? (
               <div className="preview-empty" role="status">
-                <span>Preview unavailable</span>
-                <span className="hint">Check the backend is running</span>
+                <span>{t('Preview unavailable')}</span>
+                <span className="hint">{t('Check the backend is running')}</span>
               </div>
             ) : (
               <>
-                {imgLoading && <div className="skeleton" style={{ position: 'absolute', inset: 0 }} aria-busy="true" aria-label="Loading preview" />}
+                {imgLoading && <div className="skeleton" style={{ position: 'absolute', inset: 0 }} aria-busy="true" aria-label={t('Loading preview')} />}
                 {previewSrc && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   key={previewKey}
                   src={previewSrc}
-                  alt={`${mediaType} preview`}
+                  alt={t('{type} preview', { type: mediaTypeLabel.toLowerCase() })}
                   className="preview-img"
                   decoding="async"
                   style={{ opacity: imgLoading ? 0 : 1, transition: 'opacity var(--dur-3) var(--ease-out)' }}
@@ -630,7 +635,7 @@ export function ConfiguratorClient() {
               type="button"
               className="preview-pin"
               onClick={backToPreview}
-              aria-label="Back to preview"
+              aria-label={t('Back to preview')}
               style={{ aspectRatio: aspect, height: mediaType === 'poster' ? '6rem' : '3.5rem' }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -647,7 +652,7 @@ export function ConfiguratorClient() {
                 rel="noreferrer"
               >
                 <Maximize2 size={13} aria-hidden />
-                Full size
+                {t('Full size')}
               </a>
               <button
                 className={`btn btn-ghost btn-sm${shareState === 'failed' ? ' btn-danger' : ''}`}
@@ -656,9 +661,9 @@ export function ConfiguratorClient() {
                 {shareState === 'copied' ? <Check size={13} aria-hidden />
                   : shareState === 'failed' ? <X size={13} aria-hidden />
                   : <Link2 size={13} aria-hidden />}
-                {shareState === 'copied' ? 'Link copied'
-                  : shareState === 'failed' ? 'Copy failed'
-                  : 'Share this look'}
+                {shareState === 'copied' ? t('Link copied')
+                  : shareState === 'failed' ? t('Copy failed')
+                  : t('Share this look')}
               </button>
               {!loadedProfile && (
                 // Save lived only inside the Profile tab, so someone who set up
@@ -679,29 +684,29 @@ export function ConfiguratorClient() {
                       document.querySelector<HTMLInputElement>('[data-register-username]')?.focus();
                     });
                   }}
-                  title="Save these settings to a profile"
+                  title={t('Save these settings to a profile')}
                 >
                   <Save size={13} aria-hidden />
-                  Save
+                  {t('Save')}
                 </button>
               )}
               <button
                 className="btn btn-ghost btn-sm"
                 onClick={undo}
                 disabled={!canUndo}
-                title="Undo the last change (Ctrl/Cmd+Z)"
+                title={t('Undo the last change (Ctrl/Cmd+Z)')}
               >
                 <Undo2 size={13} aria-hidden />
-                Undo
+                {t('Undo')}
               </button>
               <button
                 className="btn btn-ghost btn-sm"
                 onClick={redo}
                 disabled={!canRedo}
-                title="Redo (Ctrl/Cmd+Shift+Z)"
+                title={t('Redo (Ctrl/Cmd+Shift+Z)')}
               >
                 <Redo2 size={13} aria-hidden />
-                Redo
+                {t('Redo')}
               </button>
             </div>
           )}
@@ -712,15 +717,15 @@ export function ConfiguratorClient() {
             mediaId={mediaId}
             mediaTitle={mediaTitle}
             onSelect={handleMediaSelect}
-            onError={msg => flash('error', msg)}
+            onError={message => flash('error', message)}
           />
 
           {mediaType === 'thumbnail' && !EPISODE_ID_RE.test(mediaId) && (
             <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
-              <span className="label" id={`${uid}-ep-label`}>Preview episode</span>
+              <span className="label" id={`${uid}-ep-label`}>{t('Preview episode')}</span>
               <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}
                 role="group" aria-labelledby={`${uid}-ep-label`}>
-                <label className="hint" htmlFor={`${uid}-ep-season`}>Season</label>
+                <label className="hint" htmlFor={`${uid}-ep-season`}>{t('Season')}</label>
                 <input
                   id={`${uid}-ep-season`}
                   className="input" type="number" inputMode="numeric"
@@ -728,7 +733,7 @@ export function ConfiguratorClient() {
                   onChange={e => setPreviewEpisode(p => ({ ...p, season: Math.max(0, Number(e.target.value) || 0) }))}
                   style={{ maxWidth: '5rem' }}
                 />
-                <label className="hint" htmlFor={`${uid}-ep-episode`}>Episode</label>
+                <label className="hint" htmlFor={`${uid}-ep-episode`}>{t('Episode')}</label>
                 <input
                   id={`${uid}-ep-episode`}
                   className="input" type="number" inputMode="numeric"
@@ -738,7 +743,7 @@ export function ConfiguratorClient() {
                 />
               </div>
               <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
-                Thumbnails are episode artwork. A movie falls back to its own artwork.
+                {t('Thumbnails are episode artwork. A movie falls back to its own artwork.')}
               </span>
             </div>
           )}
@@ -746,14 +751,14 @@ export function ConfiguratorClient() {
 
         {/* ── Controls column ──────────────────────────────────────── */}
         <div className="cfg-col">
-          <div className="tabs" role="tablist" aria-label="Settings panel" onKeyDown={tablistKeyNav}>
+          <div className="tabs" role="tablist" aria-label={t('Settings panel')} onKeyDown={tablistKeyNav}>
             {SURFACE_TABS.map(renderTab)}
 
             {/* Profile and Install act on the whole config rather than the
                 surface being styled, so they hold their own row instead of
                 wrapping into one by chance. */}
             <span className="tabs-break" aria-hidden="true" />
-            <span className="tabs-group" aria-hidden="true">This config</span>
+            <span className="tabs-group" aria-hidden="true">{t('This config')}</span>
             {CONFIG_TABS.map(renderTab)}
           </div>
 
@@ -761,11 +766,11 @@ export function ConfiguratorClient() {
             <>
               <div className="surface-scope">
                 <span className="surface-scope-text">
-                  These settings apply to <strong>{MEDIA_TYPES.find(t => t.id === mediaType)?.label ?? mediaType}</strong> only.
-                  {' '}{otherSurfaceLabels} keep their own, including which badges show.
+                  {t('These settings apply to')} <strong>{mediaTypeLabel}</strong> {t('only.')}
+                  {' '}{otherSurfaceLabels} {t('keep their own, including which badges show.')}
                 </span>
                 <button className="btn btn-ghost btn-sm" onClick={copyToAllSurfaces}>
-                  Copy to all surfaces
+                  {t('Copy to all surfaces')}
                 </button>
               </div>
 
@@ -773,10 +778,10 @@ export function ConfiguratorClient() {
                 <div>
                   <label className="fine-bar-label" htmlFor={`${uid}-fine`}>
                     <SlidersHorizontal size={14} aria-hidden />
-                    Fine tuning
+                    {t('Fine tuning')}
                   </label>
                   <span className="fine-bar-hint" id={`${uid}-fine-hint`}>
-                    Scale, offset and colour, shown with the badge itself. Blank fields use the default.
+                    {t('Scale, offset and colour, shown with the badge itself. Blank fields use the default.')}
                   </span>
                 </div>
                 <button
@@ -796,21 +801,21 @@ export function ConfiguratorClient() {
 
           {activeTab === 'display' && (
             <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
-              <h2 className="sr-only">Display settings</h2>
+              <h2 className="sr-only">{t('Display settings')}</h2>
               <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} fine={fine} features={features} onReset={() => { lastEditRef.current = null; pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
             </div>
           )}
 
           {activeTab === 'ratings' && (
             <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`} className="tabpanel-enter">
-              <h2 className="sr-only">Rating sources</h2>
+              <h2 className="sr-only">{t('Rating sources')}</h2>
               <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} onMoveRating={moveRating} fine={fine} mediaType={mediaType} />
             </div>
           )}
 
           {activeTab === 'profile' && (
             <div id={`${uid}-panel-profile`} role="tabpanel" aria-labelledby={`${uid}-tab-profile`} className="tabpanel-enter">
-              <h2 className="sr-only">Profile</h2>
+              <h2 className="sr-only">{t('Profile')}</h2>
               <ProfilePanel
                 configs={configs}
                 mediaType={mediaType}
@@ -827,7 +832,7 @@ export function ConfiguratorClient() {
 
           {activeTab === 'install' && (
             <div id={`${uid}-panel-install`} role="tabpanel" aria-labelledby={`${uid}-tab-install`} className="tabpanel-enter">
-              <h2 className="sr-only">Install</h2>
+              <h2 className="sr-only">{t('Install')}</h2>
               <InstallPanel
                 configKey={loadedProfile ? (loadedProfile.alias || loadedProfile.id) : ''}
                 renderKey={renderKey}

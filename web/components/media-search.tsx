@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useId, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Search, Shuffle, Pin, X } from 'lucide-react';
 import { searchTitles, trendingTitles, renderIDFor, ApiError, type TitleResult } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import type { TFunction } from '@/lib/i18n';
 
 export interface PinnedItem {
   id: string;    // render ID (tt-ID, or "tmdb:movie:123" / "tmdb:series:123")
@@ -32,15 +34,17 @@ interface MediaSearchProps {
  * all is the instance being unreachable. One message for all three sent people
  * to inspect a key that was fine.
  */
-function tmdbError(action: string, err: unknown): string {
+function tmdbError(t: TFunction, action: 'Search' | 'Shuffle', err: unknown): string {
   const status = err instanceof ApiError ? err.status : 0;
-  if (status === 503) return `${action} needs a TMDB key configured on this instance.`;
-  if (status === 502) return `${action} could not reach TMDB. Try again shortly.`;
-  if (status === 0) return `${action} could not reach this instance.`;
-  return `${action} is unavailable (HTTP ${status}).`;
+  const search = action === 'Search';
+  if (status === 503) return search ? t('Search needs a TMDB key configured on this instance.') : t('Shuffle needs a TMDB key configured on this instance.');
+  if (status === 502) return search ? t('Search could not reach TMDB. Try again shortly.') : t('Shuffle could not reach TMDB. Try again shortly.');
+  if (status === 0) return search ? t('Search could not reach this instance.') : t('Shuffle could not reach this instance.');
+  return search ? t('Search is unavailable (HTTP {status}).', { status }) : t('Shuffle is unavailable (HTTP {status}).', { status });
 }
 
 export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSearchProps) {
+  const t = useT();
   const uid = useId();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TitleResult[]>([]);
@@ -123,18 +127,18 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
         setActiveIndex(-1);
         setOpen(hits.length > 0);
       } catch (err) {
-        onError(tmdbError('Search', err));
+        onError(tmdbError(t, 'Search', err));
       } finally {
         setSearching(false);
       }
     }, 350);
-  }, [onError, closeList]);
+  }, [onError, closeList, t]);
 
-  const selectResult = async (t: TitleResult) => {
+  const selectResult = async (hit: TitleResult) => {
     closeList();
     setQuery('');
-    const id = await renderIDFor(t);
-    onSelect(id, t.year ? `${t.title} (${t.year})` : t.title);
+    const id = await renderIDFor(hit);
+    onSelect(id, hit.year ? `${hit.title} (${hit.year})` : hit.title);
   };
 
   const handleDirect = () => {
@@ -178,7 +182,7 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
       if (!trendingRef.current) {
         trendingRef.current = await trendingTitles();
       }
-      const pool = trendingRef.current.filter(t => String(t.tmdbId) !== mediaId);
+      const pool = trendingRef.current.filter(x => String(x.tmdbId) !== mediaId);
       if (pool.length === 0) return;
       const pick = pool[Math.floor(Math.random() * pool.length)];
       const id = await renderIDFor(pick);
@@ -189,7 +193,7 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
         onSelect(id, pick.year ? `${pick.title} (${pick.year})` : pick.title);
       }
     } catch (err) {
-      onError(tmdbError('Shuffle', err));
+      onError(tmdbError(t, 'Shuffle', err));
     } finally {
       setShuffling(false);
     }
@@ -222,24 +226,24 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
           className={`btn btn-ghost btn-sm${isPinned ? ' media-pin--on' : ''}`}
           onClick={togglePin}
           aria-pressed={isPinned}
-          aria-label={isPinned ? 'Unpin this title' : 'Pin this title'}
+          aria-label={isPinned ? t('Unpin this title') : t('Pin this title')}
         >
           <Pin size={13} aria-hidden />
-          {isPinned ? 'Pinned' : 'Pin'}
+          {isPinned ? t('Pinned') : t('Pin')}
         </button>
         <button
           className="btn btn-ghost btn-sm"
           onClick={shuffle}
           disabled={shuffling}
-          aria-label="Shuffle to a trending title"
+          aria-label={t('Shuffle to a trending title')}
         >
           <Shuffle size={13} aria-hidden className={shuffling ? 'spin' : ''} />
-          Shuffle
+          {t('Shuffle')}
         </button>
       </div>
 
       <div className="field" style={{ position: 'relative' }}>
-        <label className="label" htmlFor={`${uid}-q`}>Find a title</label>
+        <label className="label" htmlFor={`${uid}-q`}>{t('Find a title')}</label>
         <div className="media-search-box">
           <Search size={14} aria-hidden className="media-search-icon" />
           <input
@@ -250,7 +254,7 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
             onChange={e => { setQuery(e.target.value); runSearch(e.target.value); }}
             onKeyDown={onInputKeyDown}
             onFocus={() => { if (results.length > 0) setOpen(true); }}
-            placeholder="Search by name, or paste an IMDb / TMDB ID"
+            placeholder={t('Search by name, or paste an IMDb / TMDB ID')}
             role="combobox"
             aria-expanded={open}
             aria-controls={`${uid}-results`}
@@ -260,22 +264,22 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
           />
           <kbd className="kbd-hint" aria-hidden>/</kbd>
         </div>
-        {searching && <span className="hint">Searching…</span>}
+        {searching && <span className="hint">{t('Searching…')}</span>}
         {open && (
           <ul id={`${uid}-results`} className="media-results" role="listbox">
-            {results.map((t, i) => (
-              <li key={`${t.mediaType}-${t.tmdbId}`}>
+            {results.map((hit, i) => (
+              <li key={`${hit.mediaType}-${hit.tmdbId}`}>
                 <button
                   id={optionId(i)}
                   className={`media-result${i === activeIndex ? ' media-result--active' : ''}`}
                   role="option"
                   aria-selected={i === activeIndex}
                   onMouseMove={() => setActiveIndex(i)}
-                  onClick={() => void selectResult(t)}
+                  onClick={() => void selectResult(hit)}
                 >
-                  <span className="media-result-title">{t.title}</span>
+                  <span className="media-result-title">{hit.title}</span>
                   <span className="media-result-meta">
-                    {t.year > 0 && `${t.year} · `}{t.mediaType === 'tv' ? 'Series' : 'Movie'}
+                    {hit.year > 0 && `${hit.year} · `}{hit.mediaType === 'tv' ? t('Series') : t('Movie')}
                   </span>
                 </button>
               </li>
@@ -286,7 +290,7 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
 
       {pins.length > 0 && (
         <div className="field">
-          <span className="label">Pinned</span>
+          <span className="label">{t('Pinned')}</span>
           <div className="pin-row">
             {pins.map(p => (
               <span key={p.id} className={`pin-chip${p.id === mediaId ? ' pin-chip--active' : ''}`}>
@@ -297,7 +301,7 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
                 >
                   {p.title}
                 </button>
-                <button className="pin-chip-x" onClick={() => unpin(p.id)} aria-label={`Unpin ${p.title}`}>
+                <button className="pin-chip-x" onClick={() => unpin(p.id)} aria-label={t('Unpin {title}', { title: p.title })}>
                   <X size={11} aria-hidden />
                 </button>
               </span>

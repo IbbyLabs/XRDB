@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Check, ChevronUp, ChevronDown } from 'lucide-react';
 import { fetchTemplates, type Template } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import { msg } from '@/lib/i18n-msg';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS, RING_POS_OPTIONS,
@@ -13,15 +15,16 @@ import { NumField, RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESE
 // ── Template strip ────────────────────────────────────────────────────────────
 
 const CATEGORY_LABELS: Record<string, string> = {
-  minimal:   'Minimal',
-  detailed:  'Detailed',
-  cinema:    'Cinema',
-  streaming: 'Streaming',
+  minimal:   msg('Minimal'),
+  detailed:  msg('Detailed'),
+  cinema:    msg('Cinema'),
+  streaming: msg('Streaming'),
 };
 
 export function TemplateStrip({
   appliedId, onApply,
-}: { appliedId: string | null; onApply: (t: Template) => void }) {
+}: { appliedId: string | null; onApply: (tpl: Template) => void }) {
+  const t = useT();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
@@ -38,27 +41,27 @@ export function TemplateStrip({
   if (error) return null;
 
   return (
-    <section aria-label="Templates" style={{ marginBottom: 'var(--sp-4)' }}>
-      <span className="label">Start from a template</span>
+    <section aria-label={t('Templates')} style={{ marginBottom: 'var(--sp-4)' }}>
+      <span className="label">{t('Start from a template')}</span>
       <div className="tpl-strip">
         {loading
           ? [0, 1, 2, 3].map(i => <div key={i} className="skeleton tpl-skeleton" />)
-          : templates.map(t => {
-              const applied = appliedId === t.id;
+          : templates.map(tpl => {
+              const applied = appliedId === tpl.id;
               return (
                 <button
-                  key={t.id}
+                  key={tpl.id}
                   className={`tpl-card${applied ? ' tpl-card--applied' : ''}`}
-                  onClick={() => onApply(t)}
+                  onClick={() => onApply(tpl)}
                   aria-pressed={applied}
-                  aria-label={`Apply template: ${t.name}`}
+                  aria-label={t('Apply template: {name}', { name: tpl.name })}
                 >
-                  <span className="tpl-cat">{CATEGORY_LABELS[t.category] ?? t.category}</span>
+                  <span className="tpl-cat">{CATEGORY_LABELS[tpl.category] ? t(CATEGORY_LABELS[tpl.category]) : tpl.category}</span>
                   <span className="tpl-name">
                     {applied && <Check size={13} aria-hidden />}
-                    {t.name}
+                    {tpl.name}
                   </span>
-                  <span className="tpl-desc">{t.description}</span>
+                  <span className="tpl-desc">{tpl.description}</span>
                 </button>
               );
             })}
@@ -72,8 +75,8 @@ export function TemplateStrip({
 // Nuvio centre-crops the 16:9 thumbnail: cards (phone, desktop, TV) cut 4-7% per
 // side, the square list image cuts 22%.
 const NUVIO_INSET_PRESETS = [
-  { value: 8, label: 'Nuvio cards (phone, desktop, TV): 8%' },
-  { value: 22, label: 'Nuvio list: 22%' },
+  { value: 8, label: msg('Nuvio cards (phone, desktop, TV): 8%') },
+  { value: 22, label: msg('Nuvio list: 22%') },
 ] as const;
 
 interface RatingsPanelProps {
@@ -129,6 +132,7 @@ function SourceOrderList({ ids, labelId, logoFailed, onLogoError, onMove }: {
   onLogoError: (id: string) => void;
   onMove: (id: string, dir: -1 | 1) => void;
 }) {
+  const t = useT();
   return (
     <ol className="src-order" aria-labelledby={labelId}>
       {ids.map((id, i) => {
@@ -155,7 +159,7 @@ function SourceOrderList({ ids, labelId, logoFailed, onLogoError, onMove }: {
               className="src-order-btn"
               onClick={() => onMove(id, -1)}
               disabled={i === 0}
-              aria-label={`Move ${opt?.label ?? id} earlier`}
+              aria-label={t('Move {label} earlier', { label: opt?.label ?? id })}
             >
               <ChevronUp size={13} aria-hidden />
             </button>
@@ -163,7 +167,7 @@ function SourceOrderList({ ids, labelId, logoFailed, onLogoError, onMove }: {
               className="src-order-btn"
               onClick={() => onMove(id, 1)}
               disabled={i === ids.length - 1}
-              aria-label={`Move ${opt?.label ?? id} later`}
+              aria-label={t('Move {label} later', { label: opt?.label ?? id })}
             >
               <ChevronDown size={13} aria-hidden />
             </button>
@@ -175,6 +179,7 @@ function SourceOrderList({ ids, labelId, logoFailed, onLogoError, onMove }: {
 }
 
 export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRating, fine, mediaType }: RatingsPanelProps) {
+  const t = useT();
   // Track source logos that fail to load so we fall back to the accent dot.
   const [logoFailed, setLogoFailed] = useState<Record<string, boolean>>({});
   return (
@@ -184,7 +189,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
             their own position control. */}
         {drawsBadgeStrip(config.ratingPresentation) && (
           <div className="field">
-            <span className="label" id={`${uid}-layout-label`}>Position</span>
+            <span className="label" id={`${uid}-layout-label`}>{t('Position')}</span>
             <div className="opt-grid" role="group" aria-labelledby={`${uid}-layout-label`}>
               {LAYOUT_OPTIONS.map(o => (
                 <button
@@ -193,7 +198,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                   onClick={() => onUpdate('ratingsLayout', o.id)}
                   aria-pressed={config.ratingsLayout === o.id}
                 >
-                  {o.label}
+                  {t(o.label)}
                 </button>
               ))}
             </div>
@@ -202,10 +207,10 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
 
         {mediaType === 'thumbnail' && (
           <div className="field">
-            <NumField id={`${uid}-thumb-safe-inset`} label="Safe inset (% of width)" value={config.thumbnailSafeInset}
+            <NumField id={`${uid}-thumb-safe-inset`} label={t('Safe inset (% of width)')} value={config.thumbnailSafeInset}
               onChange={v => onUpdate('thumbnailSafeInset', v)} min={0} max={25}
-              hint="Keeps badges this far in from the left and right edges. Nuvio crops thumbnails into cards and square list images, so anything on the edge is cut. Top centre is the safe spot: a bottom-centre row is not cut, but the title text and its dark fade sit over it." />
-            <div className="opt-grid" role="group" aria-label="Nuvio inset presets" style={{ marginTop: 'var(--sp-2)' }}>
+              hint={t('Keeps badges this far in from the left and right edges. Nuvio crops thumbnails into cards and square list images, so anything on the edge is cut. Top centre is the safe spot: a bottom-centre row is not cut, but the title text and its dark fade sit over it.')} />
+            <div className="opt-grid" role="group" aria-label={t('Nuvio inset presets')} style={{ marginTop: 'var(--sp-2)' }}>
               {NUVIO_INSET_PRESETS.map(o => (
                 <button
                   key={o.value}
@@ -213,7 +218,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                   onClick={() => onUpdate('thumbnailSafeInset', o.value)}
                   aria-pressed={config.thumbnailSafeInset === o.value}
                 >
-                  {o.label}
+                  {t(o.label)}
                 </button>
               ))}
             </div>
@@ -223,18 +228,18 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
         {drawsBadgeStrip(config.ratingPresentation) && SIDE_LAYOUTS.includes(config.ratingsLayout) && (
           <>
             <div className="field">
-              <label className="label" htmlFor={`${uid}-side-pos`}>Side ratings vertical</label>
+              <label className="label" htmlFor={`${uid}-side-pos`}>{t('Side ratings vertical')}</label>
               <select id={`${uid}-side-pos`} className="select" value={config.sideRatingsPosition}
                 onChange={e => onUpdate('sideRatingsPosition', e.target.value)} style={{ maxWidth: '12rem' }}>
-                <option value="middle">Middle</option>
-                <option value="top">Top</option>
-                <option value="bottom">Bottom</option>
-                <option value="custom">Custom offset</option>
+                <option value="middle">{t('Middle')}</option>
+                <option value="top">{t('Top')}</option>
+                <option value="bottom">{t('Bottom')}</option>
+                <option value="custom">{t('Custom offset')}</option>
               </select>
             </div>
             {config.sideRatingsPosition === 'custom' && (
               <div className="field">
-                <label className="label" htmlFor={`${uid}-side-offset`}>Vertical offset (px)</label>
+                <label className="label" htmlFor={`${uid}-side-offset`}>{t('Vertical offset (px)')}</label>
                 <input id={`${uid}-side-offset`} className="input" type="number" inputMode="numeric"
                   min={-400} max={400} value={config.sideRatingsOffset || ''}
                   placeholder="0"
@@ -243,10 +248,10 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
               </div>
             )}
             <div className="field">
-              <label className="label" htmlFor={`${uid}-max-per-side`}>Max per side</label>
+              <label className="label" htmlFor={`${uid}-max-per-side`}>{t('Max per side')}</label>
               <input id={`${uid}-max-per-side`} className="input" type="number" inputMode="numeric"
                 min={0} max={20} value={config.ratingsMaxPerSide || ''}
-                placeholder="no cap"
+                placeholder={t('no cap')}
                 onChange={e => onUpdate('ratingsMaxPerSide', e.target.value === '' ? 0 : Number(e.target.value))}
                 style={{ maxWidth: '9rem' }} />
             </div>
@@ -257,7 +262,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
           || PILL_PRESENTATIONS.includes(config.ratingPresentation)) && (
           <>
             <div className="field">
-              <span className="label" id={`${uid}-bstyle-label`}>Badge style</span>
+              <span className="label" id={`${uid}-bstyle-label`}>{t('Badge style')}</span>
               <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-bstyle-label`}>
                 {BADGE_STYLE_OPTIONS.map(o => (
                   <button
@@ -266,18 +271,18 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                     onClick={() => onUpdate('badgeStyle', o.id)}
                     aria-pressed={config.badgeStyle === o.id}
                   >
-                    {o.label}
+                    {t(o.label)}
                   </button>
                 ))}
               </div>
               <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
-                Coming from v2? Its glass badges are <strong>Pill</strong> here, and look closest
-                with Icon shape set to Circle. Outline is a transparent style of its own.
+                {t('Coming from v2? Its glass badges are')} <strong>{t('Pill')}</strong>
+                {t(' here, and look closest with Icon shape set to Circle. Outline is a transparent style of its own.')}
               </span>
             </div>
 
             <div className="field">
-              <span className="label" id={`${uid}-btheme-label`}>Badge theme</span>
+              <span className="label" id={`${uid}-btheme-label`}>{t('Badge theme')}</span>
               <div className="opt-grid" role="group" aria-labelledby={`${uid}-btheme-label`}>
                 {BADGE_THEME_OPTIONS.map(o => (
                   <button
@@ -286,7 +291,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                     onClick={() => onUpdate('badgeTheme', o.id)}
                     aria-pressed={config.badgeTheme === o.id}
                   >
-                    {o.label}
+                    {t(o.label)}
                   </button>
                 ))}
               </div>
@@ -311,21 +316,21 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
         {hasAnyRatingSource(config) && (
           <>
             <div className="field">
-              <span className="label" id={`${uid}-ring-label`}>Average ring</span>
+              <span className="label" id={`${uid}-ring-label`}>{t('Average ring')}</span>
               <div className="opt-grid" role="group" aria-labelledby={`${uid}-ring-label`}>
                 <button
                   className={`opt-btn${!config.ratingRing ? ' opt-btn--active' : ''}`}
                   onClick={() => onUpdate('ratingRing', false)}
                   aria-pressed={!config.ratingRing}
                 >
-                  Off
+                  {t('Off')}
                 </button>
                 <button
                   className={`opt-btn${config.ratingRing ? ' opt-btn--active' : ''}`}
                   onClick={() => onUpdate('ratingRing', true)}
                   aria-pressed={config.ratingRing}
                 >
-                  Ring
+                  {t('Ring')}
                 </button>
               </div>
             </div>
@@ -333,7 +338,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
             {config.ratingRing && (
               <>
                 <div className="field">
-                  <span className="label" id={`${uid}-ring-pos-label`}>Ring position</span>
+                  <span className="label" id={`${uid}-ring-pos-label`}>{t('Ring position')}</span>
                   <div className="opt-grid" role="group" aria-labelledby={`${uid}-ring-pos-label`}>
                     {RING_POS_OPTIONS.map(o => (
                       <button
@@ -342,14 +347,14 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                         onClick={() => onUpdate('ratingRingPos', o.id)}
                         aria-pressed={config.ratingRingPos === o.id}
                       >
-                        {o.label}
+                        {t(o.label)}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="field">
-                  <label className="label" htmlFor={`${uid}-ring-color`}>Ring color</label>
+                  <label className="label" htmlFor={`${uid}-ring-color`}>{t('Ring color')}</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
                     <input
                       id={`${uid}-ring-color`}
@@ -364,16 +369,16 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                       aria-pressed={!config.ratingRingColor}
                       style={{ flex: 1 }}
                     >
-                      Auto (score-based)
+                      {t('Auto (score-based)')}
                     </button>
                   </div>
                   <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-                    Auto follows your Score colours when you have set any, and green / amber / red otherwise. Pick a color to override.
+                    {t('Auto follows your Score colours when you have set any, and green / amber / red otherwise. Pick a color to override.')}
                   </span>
                 </div>
 
                 <div className="field">
-                  <label className="label" htmlFor={`${uid}-ring-placeholder-color`}>Empty ring color</label>
+                  <label className="label" htmlFor={`${uid}-ring-placeholder-color`}>{t('Empty ring color')}</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
                     <input
                       id={`${uid}-ring-placeholder-color`}
@@ -388,11 +393,11 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                       aria-pressed={!config.ratingRingPlaceholderColor}
                       style={{ flex: 1 }}
                     >
-                      Faint outline
+                      {t('Faint outline')}
                     </button>
                   </div>
                   <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-                    The ring drawn for a title with no rating, when the empty ring placeholder is on. Faint outline is what it has always drawn.
+                    {t('The ring drawn for a title with no rating, when the empty ring placeholder is on. Faint outline is what it has always drawn.')}
                   </span>
                 </div>
 
@@ -404,18 +409,18 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
 
         <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
           <legend className="label" style={{ marginBottom: 'var(--sp-2)' }}>
-            Sources
+            {t('Sources')}
             {config.ratings.length > 0 && (
               <span className="count-pill">{config.ratings.length}</span>
             )}
           </legend>
           {([
-            { key: 'general', label: 'General', items: RATING_OPTIONS.filter(r => !r.group) },
-            { key: 'anime',   label: 'Anime',   items: RATING_OPTIONS.filter(r => r.group === 'anime') },
+            { key: 'general', label: msg('General'), items: RATING_OPTIONS.filter(r => !r.group) },
+            { key: 'anime',   label: msg('Anime'),   items: RATING_OPTIONS.filter(r => r.group === 'anime') },
           ]).map(group => (
             <div key={group.key} style={{ marginBottom: 'var(--sp-2)' }}>
-              <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-1)' }}>{group.label}</span>
-              <div className="src-list" role="group" aria-label={`${group.label} rating sources`}>
+              <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-1)' }}>{t(group.label)}</span>
+              <div className="src-list" role="group" aria-label={t('{label} rating sources', { label: t(group.label) })}>
                 {group.items.map(r => (
                   <SourceRow
                     key={r.id}
@@ -430,32 +435,26 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
             </div>
           ))}
           <span className="hint" style={{ marginTop: 0 }}>
-            Only sources that have data for the specific title will appear —
-            selecting a source does not guarantee it shows up if the provider
-            has no rating for that title.
+            {t('Only sources that have data for the specific title will appear — selecting a source does not guarantee it shows up if the provider has no rating for that title.')}
           </span>
 
           {config.ratings.includes('custom') && (
             <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
-              <label className="label" htmlFor={`${uid}-custom-label`}>Custom Source Label</label>
+              <label className="label" htmlFor={`${uid}-custom-label`}>{t('Custom Source Label')}</label>
               <input id={`${uid}-custom-label`} className="input" type="text" maxLength={12}
-                value={config.customRatingLabel} placeholder="e.g. My Score" spellCheck={false}
+                value={config.customRatingLabel} placeholder={t('e.g. My Score')} spellCheck={false}
                 onChange={e => onUpdate('customRatingLabel', e.target.value)} />
               <span className="hint">
-                Shown before the score unless you set a custom icon for it. The endpoint is set in your
-                saved profile, under its keys, so it never appears in a poster link. It is called with the
-                title&apos;s IMDb id and answers with JSON such as {'{'}&quot;score&quot;: 8.1, &quot;max&quot;: 10{'}'}.
+                {t("Shown before the score unless you set a custom icon for it. The endpoint is set in your saved profile, under its keys, so it never appears in a poster link. It is called with the title's IMDb id and answers with JSON such as")} {'{'}&quot;score&quot;: 8.1, &quot;max&quot;: 10{'}'}.
               </span>
             </div>
           )}
 
           {config.ratings.length > 1 && (
             <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
-              <span className="label" id={`${uid}-order-label`}>Order</span>
+              <span className="label" id={`${uid}-order-label`}>{t('Order')}</span>
               <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
-                Badges are drawn in this order, skipping any source with no
-                rating for the title. With a maximum set, put the sources you
-                want first at the top.
+                {t('Badges are drawn in this order, skipping any source with no rating for the title. With a maximum set, put the sources you want first at the top.')}
               </span>
               <SourceOrderList
                 ids={config.ratings}
@@ -470,25 +469,23 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
 
         {fine && (
           <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-            <legend className="label" style={{ marginBottom: 'var(--sp-2)' }}>Per-type sources</legend>
+            <legend className="label" style={{ marginBottom: 'var(--sp-2)' }}>{t('Per-type sources')}</legend>
             <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
-              Pick different sources for a media type. Leave a type empty to use
-              the sources above, or choose No ratings to show none for that type
-              alone.
+              {t('Pick different sources for a media type. Leave a type empty to use the sources above, or choose No ratings to show none for that type alone.')}
             </span>
             {([
-              { key: 'ratingsMovie' as const, label: 'Movies' },
-              { key: 'ratingsSeries' as const, label: 'Series' },
-              { key: 'ratingsAnime' as const, label: 'Anime' },
-            ]).map(t => {
+              { key: 'ratingsMovie' as const, label: msg('Movies') },
+              { key: 'ratingsSeries' as const, label: msg('Series') },
+              { key: 'ratingsAnime' as const, label: msg('Anime') },
+            ]).map(pt => {
               // "none" is the stored spelling for a deliberately empty list; an
               // empty one means inherit, so the two cannot be the same state.
-              const chosen = config[t.key].filter(x => x !== 'none');
-              const isNone = config[t.key].includes('none');
+              const chosen = config[pt.key].filter(x => x !== 'none');
+              const isNone = config[pt.key].includes('none');
               return (
-              <div key={t.key} style={{ marginBottom: 'var(--sp-2)' }}>
+              <div key={pt.key} style={{ marginBottom: 'var(--sp-2)' }}>
                 <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-1)' }}>
-                  {t.label}
+                  {t(pt.label)}
                   {chosen.length > 0 && (
                     <span className="count-pill">{chosen.length}</span>
                   )}
@@ -497,12 +494,12 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                   type="button"
                   className={`opt-btn${isNone ? ' opt-btn--active' : ''}`}
                   aria-pressed={isNone}
-                  onClick={() => onUpdate(t.key, isNone ? [] : ['none'])}
+                  onClick={() => onUpdate(pt.key, isNone ? [] : ['none'])}
                   style={{ marginBottom: 'var(--sp-1)' }}
                 >
-                  No ratings
+                  {t('No ratings')}
                 </button>
-                <div className="src-list" role="group" aria-label={`${t.label} rating source override`}>
+                <div className="src-list" role="group" aria-label={t('{label} rating source override', { label: t(pt.label) })}>
                   {RATING_OPTIONS.map(r => (
                     <SourceRow
                       key={r.id}
@@ -510,7 +507,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                       active={chosen.includes(r.id)}
                       failed={!!logoFailed[r.id]}
                       onToggle={() => {
-                        onUpdate(t.key, chosen.includes(r.id)
+                        onUpdate(pt.key, chosen.includes(r.id)
                           ? chosen.filter(x => x !== r.id)
                           : [...chosen, r.id]);
                       }}
@@ -520,13 +517,13 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                 </div>
                 {chosen.length > 1 && (
                   <div className="field" style={{ marginTop: 'var(--sp-2)' }}>
-                    <span className="label" id={`${uid}-${t.key}-order-label`}>{t.label} order</span>
+                    <span className="label" id={`${uid}-${pt.key}-order-label`}>{t('{label} order', { label: t(pt.label) })}</span>
                     <SourceOrderList
                       ids={chosen}
-                      labelId={`${uid}-${t.key}-order-label`}
+                      labelId={`${uid}-${pt.key}-order-label`}
                       logoFailed={logoFailed}
                       onLogoError={id => setLogoFailed(prev => ({ ...prev, [id]: true }))}
-                      onMove={(id, dir) => onUpdate(t.key, moved(chosen, id, dir))}
+                      onMove={(id, dir) => onUpdate(pt.key, moved(chosen, id, dir))}
                     />
                   </div>
                 )}

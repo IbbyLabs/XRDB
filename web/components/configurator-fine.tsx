@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
+import { useT, tOr } from '@/lib/i18n';
+import { msg } from '@/lib/i18n-msg';
 import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
@@ -75,6 +77,7 @@ export function NumField({
   id: string; label: string; value: number; onChange: (v: number) => void;
   min: number; max: number; step?: number; placeholder?: string; hint?: string; zeroIsDefault?: boolean;
 }) {
+  const t = useT();
   const isDefault = zeroIsDefault && value === 0;
   // When the value is the default sentinel the slider rests at min; otherwise it
   // mirrors the current value, clamped so a stale out-of-range value still shows.
@@ -92,7 +95,7 @@ export function NumField({
           max={max}
           step={step}
           value={isDefault ? '' : value}
-          placeholder={placeholder}
+          placeholder={t(placeholder)}
           onChange={e => {
             const n = e.target.value === '' ? 0 : Number(e.target.value);
             onChange(Number.isFinite(n) ? n : 0);
@@ -113,7 +116,7 @@ export function NumField({
           step={step}
           value={sliderValue}
           onChange={e => onChange(Number(e.target.value))}
-          aria-label={`${label} slider`}
+          aria-label={t('{label} slider', { label })}
         />
       </div>
       {hint && <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>{hint}</span>}
@@ -173,6 +176,7 @@ function seedStops(raw: string, start: number) {
 function ScoreStopsField({ uid, value, onChange }: {
   uid: string; value: string; onChange: (v: string) => void;
 }) {
+  const t = useT();
   const [state, setState] = useState(() => seedStops(value, 0));
   // A preset, an undo or a shared link replaces the string from outside. React
   // allows adjusting state during render for exactly this, and it avoids the
@@ -196,7 +200,7 @@ function ScoreStopsField({ uid, value, onChange }: {
   const gradient = stopsGradient(rows);
   return (
     <div className="field" role="group" aria-labelledby={`${uid}-stops-label`}>
-      <span className="label" id={`${uid}-stops-label`}>Colour stops</span>
+      <span className="label" id={`${uid}-stops-label`}>{t('Colour stops')}</span>
       {rows.length > 0 && (
         <div
           className="stops-preview"
@@ -214,7 +218,7 @@ function ScoreStopsField({ uid, value, onChange }: {
             max={100}
             step={1}
             value={row.score}
-            aria-label={`Stop ${i + 1} score`}
+            aria-label={t('Stop {n} score', { n: i + 1 })}
             onChange={e => {
               const n = Number(e.target.value);
               commit(rows.map(r => (r.id === row.id
@@ -226,16 +230,16 @@ function ScoreStopsField({ uid, value, onChange }: {
             className="color-swatch"
             type="color"
             value={row.color}
-            aria-label={`Stop ${i + 1} colour`}
+            aria-label={t('Stop {n} colour', { n: i + 1 })}
             onChange={e => commit(rows.map(r => (r.id === row.id ? { ...r, color: e.target.value } : r)))}
           />
           <button
             type="button"
             className="opt-btn stops-remove"
-            aria-label={`Remove stop ${i + 1}`}
+            aria-label={t('Remove stop {n}', { n: i + 1 })}
             onClick={() => commit(rows.filter(r => r.id !== row.id))}
           >
-            Remove
+            {t('Remove')}
           </button>
         </div>
       ))}
@@ -245,7 +249,7 @@ function ScoreStopsField({ uid, value, onChange }: {
           className="opt-btn"
           onClick={() => addStops([{ score: nextScore, color: '#3355ff' }])}
         >
-          Add stop
+          {t('Add stop')}
         </button>
         <button
           type="button"
@@ -255,13 +259,11 @@ function ScoreStopsField({ uid, value, onChange }: {
             { score: Math.min(100, nextScore + 9), color: '#3355ff' },
           ])}
         >
-          Add flat band
+          {t('Add flat band')}
         </button>
       </div>
       <p className="hint">
-        Score to colour, on a 0–100 scale, so 4 out of 10 is 40. Colours blend
-        between stops: a band of one flat colour needs the same colour at both
-        ends, which is what Add flat band does. Blank uses the built-in bands.
+        {t('Score to colour, on a 0–100 scale, so 4 out of 10 is 40. Colours blend between stops: a band of one flat colour needs the same colour at both ends, which is what Add flat band does. Blank uses the built-in bands.')}
       </p>
     </div>
   );
@@ -303,11 +305,12 @@ function ColorField({
 function FontSelect({
   id, label, value, onChange,
 }: { id: string; label: string; value: string; onChange: (v: string) => void }) {
+  const t = useT();
   return (
     <div className="field">
       <label className="label" htmlFor={id}>{label}</label>
       <select id={id} className="select" value={value} onChange={e => onChange(e.target.value)} style={{ maxWidth: '12rem' }}>
-        {BADGE_FONT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        {BADGE_FONT_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
       </select>
     </div>
   );
@@ -340,11 +343,12 @@ function ToggleField({ id, label, hint, checked, onChange }: {
 function PosSelect({
   id, label, value, onChange,
 }: { id: string; label: string; value: string; onChange: (v: string) => void }) {
+  const t = useT();
   return (
     <div className="field">
       <label className="label" htmlFor={id}>{label}</label>
       <select id={id} className="select" value={value} onChange={e => onChange(e.target.value)} style={{ maxWidth: '12rem' }}>
-        {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
       </select>
     </div>
   );
@@ -357,6 +361,7 @@ function StyleGrid({
   id: string; label: string; options: readonly { id: string; label: string }[];
   value: string; onChange: (v: string) => void; columns?: number; hint?: React.ReactNode;
 }) {
+  const t = useT();
   return (
     <div className="field">
       <span className="label" id={id}>{label}</span>
@@ -373,7 +378,7 @@ function StyleGrid({
             onClick={() => onChange(o.id)}
             aria-pressed={value === o.id}
           >
-            {o.label}
+            {t(o.label)}
           </button>
         ))}
       </div>
@@ -390,6 +395,7 @@ function StyleGrid({
  * up here, so the list tracks the Sources selection.
  */
 function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   const selected = RATING_OPTIONS.filter(r => config.ratings.includes(r.id));
   if (selected.length === 0) return null;
 
@@ -411,11 +417,11 @@ function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
   return (
     <details className="adv-details">
       <summary>
-        Per-provider colors
+        {t('Per-provider colors')}
       </summary>
       <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
         <p className="hint" style={{ marginTop: 0 }}>
-          Override a source&apos;s accent colour and mark size. Sources left alone keep their brand colour at full size.
+          {t("Override a source's accent colour and mark size. Sources left alone keep their brand colour at full size.")}
         </p>
         {selected.map(r => {
           const override = config.ratingProviderOverrides[r.id];
@@ -436,10 +442,10 @@ function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
                   aria-pressed={!override}
                   style={{ flex: 1 }}
                 >
-                  Brand default
+                  {t('Brand default')}
                 </button>
               </div>
-              <NumField id={`${uid}-provscale-${r.id}`} label={`${r.label} mark size (%)`}
+              <NumField id={`${uid}-provscale-${r.id}`} label={t('{label} mark size (%)', { label: r.label })}
                 value={config.ratingProviderIconScale[r.id] ?? 0}
                 onChange={v => setScale(r.id, v)} min={50} max={150} step={5} placeholder="100" />
             </div>
@@ -454,6 +460,7 @@ function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
 function IconUrlField({ id, label, value, onCommit }: {
   id: string; label: string; value: string; onCommit: (url: string) => void;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState(value);
   const trimmed = draft.trim();
   const invalid = trimmed !== '' && !isIconUrl(trimmed);
@@ -468,14 +475,14 @@ function IconUrlField({ id, label, value, onCommit }: {
         type="url"
         className="input"
         value={draft}
-        placeholder="Bundled icon"
+        placeholder={t('Bundled icon')}
         spellCheck={false}
         aria-invalid={invalid}
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') commit(); }}
       />
-      {invalid && <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>Use an http(s) link to a PNG, JPEG, WebP or GIF.</span>}
+      {invalid && <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>{t('Use an http(s) link to a PNG, JPEG, WebP or GIF.')}</span>}
     </div>
   );
 }
@@ -485,6 +492,7 @@ function IconUrlField({ id, label, value, onCommit }: {
  * one at a time or from a Fusion-format icon pack.
  */
 function ProviderIcons({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   const [packUrl, setPackUrl] = useState('');
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -506,14 +514,16 @@ function ProviderIcons({ uid, config, onUpdate }: GroupProps) {
       const found = Object.fromEntries(Object.entries(all).filter(([id]) => config.ratings.includes(id)));
       const count = Object.keys(found).length;
       if (count === 0) {
-        setStatus({ ok: false, text: 'No icons in that pack matched a selected rating source.' });
+        setStatus({ ok: false, text: t('No icons in that pack matched a selected rating source.') });
         return;
       }
       onUpdate('ratingProviderIconUrl', { ...icons, ...found });
-      const extra = skipped > 0 ? ` ${skipped} entr${skipped === 1 ? 'y was' : 'ies were'} not recognised.` : '';
-      setStatus({ ok: true, text: `Imported ${count} icon${count === 1 ? '' : 's'}.${extra}` });
+      const extra = skipped > 0
+        ? ` ${skipped === 1 ? t('1 entry was not recognised.') : t('{n} entries were not recognised.', { n: skipped })}`
+        : '';
+      setStatus({ ok: true, text: `${count === 1 ? t('Imported 1 icon.') : t('Imported {n} icons.', { n: count })}${extra}` });
     } catch (e) {
-      setStatus({ ok: false, text: e instanceof Error ? e.message : 'The pack could not be imported.' });
+      setStatus({ ok: false, text: e instanceof Error ? t(e.message) : t('The pack could not be imported.') });
     } finally {
       setBusy(false);
     }
@@ -523,14 +533,14 @@ function ProviderIcons({ uid, config, onUpdate }: GroupProps) {
   return (
     <details className="adv-details">
       <summary>
-        Custom icons
+        {t('Custom icons')}
       </summary>
       <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
         <p className="hint" style={{ marginTop: 0 }}>
-          Link an image to use instead of a source&apos;s bundled icon. PNG, JPEG, WebP or GIF, up to 1 MB. A link that fails to load falls back to the bundled icon.
+          {t("Link an image to use instead of a source's bundled icon. PNG, JPEG, WebP or GIF, up to 1 MB. A link that fails to load falls back to the bundled icon.")}
         </p>
         <div className="field">
-          <label className="label" htmlFor={`${uid}-iconpack`}>Import an icon pack</label>
+          <label className="label" htmlFor={`${uid}-iconpack`}>{t('Import an icon pack')}</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
             <input
               id={`${uid}-iconpack`}
@@ -544,11 +554,11 @@ function ProviderIcons({ uid, config, onUpdate }: GroupProps) {
               onKeyDown={e => { if (e.key === 'Enter' && packUrl.trim()) void importPack(); }}
             />
             <button type="button" className="opt-btn" onClick={() => void importPack()} disabled={busy || !packUrl.trim()}>
-              {busy ? 'Importing…' : 'Import'}
+              {busy ? t('Importing…') : t('Import')}
             </button>
           </div>
           <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-            Fusion-format packs work: a JSON list of names and links, such as &quot;IMDb (IM)&quot;.
+            {t('Fusion-format packs work: a JSON list of names and links, such as "IMDb (IM)".')}
           </span>
           {status && (
             <span className="hint" role="status" style={{ marginTop: 'var(--sp-1)' }}>{status.text}</span>
@@ -558,20 +568,20 @@ function ProviderIcons({ uid, config, onUpdate }: GroupProps) {
           <IconUrlField
             key={`${r.id}:${icons[r.id] ?? ''}`}
             id={`${uid}-provicon-${r.id}`}
-            label={`${r.label} icon`}
+            label={t('{label} icon', { label: r.label })}
             value={icons[r.id] ?? ''}
             onCommit={url => setIcon(r.id, url)}
           />
         ))}
         {icons.rt && selected.some(r => r.id === 'rt') && (
-          <ToggleField id={`${uid}-keep-rt-marks`} label="Keep RT's Certified Fresh and Rotten marks"
+          <ToggleField id={`${uid}-keep-rt-marks`} label={t("Keep RT's Certified Fresh and Rotten marks")}
             checked={config.customIconKeepRtMarks}
             onChange={v => onUpdate('customIconKeepRtMarks', v)}
-            hint="Use your Rotten Tomatoes icon only for a plain Fresh score, and the bundled marks for Certified Fresh and Rotten." />
+            hint={t('Use your Rotten Tomatoes icon only for a plain Fresh score, and the bundled marks for Certified Fresh and Rotten.')} />
         )}
         {customCount > 0 && (
           <button type="button" className="opt-btn" onClick={() => { onUpdate('ratingProviderIconUrl', {}); setStatus(null); }}>
-            Use bundled icons for every source
+            {t('Use bundled icons for every source')}
           </button>
         )}
       </div>
@@ -589,6 +599,7 @@ function ProviderIcons({ uid, config, onUpdate }: GroupProps) {
  * is no invalid state to warn about or correct.
  */
 function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   const selected = RATING_OPTIONS.filter(r => config.ratings.includes(r.id));
   if (selected.length === 0) return null;
 
@@ -603,20 +614,17 @@ function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
   return (
     <details className="adv-details">
       <summary>
-        Source weighting
+        {t('Source weighting')}
       </summary>
-      <div className="cfg-fields" role="group" aria-label="Source weighting" style={{ marginTop: 'var(--sp-2)' }}>
+      <div className="cfg-fields" role="group" aria-label={t('Source weighting')} style={{ marginTop: 'var(--sp-2)' }}>
         <p className="hint" style={{ marginTop: 0 }}>
-          How the ring, the score bar and the averaged presentations divide their
-          score between sources. Moving one adjusts the rest to keep the total at
-          100%. A source on 0% stops counting but keeps its own badge, and one
-          with no rating for a title hands its share to the others.
+          {t('How the ring, the score bar and the averaged presentations divide their score between sources. Moving one adjusts the rest to keep the total at 100%. A source on 0% stops counting but keeps its own badge, and one with no rating for a title hands its share to the others.')}
         </p>
         {selected.map(r => (
           <NumField
             key={r.id}
             id={`${uid}-weight-${r.id}`}
-            label={`${r.label} (%)`}
+            label={t('{label} (%)', { label: r.label })}
             value={shares[r.id] ?? 0}
             onChange={v => setShare(r.id, v)}
             min={0}
@@ -626,7 +634,7 @@ function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
           />
         ))}
         <div className="share-total">
-          <span>Total</span>
+          <span>{t('Total')}</span>
           <span className="share-total-value">
             {ids.reduce((sum, id) => sum + (shares[id] ?? 0), 0)}%
           </span>
@@ -636,7 +644,7 @@ function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
           onClick={() => onUpdate('ratingProviderWeights', {})}
           aria-pressed={isEven}
         >
-          Even split
+          {t('Even split')}
         </button>
       </div>
     </details>
@@ -704,110 +712,110 @@ function genreBorderMode(width: number): string {
 }
 
 export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   const strip = drawsBadgeStrip(config.ratingPresentation);
   const pills = PILL_PRESENTATIONS.includes(config.ratingPresentation);
   return (
-    <FineGroup label="Rating badges">
+    <FineGroup label={t('Rating badges')}>
       <StyleGrid
         id={`${uid}-rating-pres-label`}
-        label="Presentation"
+        label={t('Presentation')}
         options={RATING_PRESENTATION_OPTIONS}
         value={config.ratingPresentation}
         onChange={v => onUpdate('ratingPresentation', v)}
-        hint={RATING_PRESENTATION_OPTIONS.find(o => o.id === config.ratingPresentation)?.desc}
+        hint={tOr(t, RATING_PRESENTATION_OPTIONS.find(o => o.id === config.ratingPresentation)?.desc)}
       />
       {PILL_PRESENTATIONS.includes(config.ratingPresentation) && (
-        <PosSelect id={`${uid}-aggregate-pill-pos`} label="Pill position"
+        <PosSelect id={`${uid}-aggregate-pill-pos`} label={t('Pill position')}
           value={config.aggregatePillPos}
           onChange={v => onUpdate('aggregatePillPos', v)} />
       )}
       {config.ratingPresentation !== 'scorebar' && (
         <StyleGrid
           id={`${uid}-rating-value-mode-label`}
-          label="Value scale"
+          label={t('Value scale')}
           options={RATING_VALUE_MODE_OPTIONS}
           value={config.ratingValueMode}
           onChange={v => onUpdate('ratingValueMode', v)}
-          hint={RATING_VALUE_MODE_OPTIONS.find(o => o.id === config.ratingValueMode)?.desc}
+          hint={tOr(t, RATING_VALUE_MODE_OPTIONS.find(o => o.id === config.ratingValueMode)?.desc)}
         />
       )}
-      <FontSelect id={`${uid}-rating-font`} label="Rating badge font"
+      <FontSelect id={`${uid}-rating-font`} label={t('Rating badge font')}
         value={config.ratingBadgeFont}
         onChange={v => onUpdate('ratingBadgeFont', v)} />
       {strip && (
         <StyleGrid
           id={`${uid}-icon-shape-label`}
-          label="Icon shape"
+          label={t('Icon shape')}
           options={ICON_SHAPE_OPTIONS}
           value={config.iconShape}
           onChange={v => onUpdate('iconShape', v)}
           columns={4}
-          hint="Trim each provider's mark to a shape. Original keeps its own outline."
+          hint={t("Trim each provider's mark to a shape. Original keeps its own outline.")}
         />
       )}
       {strip && (
-        <ToggleField id={`${uid}-icon-plate-filled`} label="Fill the mark's plate"
+        <ToggleField id={`${uid}-icon-plate-filled`} label={t("Fill the mark's plate")}
           checked={config.iconPlateFilled}
           onChange={v => onUpdate('iconPlateFilled', v)}
-          hint="Fills the shape behind each provider mark with that site's own colour. Needs an icon shape other than Original." />
+          hint={t("Fills the shape behind each provider mark with that site's own colour. Needs an icon shape other than Original.")} />
       )}
       {(strip || pills) && (
-        <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
+        <NumField id={`${uid}-rating-scale`} label={t('Scale (%)')} value={config.ratingBadgeScale}
           onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={600} step={5}
-          hint="70–600. Blank keeps the default size." />
+          hint={t('70–600. Blank keeps the default size.')} />
       )}
       {strip && (
         <>
-          <ToggleField id={`${uid}-rating-hide-icon`} label="Hide provider marks"
+          <ToggleField id={`${uid}-rating-hide-icon`} label={t('Hide provider marks')}
             checked={config.ratingIconHidden}
             onChange={v => onUpdate('ratingIconHidden', v)}
-            hint="Show the score on its own, without the provider's logo." />
-          <ToggleField id={`${uid}-stacked-line`} label="Hide the stacked accent bar"
+            hint={t("Show the score on its own, without the provider's logo.")} />
+          <ToggleField id={`${uid}-stacked-line`} label={t('Hide the stacked accent bar')}
             checked={config.stackedLineHidden}
             onChange={v => onUpdate('stackedLineHidden', v)}
-            hint="Drops the coloured bar above the mark in the stacked style." />
-          <ToggleField id={`${uid}-rating-accent-bar`} label="Hide the accent stripe"
+            hint={t('Drops the coloured bar above the mark in the stacked style.')} />
+          <ToggleField id={`${uid}-rating-accent-bar`} label={t('Hide the accent stripe')}
             checked={config.ratingAccentBarHidden}
             onChange={v => onUpdate('ratingAccentBarHidden', v)}
-            hint="Drops the coloured stripe down the left edge, keeping the badge shape." />
-          <NumField id={`${uid}-ratings-max`} label="Max badges" value={config.ratingsMax}
-            onChange={v => onUpdate('ratingsMax', v)} min={0} max={20} placeholder="no cap"
-            hint="0 shows all selected sources that have data." />
+            hint={t('Drops the coloured stripe down the left edge, keeping the badge shape.')} />
+          <NumField id={`${uid}-ratings-max`} label={t('Max badges')} value={config.ratingsMax}
+            onChange={v => onUpdate('ratingsMax', v)} min={0} max={20} placeholder={t('no cap')}
+            hint={t('0 shows all selected sources that have data.')} />
         </>
       )}
       {(strip || pills) && (
         <div className="numfield-pair">
-          <NumField id={`${uid}-rating-ox`} label="Offset X" value={config.ratingBadgeOffsetX}
+          <NumField id={`${uid}-rating-ox`} label={t('Offset X')} value={config.ratingBadgeOffsetX}
             onChange={v => onUpdate('ratingBadgeOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
-          <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
+          <NumField id={`${uid}-rating-oy`} label={t('Offset Y')} value={config.ratingBadgeOffsetY}
             onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
         </div>
       )}
       {strip && (
         <>
-          <ToggleField id={`${uid}-vote-counts`} label="Show vote counts"
+          <ToggleField id={`${uid}-vote-counts`} label={t('Show vote counts')}
             checked={config.ratingVoteCounts}
             onChange={v => onUpdate('ratingVoteCounts', v)}
-            hint="Append the number of votes to each score. Only IMDb, MDBList and TMDB report one; other sources show the score alone." />
-          <ToggleField id={`${uid}-hide-native-scale`} label="Hide the score's scale"
+            hint={t('Append the number of votes to each score. Only IMDb, MDBList and TMDB report one; other sources show the score alone.')} />
+          <ToggleField id={`${uid}-hide-native-scale`} label={t("Hide the score's scale")}
             checked={config.hideNativeScale}
             onChange={v => onUpdate('hideNativeScale', v)}
-            hint="Draw a five- or four-point score bare, so Letterboxd reads 4.6 rather than 4.6/5. The scale is what stops a high five-point score being read as a low ten-point one, so leave it on unless every source in your row shares a scale." />
-          <ToggleField id={`${uid}-mal-episode-only`} label="Episode-only MAL scores"
+            hint={t('Draw a five- or four-point score bare, so Letterboxd reads 4.6 rather than 4.6/5. The scale is what stops a high five-point score being read as a low ten-point one, so leave it on unless every source in your row shares a scale.')} />
+          <ToggleField id={`${uid}-mal-episode-only`} label={t('Episode-only MAL scores')}
             checked={config.malEpisodeOnly}
             onChange={v => onUpdate('malEpisodeOnly', v)}
-            hint="On episode artwork, hide the series MAL score when that episode has no score of its own." />
-          <ToggleField id={`${uid}-min-votes`} label="Hide thin ratings"
+            hint={t('On episode artwork, hide the series MAL score when that episode has no score of its own.')} />
+          <ToggleField id={`${uid}-min-votes`} label={t('Hide thin ratings')}
             checked={config.ratingMinVotes}
             onChange={v => onUpdate('ratingMinVotes', v)}
-            hint="Hide a score resting on too few votes to mean anything. Applies to IMDb, Letterboxd, Trakt, TMDB, SIMKL and Metacritic's user score. Metacritic, Rotten Tomatoes and Popcorn are never hidden: their counts measure how many critics reviewed a title, not how confident the score is. A source that reports no count is left alone." />
+            hint={t("Hide a score resting on too few votes to mean anything. Applies to IMDb, Letterboxd, Trakt, TMDB, SIMKL and Metacritic's user score. Metacritic, Rotten Tomatoes and Popcorn are never hidden: their counts measure how many critics reviewed a title, not how confident the score is. A source that reports no count is left alone.")} />
           {config.ratingMinVotes && (
             <details className="adv-details">
-              <summary>Minimum votes per source</summary>
+              <summary>{t('Minimum votes per source')}</summary>
               <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
                 <p className="hint" style={{ marginTop: 0 }}>
-                  Leave a source empty to follow the built-in minimum, or set 0 to
-                  stop hiding that source.
+                  {t('Leave a source empty to follow the built-in minimum, or set 0 to stop hiding that source.')}
                 </p>
                 {MIN_VOTE_SOURCES.map(src => (
                   <NumField key={src.id} id={`${uid}-minvotes-${src.id}`} label={src.label}
@@ -822,58 +830,58 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
               </div>
             </details>
           )}
-          <ToggleField id={`${uid}-bottom-row`} label="Single row"
+          <ToggleField id={`${uid}-bottom-row`} label={t('Single row')}
             checked={config.bottomRatingsRow}
             onChange={v => onUpdate('bottomRatingsRow', v)}
-            hint="Keep every badge on one row instead of wrapping. The row follows the ratings layout." />
-          <ToggleField id={`${uid}-unavailable-mark`} label="Mark a rating hidden for too few votes"
+            hint={t('Keep every badge on one row instead of wrapping. The row follows the ratings layout.')} />
+          <ToggleField id={`${uid}-unavailable-mark`} label={t('Mark a rating hidden for too few votes')}
             checked={config.ratingUnavailableMark}
             onChange={v => onUpdate('ratingUnavailableMark', v)}
-            hint="Draw a dash where a rating would go when the minimum vote count hid it, so the source keeps its place in the row. Needs the minimum turned on. A source we could not reach is never marked." />
-          <ToggleField id={`${uid}-uniform-width`} label="Match badge widths"
+            hint={t('Draw a dash where a rating would go when the minimum vote count hid it, so the source keeps its place in the row. Needs the minimum turned on. A source we could not reach is never marked.')} />
+          <ToggleField id={`${uid}-uniform-width`} label={t('Match badge widths')}
             checked={config.ratingsUniformWidth}
             onChange={v => onUpdate('ratingsUniformWidth', v)}
-            hint="Pad every badge to the widest so they share one edge. Marks differ in width, so matching the value scale alone will not line them up. Costs a little width in a row." />
-          <ToggleField id={`${uid}-ratings-anchored`} label="Anchor badges to the edge"
+            hint={t('Pad every badge to the widest so they share one edge. Marks differ in width, so matching the value scale alone will not line them up. Costs a little width in a row.')} />
+          <ToggleField id={`${uid}-ratings-anchored`} label={t('Anchor badges to the edge')}
             checked={config.ratingsAnchored}
             onChange={v => onUpdate('ratingsAnchored', v)}
-            hint="Row flush to the poster edge with squared corners." />
-          <NumField id={`${uid}-edge-offset`} label="Edge inset (px)" value={config.posterEdgeOffset}
+            hint={t('Row flush to the poster edge with squared corners.')} />
+          <NumField id={`${uid}-edge-offset`} label={t('Edge inset (px)')} value={config.posterEdgeOffset}
             onChange={v => onUpdate('posterEdgeOffset', v)} min={0} max={80}
-            hint="Push the strip further in from the edge it sits against." />
+            hint={t('Push the strip further in from the edge it sits against.')} />
           <details className="adv-details">
-            <summary>Per-style nudges</summary>
+            <summary>{t('Per-style nudges')}</summary>
             <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
-              <p className="hint">A nudge kept separately for each badge style, so switching style keeps both positions.</p>
+              <p className="hint">{t('A nudge kept separately for each badge style, so switching style keeps both positions.')}</p>
               <div className="numfield-pair">
-                <NumField id={`${uid}-off-x-glass`} label="Other styles X" value={config.ratingXOffsetPillGlass}
+                <NumField id={`${uid}-off-x-glass`} label={t('Other styles X')} value={config.ratingXOffsetPillGlass}
                   onChange={v => onUpdate('ratingXOffsetPillGlass', v)} min={-1200} max={1200} zeroIsDefault={false} />
-                <NumField id={`${uid}-off-y-glass`} label="Other styles Y" value={config.ratingYOffsetPillGlass}
+                <NumField id={`${uid}-off-y-glass`} label={t('Other styles Y')} value={config.ratingYOffsetPillGlass}
                   onChange={v => onUpdate('ratingYOffsetPillGlass', v)} min={-1200} max={1200} zeroIsDefault={false} />
               </div>
               <div className="numfield-pair">
-                <NumField id={`${uid}-off-x-square`} label="Square X" value={config.ratingXOffsetSquare}
+                <NumField id={`${uid}-off-x-square`} label={t('Square X')} value={config.ratingXOffsetSquare}
                   onChange={v => onUpdate('ratingXOffsetSquare', v)} min={-1200} max={1200} zeroIsDefault={false} />
-                <NumField id={`${uid}-off-y-square`} label="Square Y" value={config.ratingYOffsetSquare}
+                <NumField id={`${uid}-off-y-square`} label={t('Square Y')} value={config.ratingYOffsetSquare}
                   onChange={v => onUpdate('ratingYOffsetSquare', v)} min={-1200} max={1200} zeroIsDefault={false} />
               </div>
             </div>
           </details>
         </>
       )}
-      <NumField id={`${uid}-badge-density`} label="Badge density (%)" value={config.ratingBadgeDensity}
+      <NumField id={`${uid}-badge-density`} label={t('Badge density (%)')} value={config.ratingBadgeDensity}
         onChange={v => onUpdate('ratingBadgeDensity', v)} min={60} max={140} step={5}
-        hint="Padding inside each badge and the gap to its logo. Lower hugs the contents." />
-      <NumField id={`${uid}-badge-gap`} label="Space between badges (%)" value={config.ratingBadgeGap}
+        hint={t('Padding inside each badge and the gap to its logo. Lower hugs the contents.')} />
+      <NumField id={`${uid}-badge-gap`} label={t('Space between badges (%)')} value={config.ratingBadgeGap}
         onChange={v => onUpdate('ratingBadgeGap', v)} min={20} max={300} step={10}
-        hint="The gap between rating badges and between their rows. Blank keeps the default." />
-      <NumField id={`${uid}-icon-gap`} label="Space between logo and score (%)" value={config.ratingIconGap}
+        hint={t('The gap between rating badges and between their rows. Blank keeps the default.')} />
+      <NumField id={`${uid}-icon-gap`} label={t('Space between logo and score (%)')} value={config.ratingIconGap}
         onChange={v => onUpdate('ratingIconGap', v)} min={10} max={300} step={10}
-        hint="The gap between each badge's logo and its score. Blank keeps the default." />
-      <ColorField id={`${uid}-rating-value`} label="Score text colour" value={config.ratingValueColor}
-        onChange={v => onUpdate('ratingValueColor', v)} fallback="#ffffff" resetLabel="Style default" />
+        hint={t("The gap between each badge's logo and its score. Blank keeps the default.")} />
+      <ColorField id={`${uid}-rating-value`} label={t('Score text colour')} value={config.ratingValueColor}
+        onChange={v => onUpdate('ratingValueColor', v)} fallback="#ffffff" resetLabel={t('Style default')} />
       <div className="field">
-        <label className="label" htmlFor={`${uid}-badge-border`}>Badge outline</label>
+        <label className="label" htmlFor={`${uid}-badge-border`}>{t('Badge outline')}</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
           <input
             id={`${uid}-badge-border`}
@@ -888,44 +896,44 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
             aria-pressed={!config.ratingBadgeBorderColor}
             style={{ flex: 1 }}
           >
-            Per style
+            {t('Per style')}
           </button>
         </div>
         <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-          Traces the capsule itself, so it reads as a defined chip.
+          {t('Traces the capsule itself, so it reads as a defined chip.')}
         </span>
       </div>
-      <ToggleField id={`${uid}-badge-border-tint`} label="Outline in each rating site's colour"
-        hint="Draws every badge's outline in that site's own colour. On the Tile style this gives the classic outlined chip; on Glass it's a floating coloured ring."
+      <ToggleField id={`${uid}-badge-border-tint`} label={t("Outline in each rating site's colour")}
+        hint={t("Draws every badge's outline in that site's own colour. On the Tile style this gives the classic outlined chip; on Glass it's a floating coloured ring.")}
         checked={config.ratingBadgeBorderSourceTint}
         onChange={() => onUpdate('ratingBadgeBorderSourceTint', !config.ratingBadgeBorderSourceTint)} />
-      <ToggleField id={`${uid}-badge-border-glow`} label="Bloom the badge outline"
-        hint="Fades the outline outward instead of a hard edge, so a source-tinted border reads as a halo around the badge."
+      <ToggleField id={`${uid}-badge-border-glow`} label={t('Bloom the badge outline')}
+        hint={t('Fades the outline outward instead of a hard edge, so a source-tinted border reads as a halo around the badge.')}
         checked={config.ratingBadgeBorderGlow}
         onChange={() => onUpdate('ratingBadgeBorderGlow', !config.ratingBadgeBorderGlow)} />
       {config.ratingBadgeBorderGlow && (
-        <NumField id={`${uid}-badge-border-glow-strength`} label="Bloom strength (%)"
+        <NumField id={`${uid}-badge-border-glow-strength`} label={t('Bloom strength (%)')}
           value={config.ratingBadgeBorderGlowStrength}
           onChange={v => onUpdate('ratingBadgeBorderGlowStrength', v)}
-          min={5} max={100} step={5} placeholder="default"
-          hint="How far the bloom reaches and how strongly it reads. Blank keeps the default." />
+          min={5} max={100} step={5} placeholder={t('default')}
+          hint={t('How far the bloom reaches and how strongly it reads. Blank keeps the default.')} />
       )}
-      <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
-        onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="solid" />
+      <NumField id={`${uid}-badge-border-op`} label={t('Badge outline opacity (%)')} value={config.ratingBadgeBorderOpacity}
+        onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder={t('solid')} />
       <StyleGrid
         id={`${uid}-badge-border-mode-label`}
-        label="Badge border"
+        label={t('Badge border')}
         options={GENRE_BORDER_OPTIONS}
         value={genreBorderMode(config.ratingBadgeBorderWidth)}
         onChange={v => onUpdate('ratingBadgeBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
       />
       {genreBorderMode(config.ratingBadgeBorderWidth) === 'custom' && (
-        <NumField id={`${uid}-badge-border-w`} label="Badge border width (px)" value={config.ratingBadgeBorderWidth}
+        <NumField id={`${uid}-badge-border-w`} label={t('Badge border width (px)')} value={config.ratingBadgeBorderWidth}
           onChange={v => onUpdate('ratingBadgeBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
       )}
-      <NumField id={`${uid}-badge-bg-op`} label="Badge background opacity (%)" value={config.ratingBadgeBackgroundOpacity}
-        onChange={v => onUpdate('ratingBadgeBackgroundOpacity', v)} min={5} max={100} step={5} placeholder="per style"
-        hint="How much artwork shows through the badge body. Blank keeps what the style and theme picked." />
+      <NumField id={`${uid}-badge-bg-op`} label={t('Badge background opacity (%)')} value={config.ratingBadgeBackgroundOpacity}
+        onChange={v => onUpdate('ratingBadgeBackgroundOpacity', v)} min={5} max={100} step={5} placeholder={t('per style')}
+        hint={t('How much artwork shows through the badge body. Blank keeps what the style and theme picked.')} />
       <ProviderOverrides uid={uid} config={config} onUpdate={onUpdate} />
       <ProviderIcons uid={uid} config={config} onUpdate={onUpdate} />
       <ProviderWeights uid={uid} config={config} onUpdate={onUpdate} />
@@ -935,22 +943,23 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
 
 /** The value/fill sources a ring can read, beyond the individual providers. */
 const RING_SOURCE_OPTIONS = [
-  { id: 'overall',           label: 'Overall average' },
-  { id: 'critics',           label: 'Critics average' },
-  { id: 'audience',          label: 'Audience average' },
-  { id: 'priority-critics',  label: 'Top critic' },
-  { id: 'priority-audience', label: 'Top audience' },
-  { id: 'highest',           label: 'Highest score' },
+  { id: 'overall',           label: msg('Overall average') },
+  { id: 'critics',           label: msg('Critics average') },
+  { id: 'audience',          label: msg('Audience average') },
+  { id: 'priority-critics',  label: msg('Top critic') },
+  { id: 'priority-audience', label: msg('Top audience') },
+  { id: 'highest',           label: msg('Highest score') },
 ] as const;
 
 function RingSourceSelect({
   id, label, value, onChange,
 }: { id: string; label: string; value: string; onChange: (v: string) => void }) {
+  const t = useT();
   return (
     <div className="field">
       <label className="label" htmlFor={id}>{label}</label>
       <select id={id} className="select" value={value} onChange={e => onChange(e.target.value)} style={{ maxWidth: '12rem' }}>
-        {RING_SOURCE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        {RING_SOURCE_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
         {RATING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
       </select>
     </div>
@@ -971,6 +980,7 @@ function PriorityList({
   label: string; hint: string; order: string[]; fallback: string[];
   onChange: (next: string[]) => void;
 }) {
+  const t = useT();
   const effective = order.length > 0 ? order : fallback;
   const swap = (i: number, j: number) => {
     if (j < 0 || j >= effective.length) return;
@@ -992,7 +1002,7 @@ function PriorityList({
               className="opt-btn priority-move"
               onClick={() => swap(i, i - 1)}
               disabled={i === 0}
-              aria-label={`Move ${sourceLabel(id)} up`}
+              aria-label={t('Move {label} up', { label: sourceLabel(id) })}
             >
               ↑
             </button>
@@ -1000,7 +1010,7 @@ function PriorityList({
               className="opt-btn priority-move"
               onClick={() => swap(i, i + 1)}
               disabled={i === effective.length - 1}
-              aria-label={`Move ${sourceLabel(id)} down`}
+              aria-label={t('Move {label} down', { label: sourceLabel(id) })}
             >
               ↓
             </button>
@@ -1013,81 +1023,82 @@ function PriorityList({
         aria-pressed={order.length === 0}
         style={{ marginTop: 'var(--sp-1)' }}
       >
-        Default order
+        {t('Default order')}
       </button>
     </div>
   );
 }
 
 export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   const isRing = !config.ringShape || config.ringShape === 'ring';
   return (
-    <FineGroup label="Rating ring">
-      <NumField id={`${uid}-ring-scale`} label="Ring size (%)" value={config.ringScale}
+    <FineGroup label={t('Rating ring')}>
+      <NumField id={`${uid}-ring-scale`} label={t('Ring size (%)')} value={config.ringScale}
         onChange={v => onUpdate('ringScale', v)} min={70} max={250} step={5}
-        hint="Size of the ring and the number inside it. Blank keeps the default." />
+        hint={t('Size of the ring and the number inside it. Blank keeps the default.')} />
       <StyleGrid
         id={`${uid}-ring-shape-label`}
-        label="Shape"
+        label={t('Shape')}
         options={RING_SHAPE_OPTIONS}
         value={config.ringShape || 'ring'}
         onChange={v => onUpdate('ringShape', v)}
       />
       {isRing && <StyleGrid
         id={`${uid}-ring-center-mode-label`}
-        label="Center disc"
+        label={t('Center disc')}
         options={RING_CENTER_OPTIONS}
         value={ringCenterMode(config.ringCenterOpacity)}
         onChange={v => onUpdate('ringCenterOpacity', v === 'invisible' ? -1 : v === 'default' ? 0 : 50)}
       />}
       {isRing && ringCenterMode(config.ringCenterOpacity) === 'custom' && (
-        <NumField id={`${uid}-ring-center-op`} label="Center opacity (%)" value={config.ringCenterOpacity}
+        <NumField id={`${uid}-ring-center-op`} label={t('Center opacity (%)')} value={config.ringCenterOpacity}
           onChange={v => onUpdate('ringCenterOpacity', v)} min={5} max={100} step={5} zeroIsDefault={false}
-          hint="Opacity of the disc behind the ring's number." />
+          hint={t("Opacity of the disc behind the ring's number.")} />
       )}
       <div className="numfield-pair">
-        <NumField id={`${uid}-ring-ox`} label="Offset X (px)" value={config.ringOffsetX}
+        <NumField id={`${uid}-ring-ox`} label={t('Offset X (px)')} value={config.ringOffsetX}
           onChange={v => onUpdate('ringOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
-        <NumField id={`${uid}-ring-oy`} label="Offset Y (px)" value={config.ringOffsetY}
+        <NumField id={`${uid}-ring-oy`} label={t('Offset Y (px)')} value={config.ringOffsetY}
           onChange={v => onUpdate('ringOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
       </div>
-      <RingSourceSelect id={`${uid}-ring-value-src`} label="Value source"
+      <RingSourceSelect id={`${uid}-ring-value-src`} label={t('Value source')}
         value={config.ringValueSource} onChange={v => onUpdate('ringValueSource', v)} />
-      <RingSourceSelect id={`${uid}-ring-prog-src`} label="Fill source"
+      <RingSourceSelect id={`${uid}-ring-prog-src`} label={t('Fill source')}
         value={config.ringProgressSource} onChange={v => onUpdate('ringProgressSource', v)} />
-      <ToggleField id={`${uid}-ring-per-source`} label="One ring per source"
+      <ToggleField id={`${uid}-ring-per-source`} label={t('One ring per source')}
         checked={config.ringPerSource}
         onChange={v => onUpdate('ringPerSource', v)}
-        hint="A ring for each selected rating source, coloured by its own score, with the source's logo." />
+        hint={t("A ring for each selected rating source, coloured by its own score, with the source's logo.")} />
       {config.ringPerSource && (
         <div className="field">
-          <label className="label" htmlFor={`${uid}-ring-logo-pos`}>Logo position</label>
+          <label className="label" htmlFor={`${uid}-ring-logo-pos`}>{t('Logo position')}</label>
           <select id={`${uid}-ring-logo-pos`} className="select" value={config.ringLogoPosition}
             onChange={e => onUpdate('ringLogoPosition', e.target.value as 'below' | 'above')} style={{ maxWidth: '12rem' }}>
-            <option value="below">Below the ring</option>
-            <option value="above">Above the ring</option>
+            <option value="below">{t('Below the ring')}</option>
+            <option value="above">{t('Above the ring')}</option>
           </select>
         </div>
       )}
-      {isRing && <ToggleField id={`${uid}-ring-glow`} label="Glow"
+      {isRing && <ToggleField id={`${uid}-ring-glow`} label={t('Glow')}
         checked={config.ringGlow}
         onChange={v => onUpdate('ringGlow', v)}
-        hint="Soft halo around the progress arc." />}
+        hint={t('Soft halo around the progress arc.')} />}
       <details className="adv-details">
         <summary>
-          Top critic / top audience order
+          {t('Top critic / top audience order')}
         </summary>
         <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
           <PriorityList
-            label="Critics"
-            hint="Used by the Top critic source."
+            label={t('Critics')}
+            hint={t('Used by the Top critic source.')}
             order={config.ringCriticsPriority}
             fallback={DEFAULT_CRITICS_PRIORITY}
             onChange={v => onUpdate('ringCriticsPriority', v)}
           />
           <PriorityList
-            label="Audience"
-            hint="Used by the Top audience source."
+            label={t('Audience')}
+            hint={t('Used by the Top audience source.')}
             order={config.ringAudiencePriority}
             fallback={DEFAULT_AUDIENCE_PRIORITY}
             onChange={v => onUpdate('ringAudiencePriority', v)}
@@ -1101,167 +1112,168 @@ export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
 // ── Display groups ────────────────────────────────────────────────────────────
 
 export function QualityFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
-    <FineGroup label="Quality badges">
-      <PosSelect id={`${uid}-quality-pos`} label="Position" value={config.qualityBadgesPos}
+    <FineGroup label={t('Quality badges')}>
+      <PosSelect id={`${uid}-quality-pos`} label={t('Position')} value={config.qualityBadgesPos}
         onChange={v => onUpdate('qualityBadgesPos', v)} />
-      <NumField id={`${uid}-quality-scale`} label="Scale (%)" value={config.qualityBadgeScale}
+      <NumField id={`${uid}-quality-scale`} label={t('Scale (%)')} value={config.qualityBadgeScale}
         onChange={v => onUpdate('qualityBadgeScale', v)} min={70} max={400} step={5} />
-      <NumField id={`${uid}-quality-max`} label="Max badges" value={config.qualityBadgesMax}
-        onChange={v => onUpdate('qualityBadgesMax', v)} min={0} max={12} placeholder="all"
-        hint="0 shows every badge you selected." />
+      <NumField id={`${uid}-quality-max`} label={t('Max badges')} value={config.qualityBadgesMax}
+        onChange={v => onUpdate('qualityBadgesMax', v)} min={0} max={12} placeholder={t('all')}
+        hint={t('0 shows every badge you selected.')} />
       <div className="numfield-pair">
-        <NumField id={`${uid}-quality-ox`} label="Offset X" value={config.qualityBadgeOffsetX}
+        <NumField id={`${uid}-quality-ox`} label={t('Offset X')} value={config.qualityBadgeOffsetX}
           onChange={v => onUpdate('qualityBadgeOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
-        <NumField id={`${uid}-quality-oy`} label="Offset Y" value={config.qualityBadgeOffsetY}
+        <NumField id={`${uid}-quality-oy`} label={t('Offset Y')} value={config.qualityBadgeOffsetY}
           onChange={v => onUpdate('qualityBadgeOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
       </div>
       <StyleGrid
         id={`${uid}-quality-style-label`}
-        label="Style"
+        label={t('Style')}
         options={QUALITY_STYLE_OPTIONS}
         value={config.qualityBadgesStyle}
         onChange={v => onUpdate('qualityBadgesStyle', v)}
       />
       <ColorField id={`${uid}-quality-tile-color`}
-        label={config.qualityBadgesStyle === 'tile' ? 'Tile color' : 'Accent color'}
+        label={config.qualityBadgesStyle === 'tile' ? t('Tile color') : t('Accent color')}
         value={config.qualityBadgesTileAccentColor}
         onChange={v => onUpdate('qualityBadgesTileAccentColor', v)}
-        fallback="#3355ff" resetLabel="Default"
+        fallback="#3355ff" resetLabel={t('Default')}
       />
     </FineGroup>
   );
 }
 
 export function GenreFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
-    <FineGroup label="Genre badge">
+    <FineGroup label={t('Genre badge')}>
       <StyleGrid
         id={`${uid}-genre-mode-label`}
-        label="Display"
+        label={t('Display')}
         options={GENRE_MODE_OPTIONS}
         value={config.genreBadgeMode}
         onChange={v => onUpdate('genreBadgeMode', v)}
         hint={config.genreBadgeMode === 'default'
-          ? 'Lists up to three genre names.'
-          : 'Shows a glyph for the title’s main genre. The Clean and Tile styles stay text-only.'}
+          ? t('Lists up to three genre names.')
+          : t('Shows a glyph for the title’s main genre. The Clean and Tile styles stay text-only.')}
       />
       <div className="field">
-        <label className="label" htmlFor={`${uid}-anime-grouping`}>Anime</label>
+        <label className="label" htmlFor={`${uid}-anime-grouping`}>{t('Anime')}</label>
         <select
           id={`${uid}-anime-grouping`}
           className="select"
           value={config.genreBadgeAnimeGrouping}
           onChange={e => onUpdate('genreBadgeAnimeGrouping', e.target.value)}
         >
-          {ANIME_GROUPING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          {ANIME_GROUPING_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
         </select>
         <p className="hint">
-          {ANIME_GROUPING_OPTIONS.find(o => o.id === config.genreBadgeAnimeGrouping)?.desc}
+          {tOr(t, ANIME_GROUPING_OPTIONS.find(o => o.id === config.genreBadgeAnimeGrouping)?.desc)}
         </p>
       </div>
       <StyleGrid
         id={`${uid}-genre-style-label`}
-        label="Style"
+        label={t('Style')}
         options={GENRE_STYLE_OPTIONS}
         value={config.genreBadgeStyle}
         onChange={v => onUpdate('genreBadgeStyle', v)}
       />
-      <FontSelect id={`${uid}-genre-font`} label="Genre badge font"
+      <FontSelect id={`${uid}-genre-font`} label={t('Genre badge font')}
         value={config.genreBadgeFont}
         onChange={v => onUpdate('genreBadgeFont', v)} />
       {config.genreBadgeStyle !== 'plain' && (
         <ColorField id={`${uid}-genre-tile-color`}
-          label={config.genreBadgeStyle === 'tile' ? 'Tile colour' : 'Border/accent colour'}
+          label={config.genreBadgeStyle === 'tile' ? t('Tile colour') : t('Border/accent colour')}
           value={config.genreBadgeTileAccentColor}
           onChange={v => onUpdate('genreBadgeTileAccentColor', v)}
-          fallback="#3355ff" resetLabel="Auto" />
+          fallback="#3355ff" resetLabel={t('Auto')} />
       )}
       <div className="field">
-        <label className="label" htmlFor={`${uid}-genre-accent`}>Accent stripe</label>
+        <label className="label" htmlFor={`${uid}-genre-accent`}>{t('Accent stripe')}</label>
         <select
           id={`${uid}-genre-accent`}
           className="select"
           value={config.genreBadgeAccent}
           onChange={e => onUpdate('genreBadgeAccent', e.target.value)}
         >
-          {GENRE_ACCENT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          {GENRE_ACCENT_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
         </select>
         <p className="hint">
-          {GENRE_ACCENT_OPTIONS.find(o => o.id === config.genreBadgeAccent)?.desc}
+          {tOr(t, GENRE_ACCENT_OPTIONS.find(o => o.id === config.genreBadgeAccent)?.desc)}
         </p>
       </div>
       <div className="field">
-        <label className="label" htmlFor={`${uid}-genre-label`}>Label</label>
+        <label className="label" htmlFor={`${uid}-genre-label`}>{t('Label')}</label>
         <select
           id={`${uid}-genre-label`}
           className="select"
           value={config.genreBadgeLabel}
           onChange={e => onUpdate('genreBadgeLabel', e.target.value)}
         >
-          {GENRE_LABEL_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          {GENRE_LABEL_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
         </select>
         <p className="hint">
-          {GENRE_LABEL_OPTIONS.find(o => o.id === config.genreBadgeLabel)?.desc}
+          {tOr(t, GENRE_LABEL_OPTIONS.find(o => o.id === config.genreBadgeLabel)?.desc)}
         </p>
       </div>
       <StyleGrid
         id={`${uid}-genre-case-label`}
-        label="Case"
+        label={t('Case')}
         options={GENRE_CASE_OPTIONS}
         value={config.genreBadgeCase || 'default'}
         onChange={v => onUpdate('genreBadgeCase', v === 'default' ? '' : v)}
-        hint={GENRE_CASE_OPTIONS.find(o => o.id === (config.genreBadgeCase || 'default'))?.desc}
+        hint={tOr(t, GENRE_CASE_OPTIONS.find(o => o.id === (config.genreBadgeCase || 'default'))?.desc)}
       />
-      <ToggleField id={`${uid}-genre-short`} label="Short genre names"
+      <ToggleField id={`${uid}-genre-short`} label={t('Short genre names')}
         checked={config.genreBadgeShortNames}
         onChange={v => onUpdate('genreBadgeShortNames', v)}
-        hint="Science Fiction reads Sci-Fi, Action &amp; Adventure reads Action. Off keeps the source's own spelling." />
+        hint={t("Science Fiction reads Sci-Fi, Action & Adventure reads Action. Off keeps the source's own spelling.")} />
       <StyleGrid
         id={`${uid}-genre-count-label`}
-        label="How many genres"
+        label={t('How many genres')}
         options={GENRE_COUNT_OPTIONS}
         value={config.genreBadgeMaxGenres ? String(config.genreBadgeMaxGenres) : 'default'}
         onChange={v => onUpdate('genreBadgeMaxGenres', v === 'default' ? 0 : Number(v))}
         columns={4}
-        hint={GENRE_COUNT_OPTIONS.find(o => o.id === (config.genreBadgeMaxGenres ? String(config.genreBadgeMaxGenres) : 'default'))?.desc}
+        hint={tOr(t, GENRE_COUNT_OPTIONS.find(o => o.id === (config.genreBadgeMaxGenres ? String(config.genreBadgeMaxGenres) : 'default'))?.desc)}
       />
-      <NumField id={`${uid}-genre-scale`} label="Scale (%)" value={config.genreBadgeScale}
+      <NumField id={`${uid}-genre-scale`} label={t('Scale (%)')} value={config.genreBadgeScale}
         onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={300} step={5} />
       <div className="numfield-pair">
-        <NumField id={`${uid}-genre-ox`} label="Offset X" value={config.genreBadgeOffsetX}
+        <NumField id={`${uid}-genre-ox`} label={t('Offset X')} value={config.genreBadgeOffsetX}
           onChange={v => onUpdate('genreBadgeOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
-        <NumField id={`${uid}-genre-oy`} label="Offset Y" value={config.genreBadgeOffsetY}
+        <NumField id={`${uid}-genre-oy`} label={t('Offset Y')} value={config.genreBadgeOffsetY}
           onChange={v => onUpdate('genreBadgeOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
       </div>
-      <NumField id={`${uid}-genre-op`} label="Background opacity (%)" value={config.genreBadgeBackgroundOpacity}
+      <NumField id={`${uid}-genre-op`} label={t('Background opacity (%)')} value={config.genreBadgeBackgroundOpacity}
         onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={5} max={100} step={5} />
       <StyleGrid
         id={`${uid}-genre-border-mode-label`}
-        label="Border"
+        label={t('Border')}
         options={GENRE_BORDER_OPTIONS}
         value={genreBorderMode(config.genreBadgeBorderWidth)}
         onChange={v => onUpdate('genreBadgeBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
       />
       {genreBorderMode(config.genreBadgeBorderWidth) === 'custom' && (
-        <NumField id={`${uid}-genre-border`} label="Border width (px)" value={config.genreBadgeBorderWidth}
+        <NumField id={`${uid}-genre-border`} label={t('Border width (px)')} value={config.genreBadgeBorderWidth}
           onChange={v => onUpdate('genreBadgeBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
       )}
       <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
-        <ColorField id={`${uid}-genre-label-color`} label="Label colour" value={config.genreBadgeLabelColor}
-          onChange={v => onUpdate('genreBadgeLabelColor', v)} fallback="#ffffff" resetLabel="By genre" />
-        <ColorField id={`${uid}-genre-border-color`} label="Border colour" value={config.genreBadgeBorderColor}
-          onChange={v => onUpdate('genreBadgeBorderColor', v)} fallback="#ffffff" resetLabel="Per style" />
+        <ColorField id={`${uid}-genre-label-color`} label={t('Label colour')} value={config.genreBadgeLabelColor}
+          onChange={v => onUpdate('genreBadgeLabelColor', v)} fallback="#ffffff" resetLabel={t('By genre')} />
+        <ColorField id={`${uid}-genre-border-color`} label={t('Border colour')} value={config.genreBadgeBorderColor}
+          onChange={v => onUpdate('genreBadgeBorderColor', v)} fallback="#ffffff" resetLabel={t('Per style')} />
       </div>
-      <ToggleField id={`${uid}-genre-border-tint`} label="Outline in the genre's colour"
-        hint="Draws the border in the family's own colour, so the outline reads by genre while the label stays where you put it."
+      <ToggleField id={`${uid}-genre-border-tint`} label={t("Outline in the genre's colour")}
+        hint={t("Draws the border in the family's own colour, so the outline reads by genre while the label stays where you put it.")}
         checked={config.genreBadgeBorderSourceTint}
         onChange={() => onUpdate('genreBadgeBorderSourceTint', !config.genreBadgeBorderSourceTint)} />
-      <NumField id={`${uid}-genre-border-op`} label="Border opacity (%)" value={config.genreBadgeBorderOpacity}
-        onChange={v => onUpdate('genreBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="per style" />
+      <NumField id={`${uid}-genre-border-op`} label={t('Border opacity (%)')} value={config.genreBadgeBorderOpacity}
+        onChange={v => onUpdate('genreBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder={t('per style')} />
       <p className="hint">
-        The label and the border take their colour separately. Blank leaves each
-        following the genre family, which is what one shared accent used to do.
+        {t('The label and the border take their colour separately. Blank leaves each following the genre family, which is what one shared accent used to do.')}
       </p>
       <GenreFamilyColors uid={uid} config={config} onUpdate={onUpdate} />
     </FineGroup>
@@ -1278,6 +1290,7 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
  * built-in value, so it goes back to following the default.
  */
 function GenreFamilyColors({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   const [families, setFamilies] = useState<GenreFamily[]>([]);
   const [failed, setFailed] = useState(false);
 
@@ -1303,16 +1316,14 @@ function GenreFamilyColors({ uid, config, onUpdate }: GroupProps) {
 
   return (
     <details className="adv-details">
-      <summary>Genre family colours</summary>
+      <summary>{t('Genre family colours')}</summary>
       <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
         <p className="hint" style={{ marginTop: 0 }}>
-          Give a family its own colour. Families left alone follow the built-in
-          palette, and keep following it if that palette changes.
+          {t('Give a family its own colour. Families left alone follow the built-in palette, and keep following it if that palette changes.')}
         </p>
         {failed && (
           <p className="hint" role="status">
-            The family list could not be loaded, so there is nothing to pick from.
-            Any colours already set are still in the config.
+            {t('The family list could not be loaded, so there is nothing to pick from. Any colours already set are still in the config.')}
           </p>
         )}
         {chosen.map(f => (
@@ -1332,14 +1343,14 @@ function GenreFamilyColors({ uid, config, onUpdate }: GroupProps) {
                 onClick={() => clear(f.id)}
                 style={{ flex: 1 }}
               >
-                Built-in default
+                {t('Built-in default')}
               </button>
             </div>
           </div>
         ))}
         {rest.length > 0 && (
           <div className="field">
-            <label className="label" htmlFor={`${uid}-genrefam-add`}>Add a family</label>
+            <label className="label" htmlFor={`${uid}-genrefam-add`}>{t('Add a family')}</label>
             <select
               id={`${uid}-genrefam-add`}
               className="select"
@@ -1347,7 +1358,7 @@ function GenreFamilyColors({ uid, config, onUpdate }: GroupProps) {
               value=""
               onChange={e => { const f = rest.find(x => x.id === e.target.value); if (f) set(f.id, f.accent); }}
             >
-              <option value="">Choose a family…</option>
+              <option value="">{t('Choose a family…')}</option>
               {rest.map(f => <option key={f.id} value={f.id}>{f.label.toUpperCase()}</option>)}
             </select>
           </div>
@@ -1364,10 +1375,11 @@ function GenreFamilyColors({ uid, config, onUpdate }: GroupProps) {
  * it would otherwise sit under.
  */
 export function OutlineFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
-    <FineGroup label="Outlines">
+    <FineGroup label={t('Outlines')}>
       <div className="field">
-        <label className="label" htmlFor={`${uid}-plain-outline`}>Plain-style outline</label>
+        <label className="label" htmlFor={`${uid}-plain-outline`}>{t('Plain-style outline')}</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
           <input
             id={`${uid}-plain-outline`}
@@ -1382,28 +1394,27 @@ export function OutlineFine({ uid, config, onUpdate }: GroupProps) {
             aria-pressed={!config.noBackgroundBadgeOutlineColor}
             style={{ flex: 1 }}
           >
-            Default shadow
+            {t('Default shadow')}
           </button>
         </div>
         <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-          Text outline for background-less (plain) badges — genre, age rating,
-          release status, top rated, trending, and the rating badges themselves.
+          {t('Text outline for background-less (plain) badges — genre, age rating, release status, top rated, trending, and the rating badges themselves.')}
         </span>
       </div>
-      <NumField id={`${uid}-plain-outline-w`} label="Outline width (px)" value={config.noBackgroundBadgeOutlineWidth}
-        onChange={v => onUpdate('noBackgroundBadgeOutlineWidth', v)} min={0} max={6} placeholder="default" />
-      <ToggleField id={`${uid}-plain-outline-glow`} label="Soften the outline into a glow"
-        hint="Fades the outline outward instead of a hard edge. Applies to every plain-style badge and no-background rating badges."
+      <NumField id={`${uid}-plain-outline-w`} label={t('Outline width (px)')} value={config.noBackgroundBadgeOutlineWidth}
+        onChange={v => onUpdate('noBackgroundBadgeOutlineWidth', v)} min={0} max={6} placeholder={t('default')} />
+      <ToggleField id={`${uid}-plain-outline-glow`} label={t('Soften the outline into a glow')}
+        hint={t('Fades the outline outward instead of a hard edge. Applies to every plain-style badge and no-background rating badges.')}
         checked={config.noBackgroundBadgeOutlineGlow}
         onChange={() => onUpdate('noBackgroundBadgeOutlineGlow', !config.noBackgroundBadgeOutlineGlow)} />
-      <NumField id={`${uid}-outline-frost`} label="Frosted glass (%)" value={config.badgeFrost}
-        onChange={v => onUpdate('badgeFrost', v)} min={1} max={100} step={1} placeholder="off"
-        hint="Blurs the artwork behind every badge. Blank leaves the artwork sharp." />
-      <NumField id={`${uid}-accent-width`} label="Accent outline width (px)" value={config.aggregateAccentWidth}
+      <NumField id={`${uid}-outline-frost`} label={t('Frosted glass (%)')} value={config.badgeFrost}
+        onChange={v => onUpdate('badgeFrost', v)} min={1} max={100} step={1} placeholder={t('off')}
+        hint={t('Blurs the artwork behind every badge. Blank leaves the artwork sharp.')} />
+      <NumField id={`${uid}-accent-width`} label={t('Accent outline width (px)')} value={config.aggregateAccentWidth}
         onChange={v => onUpdate('aggregateAccentWidth', v)} min={1} max={8} placeholder="2"
-        hint="Thickness of the score pill's accent outline." />
+        hint={t("Thickness of the score pill's accent outline.")} />
       <div className="field">
-        <label className="label" htmlFor={`${uid}-icon-outline`}>Logo outline</label>
+        <label className="label" htmlFor={`${uid}-icon-outline`}>{t('Logo outline')}</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
           <input
             id={`${uid}-icon-outline`}
@@ -1418,15 +1429,15 @@ export function OutlineFine({ uid, config, onUpdate }: GroupProps) {
             aria-pressed={!config.iconOutlineColor}
             style={{ flex: 1 }}
           >
-            None
+            {t('None')}
           </button>
         </div>
         <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-          Traces each rating logo, for artwork it would blend into.
+          {t('Traces each rating logo, for artwork it would blend into.')}
         </span>
       </div>
-      <NumField id={`${uid}-icon-outline-w`} label="Logo outline width (px)" value={config.iconOutlineWidth}
-        onChange={v => onUpdate('iconOutlineWidth', v)} min={0} max={6} placeholder="none" />
+      <NumField id={`${uid}-icon-outline-w`} label={t('Logo outline width (px)')} value={config.iconOutlineWidth}
+        onChange={v => onUpdate('iconOutlineWidth', v)} min={0} max={6} placeholder={t('none')} />
     </FineGroup>
   );
 }
@@ -1438,19 +1449,20 @@ export function OutlineFine({ uid, config, onUpdate }: GroupProps) {
  * without enabling a bar the user did not want drawn.
  */
 export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
-    <FineGroup label="Score colours">
+    <FineGroup label={t('Score colours')}>
       <StyleGrid
         id={`${uid}-agg-accent-mode-label`}
-        label="Accent source"
+        label={t('Accent source')}
         options={AGGREGATE_ACCENT_MODE_OPTIONS}
         value={config.aggregateAccentMode || 'default'}
         onChange={v => onUpdate('aggregateAccentMode', v === 'default' ? '' : v)}
         columns={2}
-        hint="Applies to the score pills and the aggregate bar. Genre colours by the title's genre; Source colours by the chosen rating source."
+        hint={t("Applies to the score pills and the aggregate bar. Genre colours by the title's genre; Source colours by the chosen rating source.")}
       />
       <div className="field">
-        <label className="label" htmlFor={`${uid}-agg-pill-icon`}>Pill icon</label>
+        <label className="label" htmlFor={`${uid}-agg-pill-icon`}>{t('Pill icon')}</label>
         <select
           id={`${uid}-agg-pill-icon`}
           className="select"
@@ -1458,18 +1470,18 @@ export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
           onChange={e => onUpdate('aggregatePillIcon', e.target.value)}
           style={{ maxWidth: '12rem' }}
         >
-          <option value="">None</option>
+          <option value="">{t('None')}</option>
           {RATING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
         </select>
-        <p className="hint">A rating mark drawn inside the single-score minimal and average pills.</p>
+        <p className="hint">{t('A rating mark drawn inside the single-score minimal and average pills.')}</p>
       </div>
-      <ToggleField id={`${uid}-agg-dual-icons`} label="Dual icons"
+      <ToggleField id={`${uid}-agg-dual-icons`} label={t('Dual icons')}
         checked={config.aggregateDualIcons}
         onChange={v => onUpdate('aggregateDualIcons', v)}
-        hint="Mark the dual critics and audience pills with their glyphs instead of text labels." />
+        hint={t('Mark the dual critics and audience pills with their glyphs instead of text labels.')} />
       {config.aggregateAccentMode === 'custom' && (
         <div className="field">
-          <label className="label" htmlFor={`${uid}-agg-color`}>Accent color</label>
+          <label className="label" htmlFor={`${uid}-agg-color`}>{t('Accent color')}</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
             <input
               id={`${uid}-agg-color`}
@@ -1484,17 +1496,17 @@ export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
               aria-pressed={!config.aggregateAccentColor}
               style={{ flex: 1 }}
             >
-              Auto (score-based)
+              {t('Auto (score-based)')}
             </button>
           </div>
         </div>
       )}
       {config.aggregateAccentMode === 'custom' && (
         <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
-          <ColorField id={`${uid}-agg-critics-accent`} label="Critics accent" value={config.aggregateCriticsAccentColor}
-            onChange={v => onUpdate('aggregateCriticsAccentColor', v)} fallback="#22c55e" resetLabel="Shared" />
-          <ColorField id={`${uid}-agg-audience-accent`} label="Audience accent" value={config.aggregateAudienceAccentColor}
-            onChange={v => onUpdate('aggregateAudienceAccentColor', v)} fallback="#38bdf8" resetLabel="Shared" />
+          <ColorField id={`${uid}-agg-critics-accent`} label={t('Critics accent')} value={config.aggregateCriticsAccentColor}
+            onChange={v => onUpdate('aggregateCriticsAccentColor', v)} fallback="#22c55e" resetLabel={t('Shared')} />
+          <ColorField id={`${uid}-agg-audience-accent`} label={t('Audience accent')} value={config.aggregateAudienceAccentColor}
+            onChange={v => onUpdate('aggregateAudienceAccentColor', v)} fallback="#38bdf8" resetLabel={t('Shared')} />
         </div>
       )}
       {/* The same question the group asks. The ring reads the stops directly —
@@ -1509,40 +1521,40 @@ export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
         />
       )}
       <details className="adv-details">
-        <summary>Score value colours</summary>
+        <summary>{t('Score value colours')}</summary>
         <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
           <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
-            <ColorField id={`${uid}-agg-value`} label="Value" value={config.aggregateValueColor}
-              onChange={v => onUpdate('aggregateValueColor', v)} fallback="#ffffff" resetLabel="White" />
-            <ColorField id={`${uid}-agg-critics-value`} label="Critics value" value={config.aggregateCriticsValueColor}
-              onChange={v => onUpdate('aggregateCriticsValueColor', v)} fallback="#ffffff" resetLabel="Shared" />
-            <ColorField id={`${uid}-agg-audience-value`} label="Audience value" value={config.aggregateAudienceValueColor}
-              onChange={v => onUpdate('aggregateAudienceValueColor', v)} fallback="#ffffff" resetLabel="Shared" />
+            <ColorField id={`${uid}-agg-value`} label={t('Value')} value={config.aggregateValueColor}
+              onChange={v => onUpdate('aggregateValueColor', v)} fallback="#ffffff" resetLabel={t('White')} />
+            <ColorField id={`${uid}-agg-critics-value`} label={t('Critics value')} value={config.aggregateCriticsValueColor}
+              onChange={v => onUpdate('aggregateCriticsValueColor', v)} fallback="#ffffff" resetLabel={t('Shared')} />
+            <ColorField id={`${uid}-agg-audience-value`} label={t('Audience value')} value={config.aggregateAudienceValueColor}
+              onChange={v => onUpdate('aggregateAudienceValueColor', v)} fallback="#ffffff" resetLabel={t('Shared')} />
           </div>
-          <ToggleField id={`${uid}-agg-fill`} label="Fill by score"
+          <ToggleField id={`${uid}-agg-fill`} label={t('Fill by score')}
             checked={config.aggregateFillByScore}
             onChange={v => onUpdate('aggregateFillByScore', v)}
-            hint="Colour the whole pill with the accent instead of only the rail. With Accent source set to Dynamic this tints the badge by the score." />
-          <NumField id={`${uid}-agg-body-tint`} label="Body tint (%)"
+            hint={t('Colour the whole pill with the accent instead of only the rail. With Accent source set to Dynamic this tints the badge by the score.')} />
+          <NumField id={`${uid}-agg-body-tint`} label={t('Body tint (%)')}
             value={config.aggregatePillBodyTint}
             onChange={v => onUpdate('aggregatePillBodyTint', v)}
             min={0} max={100} step={5} zeroIsDefault={true}
-            hint="Blends the accent into the dark body short of the full fill: a dark-accent capsule that keeps a bright rail. 0 keeps the body dark. Ignored when Fill by score is on." />
-          <ToggleField id={`${uid}-agg-rail`} label="Accent rail"
+            hint={t('Blends the accent into the dark body short of the full fill: a dark-accent capsule that keeps a bright rail. 0 keeps the body dark. Ignored when Fill by score is on.')} />
+          <ToggleField id={`${uid}-agg-rail`} label={t('Accent rail')}
             checked={config.aggregateAccentBarVisible}
             onChange={v => onUpdate('aggregateAccentBarVisible', v)}
-            hint="The colour block behind a critics or audience label. On a presentation with no labels it marks the pill instead." />
-          <NumField id={`${uid}-agg-rail-offset`} label="Rail offset (px)" value={config.aggregateAccentBarOffset}
+            hint={t('The colour block behind a critics or audience label. On a presentation with no labels it marks the pill instead.')} />
+          <NumField id={`${uid}-agg-rail-offset`} label={t('Rail offset (px)')} value={config.aggregateAccentBarOffset}
             onChange={v => onUpdate('aggregateAccentBarOffset', v)} min={-40} max={40} zeroIsDefault={false} />
           {LABELLESS_PRESENTATIONS.includes(config.ratingPresentation) && (
             <StyleGrid
               id={`${uid}-agg-accent-shape-label`}
-              label="Accent shape"
+              label={t('Accent shape')}
               options={ACCENT_SHAPE_OPTIONS}
               value={config.aggregateAccentShape}
               onChange={v => onUpdate('aggregateAccentShape', v)}
               columns={2}
-              hint={ACCENT_SHAPE_OPTIONS.find(o => o.id === config.aggregateAccentShape)?.desc}
+              hint={tOr(t, ACCENT_SHAPE_OPTIONS.find(o => o.id === config.aggregateAccentShape)?.desc)}
             />
           )}
         </div>
@@ -1552,39 +1564,40 @@ export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
 }
 
 export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
-    <FineGroup label="Aggregate bar">
+    <FineGroup label={t('Aggregate bar')}>
       <div className="field">
-        <label className="label" htmlFor={`${uid}-agg-source`}>Rating source</label>
+        <label className="label" htmlFor={`${uid}-agg-source`}>{t('Rating source')}</label>
         <select id={`${uid}-agg-source`} className="select" value={config.aggregateRatingSource}
           onChange={e => onUpdate('aggregateRatingSource', e.target.value)} style={{ maxWidth: '12rem' }}>
-          {AGGREGATE_SOURCE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          {AGGREGATE_SOURCE_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
         </select>
       </div>
       <StyleGrid
         id={`${uid}-scorebar-style-label`}
-        label="Bar style"
+        label={t('Bar style')}
         options={SCOREBAR_STYLE_OPTIONS}
         value={config.scorebarStyle}
         onChange={v => onUpdate('scorebarStyle', v)}
       />
-      <NumField id={`${uid}-agg-offset`} label="Bar offset (px)" value={config.aggregateBarOffset}
+      <NumField id={`${uid}-agg-offset`} label={t('Bar offset (px)')} value={config.aggregateBarOffset}
         onChange={v => onUpdate('aggregateBarOffset', v)} min={-1200} max={1200} zeroIsDefault={false}
-        hint="Nudge the bar inward from its edge, in pixels of a normal-size render. The value is a share of the poster, so it lands in the same place at every size. Past the height of the image the bar leaves it entirely." />
-      <NumField id={`${uid}-agg-scale`} label="Bar thickness (%)" value={config.aggregateBarScale}
+        hint={t('Nudge the bar inward from its edge, in pixels of a normal-size render. The value is a share of the poster, so it lands in the same place at every size. Past the height of the image the bar leaves it entirely.')} />
+      <NumField id={`${uid}-agg-scale`} label={t('Bar thickness (%)')} value={config.aggregateBarScale}
         onChange={v => onUpdate('aggregateBarScale', v)} min={25} max={400} zeroIsDefault
-        hint="Height of the bar as a percent of its default. Blank or 0 leaves it at 100." />
+        hint={t('Height of the bar as a percent of its default. Blank or 0 leaves it at 100.')} />
       <details className="adv-details">
-        <summary>Scorebar bands (when accent is auto)</summary>
+        <summary>{t('Scorebar bands (when accent is auto)')}</summary>
         <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
           <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
-            <ColorField id={`${uid}-sb-low`} label="Low" value={config.scorebarLowColor} onChange={v => onUpdate('scorebarLowColor', v)} fallback="#c0392b" resetLabel="Auto" />
-            <ColorField id={`${uid}-sb-mid`} label="Mid" value={config.scorebarMidColor} onChange={v => onUpdate('scorebarMidColor', v)} fallback="#e67e22" resetLabel="Auto" />
-            <ColorField id={`${uid}-sb-high`} label="High" value={config.scorebarHighColor} onChange={v => onUpdate('scorebarHighColor', v)} fallback="#27ae60" resetLabel="Auto" />
+            <ColorField id={`${uid}-sb-low`} label={t('Low')} value={config.scorebarLowColor} onChange={v => onUpdate('scorebarLowColor', v)} fallback="#c0392b" resetLabel={t('Auto')} />
+            <ColorField id={`${uid}-sb-mid`} label={t('Mid')} value={config.scorebarMidColor} onChange={v => onUpdate('scorebarMidColor', v)} fallback="#e67e22" resetLabel={t('Auto')} />
+            <ColorField id={`${uid}-sb-high`} label={t('High')} value={config.scorebarHighColor} onChange={v => onUpdate('scorebarHighColor', v)} fallback="#27ae60" resetLabel={t('Auto')} />
           </div>
           <div className="numfield-pair">
-            <NumField id={`${uid}-sb-lowt`} label="Low threshold" value={config.scorebarLowThreshold} onChange={v => onUpdate('scorebarLowThreshold', v)} min={0} max={10} step={0.5} placeholder="5" />
-            <NumField id={`${uid}-sb-hight`} label="High threshold" value={config.scorebarHighThreshold} onChange={v => onUpdate('scorebarHighThreshold', v)} min={0} max={10} step={0.5} placeholder="8" />
+            <NumField id={`${uid}-sb-lowt`} label={t('Low threshold')} value={config.scorebarLowThreshold} onChange={v => onUpdate('scorebarLowThreshold', v)} min={0} max={10} step={0.5} placeholder="5" />
+            <NumField id={`${uid}-sb-hight`} label={t('High threshold')} value={config.scorebarHighThreshold} onChange={v => onUpdate('scorebarHighThreshold', v)} min={0} max={10} step={0.5} placeholder="8" />
           </div>
         </div>
       </details>
@@ -1607,96 +1620,98 @@ export function ScaleOffsetFields({ uid, config, onUpdate, scaleKey, offXKey, of
   offXKey: NumericConfigKey;
   offYKey: NumericConfigKey;
 }) {
+  const t = useT();
   return (
     <>
-      <NumField id={`${uid}-${scaleKey}`} label="Scale (%)" value={config[scaleKey]}
+      <NumField id={`${uid}-${scaleKey}`} label={t('Scale (%)')} value={config[scaleKey]}
         onChange={v => onUpdate(scaleKey, v)} min={70} max={400} step={5}
-        hint="70–400. Blank keeps the default size." />
-      <NumField id={`${uid}-${offXKey}`} label="Offset X" value={config[offXKey]}
+        hint={t('70–400. Blank keeps the default size.')} />
+      <NumField id={`${uid}-${offXKey}`} label={t('Offset X')} value={config[offXKey]}
         onChange={v => onUpdate(offXKey, v)} min={-1200} max={1200} zeroIsDefault={false} />
-      <NumField id={`${uid}-${offYKey}`} label="Offset Y" value={config[offYKey]}
+      <NumField id={`${uid}-${offYKey}`} label={t('Offset Y')} value={config[offYKey]}
         onChange={v => onUpdate(offYKey, v)} min={-1200} max={1200} zeroIsDefault={false} />
     </>
   );
 }
 
 export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
-    <FineGroup label="Release status badge">
+    <FineGroup label={t('Release status badge')}>
       <StyleGrid
         id={`${uid}-release-style-label`}
-        label="Style"
+        label={t('Style')}
         options={RELEASE_STATUS_STYLE_OPTIONS}
         value={config.releaseStatusBadgeStyle}
         onChange={v => onUpdate('releaseStatusBadgeStyle', v)}
         columns={3}
-        hint="Accent keeps the coloured border that marks cinema and digital releases."
+        hint={t('Accent keeps the coloured border that marks cinema and digital releases.')}
       />
       {config.releaseStatusBadgeStyle !== 'plain' && (
         <ColorField id={`${uid}-release-tile-color`}
-          label={config.releaseStatusBadgeStyle === 'tile' ? 'Tile colour' : 'Border colour'}
+          label={config.releaseStatusBadgeStyle === 'tile' ? t('Tile colour') : t('Border colour')}
           value={config.releaseStatusTileColor}
           onChange={v => onUpdate('releaseStatusTileColor', v)}
-          fallback="#38bdf8" resetLabel="Auto" />
+          fallback="#38bdf8" resetLabel={t('Auto')} />
       )}
-      <FontSelect id={`${uid}-release-font`} label="Font"
+      <FontSelect id={`${uid}-release-font`} label={t('Font')}
         value={config.releaseStatusFont}
         onChange={v => onUpdate('releaseStatusFont', v)} />
       <StyleGrid
         id={`${uid}-release-case-label`}
-        label="Case"
+        label={t('Case')}
         options={RELEASE_CASE_OPTIONS}
         value={config.releaseStatusCase || 'default'}
         onChange={v => onUpdate('releaseStatusCase', v === 'default' ? '' : v)}
-        hint={RELEASE_CASE_OPTIONS.find(o => o.id === (config.releaseStatusCase || 'default'))?.desc}
+        hint={tOr(t, RELEASE_CASE_OPTIONS.find(o => o.id === (config.releaseStatusCase || 'default'))?.desc)}
       />
       <StyleGrid
         id={`${uid}-release-date-label`}
-        label="Date format"
+        label={t('Date format')}
         options={RELEASE_DATE_FORMAT_OPTIONS}
         value={config.releaseStatusDateFormat || 'default'}
         onChange={v => onUpdate('releaseStatusDateFormat', v === 'default' ? '' : v)}
-        hint="How an upcoming release date reads."
+        hint={t('How an upcoming release date reads.')}
       />
-      <ColorField id={`${uid}-release-label-color`} label="Label colour"
+      <ColorField id={`${uid}-release-label-color`} label={t('Label colour')}
         value={config.releaseStatusLabelColor}
         onChange={v => onUpdate('releaseStatusLabelColor', v)}
-        fallback="#38bdf8" resetLabel="By status" />
+        fallback="#38bdf8" resetLabel={t('By status')} />
       {config.releaseStatusBadgeStyle !== 'plain' && (
-        <NumField id={`${uid}-release-op`} label="Background opacity (%)" value={config.releaseStatusBackgroundOpacity}
+        <NumField id={`${uid}-release-op`} label={t('Background opacity (%)')} value={config.releaseStatusBackgroundOpacity}
           onChange={v => onUpdate('releaseStatusBackgroundOpacity', v)} min={5} max={100} step={5} />
       )}
       {config.releaseStatusBadgeStyle !== 'plain' && (
         <>
       <StyleGrid
             id={`${uid}-release-border-mode-label`}
-            label="Border"
+            label={t('Border')}
             options={GENRE_BORDER_OPTIONS}
             value={genreBorderMode(config.releaseStatusBorderWidth)}
             onChange={v => onUpdate('releaseStatusBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
           />
           {genreBorderMode(config.releaseStatusBorderWidth) === 'custom' && (
-            <NumField id={`${uid}-release-border`} label="Border width (px)" value={config.releaseStatusBorderWidth}
+            <NumField id={`${uid}-release-border`} label={t('Border width (px)')} value={config.releaseStatusBorderWidth}
               onChange={v => onUpdate('releaseStatusBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
           )}
           {config.releaseStatusBorderWidth >= 0 && (
             <>
-              <ColorField id={`${uid}-release-border-color`} label="Border colour" value={config.releaseStatusBorderColor}
-                onChange={v => onUpdate('releaseStatusBorderColor', v)} fallback="#38bdf8" resetLabel="By status" />
-              <NumField id={`${uid}-release-border-op`} label="Border opacity (%)" value={config.releaseStatusBorderOpacity}
+              <ColorField id={`${uid}-release-border-color`} label={t('Border colour')} value={config.releaseStatusBorderColor}
+                onChange={v => onUpdate('releaseStatusBorderColor', v)} fallback="#38bdf8" resetLabel={t('By status')} />
+              <NumField id={`${uid}-release-border-op`} label={t('Border opacity (%)')} value={config.releaseStatusBorderOpacity}
                 onChange={v => onUpdate('releaseStatusBorderOpacity', v)} min={5} max={100} step={5} />
             </>
           )}
         </>
       )}
-      <ToggleField id={`${uid}-release-hide-digital`} label="Hide once out at home"
+      <ToggleField id={`${uid}-release-hide-digital`} label={t('Hide once out at home')}
         checked={config.releaseStatusHideDigital}
         onChange={v => onUpdate('releaseStatusHideDigital', v)}
-        hint="Show only In Cinemas and upcoming release dates. A title already out on digital or disc gets no badge." />
-      <ToggleField id={`${uid}-release-prefer-disc`} label="Prefer disc"
+        hint={t('Show only In Cinemas and upcoming release dates. A title already out on digital or disc gets no badge.')} />
+      <ToggleField id={`${uid}-release-prefer-disc`} label={t('Prefer disc')}
         checked={config.releaseStatusPreferDisc}
         onChange={v => onUpdate('releaseStatusPreferDisc', v)}
-        hint="Show the disc release over digital: its date while it is ahead, then On Disc for 180 days." />
+        hint={t('Show the disc release over digital: its date while it is ahead, then On Disc for 180 days.')} />
       <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
         scaleKey="releaseStatusScale" offXKey="releaseStatusOffsetX" offYKey="releaseStatusOffsetY" />
     </FineGroup>
@@ -1710,98 +1725,101 @@ export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
  * slider moves.
  */
 export function TitleLogoFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
-    <FineGroup label="Title logo">
-      <NumField id={`${uid}-logo-width`} label="Width (%)" value={config.logoWidth}
+    <FineGroup label={t('Title logo')}>
+      <NumField id={`${uid}-logo-width`} label={t('Width (%)')} value={config.logoWidth}
         onChange={v => onUpdate('logoWidth', v)} min={10} max={100} step={5}
-        hint="Share of the artwork width the logo may fill. Blank keeps the default." />
-      <NumField id={`${uid}-logo-height`} label="Height (%)" value={config.logoHeight}
+        hint={t('Share of the artwork width the logo may fill. Blank keeps the default.')} />
+      <NumField id={`${uid}-logo-height`} label={t('Height (%)')} value={config.logoHeight}
         onChange={v => onUpdate('logoHeight', v)} min={5} max={60} step={5}
-        hint="Its aspect ratio is kept, so the logo fits inside the box and never stretches." />
-      <NumField id={`${uid}-logo-pos`} label="Position (%)" value={config.logoPos}
+        hint={t('Its aspect ratio is kept, so the logo fits inside the box and never stretches.')} />
+      <NumField id={`${uid}-logo-pos`} label={t('Position (%)')} value={config.logoPos}
         onChange={v => onUpdate('logoPos', v)} min={1} max={100} step={1}
-        hint="How far down the artwork the logo sits. Blank keeps the default." />
-      <StyleGrid id={`${uid}-logo-shadow-style`} label="Shadow style"
+        hint={t('How far down the artwork the logo sits. Blank keeps the default.')} />
+      <StyleGrid id={`${uid}-logo-shadow-style`} label={t('Shadow style')}
         options={LOGO_SHADOW_STYLE_OPTIONS} value={config.logoShadowStyle}
         onChange={v => onUpdate('logoShadowStyle', v)}
-        hint="Shadow is a soft drop shadow, Extrude a solid 3D stack behind the letters, Gel a raised edge with a lit highlight." />
-      <NumField id={`${uid}-logo-scrim-size`} label="Shadow spread (%)" value={config.logoScrimSize}
+        hint={t('Shadow is a soft drop shadow, Extrude a solid 3D stack behind the letters, Gel a raised edge with a lit highlight.')} />
+      <NumField id={`${uid}-logo-scrim-size`} label={t('Shadow spread (%)')} value={config.logoScrimSize}
         onChange={v => onUpdate('logoScrimSize', v)} min={0} max={200} step={10}
-        hint="How far the shadow reaches past the logo, as a share of the logo's height." />
-      <NumField id={`${uid}-logo-scrim-opacity`} label="Shadow strength (%)" value={config.logoScrimOpacity}
+        hint={t("How far the shadow reaches past the logo, as a share of the logo's height.")} />
+      <NumField id={`${uid}-logo-scrim-opacity`} label={t('Shadow strength (%)')} value={config.logoScrimOpacity}
         onChange={v => onUpdate('logoScrimOpacity', v)} min={0} max={100} step={5}
-        hint="How dark the shadow gets at its strongest. Lower it on pale artwork, raise it when the logo is hard to read." />
-      <NumField id={`${uid}-logo-shadow-x`} label="Shadow offset X (px)" value={config.logoShadowOffsetX}
+        hint={t('How dark the shadow gets at its strongest. Lower it on pale artwork, raise it when the logo is hard to read.')} />
+      <NumField id={`${uid}-logo-shadow-x`} label={t('Shadow offset X (px)')} value={config.logoShadowOffsetX}
         onChange={v => onUpdate('logoShadowOffsetX', v)} min={-200} max={200} step={1}
-        hint="Negative moves it left, positive right. Leave both offsets blank for the style's own drop." />
-      <NumField id={`${uid}-logo-shadow-y`} label="Shadow offset Y (px)" value={config.logoShadowOffsetY}
+        hint={t("Negative moves it left, positive right. Leave both offsets blank for the style's own drop.")} />
+      <NumField id={`${uid}-logo-shadow-y`} label={t('Shadow offset Y (px)')} value={config.logoShadowOffsetY}
         onChange={v => onUpdate('logoShadowOffsetY', v)} min={-200} max={200} step={1}
-        hint="Negative moves it up, positive down." />
-      <ColorField id={`${uid}-logo-shadow-color`} label="Shadow colour" value={config.logoShadowColor}
-        onChange={v => onUpdate('logoShadowColor', v)} fallback="#000000" resetLabel="Black" />
-      <ToggleField id={`${uid}-logo-anchor`} label="Anchor to bottom"
+        hint={t('Negative moves it up, positive down.')} />
+      <ColorField id={`${uid}-logo-shadow-color`} label={t('Shadow colour')} value={config.logoShadowColor}
+        onChange={v => onUpdate('logoShadowColor', v)} fallback="#000000" resetLabel={t('Black')} />
+      <ToggleField id={`${uid}-logo-anchor`} label={t('Anchor to bottom')}
         checked={config.logoAnchor === 'bottom'}
         onChange={v => onUpdate('logoAnchor', v ? 'bottom' : '')}
-        hint="Pin the lower edge at that position, so a bigger logo grows upward instead of both ways." />
-      <ToggleField id={`${uid}-logo-frost`} label="Blur behind logo"
+        hint={t('Pin the lower edge at that position, so a bigger logo grows upward instead of both ways.')} />
+      <ToggleField id={`${uid}-logo-frost`} label={t('Blur behind logo')}
         checked={config.logoFrost}
         onChange={v => onUpdate('logoFrost', v)}
-        hint="Softly blurs the artwork around the logo so it sits on a frosted panel." />
-      <NumField id={`${uid}-logo-bottom-margin`} label="Bottom margin (%)" value={config.logoBottomMargin}
+        hint={t('Softly blurs the artwork around the logo so it sits on a frosted panel.')} />
+      <NumField id={`${uid}-logo-bottom-margin`} label={t('Bottom margin (%)')} value={config.logoBottomMargin}
         onChange={v => onUpdate('logoBottomMargin', v)} min={1} max={40} step={1}
-        hint="Pins the logo's lower edge this far above the bottom of the artwork, or above a bottom ratings row. Blank leaves it on the position above." />
-      <NumField id={`${uid}-bottom-fade-height`} label="Bottom fade height (%)" value={config.bottomFadeHeight}
+        hint={t("Pins the logo's lower edge this far above the bottom of the artwork, or above a bottom ratings row. Blank leaves it on the position above.")} />
+      <NumField id={`${uid}-bottom-fade-height`} label={t('Bottom fade height (%)')} value={config.bottomFadeHeight}
         onChange={v => onUpdate('bottomFadeHeight', v)} min={1} max={100} step={5}
-        hint="A gradient rising from the bottom edge, under the logo and badges. Blank turns it off." />
-      <NumField id={`${uid}-bottom-fade-opacity`} label="Bottom fade opacity (%)" value={config.bottomFadeOpacity}
+        hint={t('A gradient rising from the bottom edge, under the logo and badges. Blank turns it off.')} />
+      <NumField id={`${uid}-bottom-fade-opacity`} label={t('Bottom fade opacity (%)')} value={config.bottomFadeOpacity}
         onChange={v => onUpdate('bottomFadeOpacity', v)} min={1} max={100} step={5}
-        hint="How dark the fade gets at the very bottom. Blank keeps 80." />
-      <ColorField id={`${uid}-bottom-fade-color`} label="Bottom fade colour" value={config.bottomFadeColor}
-        onChange={v => onUpdate('bottomFadeColor', v)} fallback="#000000" resetLabel="Black" />
-      <NumField id={`${uid}-bottom-blur-height`} label="Bottom blur height (%)" value={config.bottomBlurHeight}
+        hint={t('How dark the fade gets at the very bottom. Blank keeps 80.')} />
+      <ColorField id={`${uid}-bottom-fade-color`} label={t('Bottom fade colour')} value={config.bottomFadeColor}
+        onChange={v => onUpdate('bottomFadeColor', v)} fallback="#000000" resetLabel={t('Black')} />
+      <NumField id={`${uid}-bottom-blur-height`} label={t('Bottom blur height (%)')} value={config.bottomBlurHeight}
         onChange={v => onUpdate('bottomBlurHeight', v)} min={1} max={100} step={5}
-        hint="Blurs the same kind of band, easing into the sharp art above it. Blank turns it off." />
-      <NumField id={`${uid}-bottom-blur-strength`} label="Bottom blur strength" value={config.bottomBlurStrength}
+        hint={t('Blurs the same kind of band, easing into the sharp art above it. Blank turns it off.')} />
+      <NumField id={`${uid}-bottom-blur-strength`} label={t('Bottom blur strength')} value={config.bottomBlurStrength}
         onChange={v => onUpdate('bottomBlurStrength', v)} min={1} max={100} step={5}
-        hint="How strong the blur is at the bottom edge. Blank keeps 50." />
-      <NumField id={`${uid}-bottom-blur-feather`} label="Bottom blur feather (%)" value={config.bottomBlurFeather}
+        hint={t('How strong the blur is at the bottom edge. Blank keeps 50.')} />
+      <NumField id={`${uid}-bottom-blur-feather`} label={t('Bottom blur feather (%)')} value={config.bottomBlurFeather}
         onChange={v => onUpdate('bottomBlurFeather', v)} min={0} max={100} step={5} zeroIsDefault={false}
-        hint="How much of the band the blur eases in over. 0 blurs the whole band evenly; 100 eases in across all of it." />
-      <NumField id={`${uid}-top-blur-height`} label="Top blur height (%)" value={config.topBlurHeight}
+        hint={t('How much of the band the blur eases in over. 0 blurs the whole band evenly; 100 eases in across all of it.')} />
+      <NumField id={`${uid}-top-blur-height`} label={t('Top blur height (%)')} value={config.topBlurHeight}
         onChange={v => onUpdate('topBlurHeight', v)} min={1} max={100} step={5}
-        hint="Blurs a band at the top edge, easing into the sharp art below it. Blank turns it off." />
-      <NumField id={`${uid}-top-blur-strength`} label="Top blur strength" value={config.topBlurStrength}
+        hint={t('Blurs a band at the top edge, easing into the sharp art below it. Blank turns it off.')} />
+      <NumField id={`${uid}-top-blur-strength`} label={t('Top blur strength')} value={config.topBlurStrength}
         onChange={v => onUpdate('topBlurStrength', v)} min={1} max={100} step={5}
-        hint="How strong the blur is at the top edge. Blank keeps 50." />
-      <NumField id={`${uid}-top-blur-feather`} label="Top blur feather (%)" value={config.topBlurFeather}
+        hint={t('How strong the blur is at the top edge. Blank keeps 50.')} />
+      <NumField id={`${uid}-top-blur-feather`} label={t('Top blur feather (%)')} value={config.topBlurFeather}
         onChange={v => onUpdate('topBlurFeather', v)} min={0} max={100} step={5} zeroIsDefault={false}
-        hint="How much of the band the blur eases in over. 0 blurs the whole band evenly; 100 eases in across all of it." />
+        hint={t('How much of the band the blur eases in over. 0 blurs the whole band evenly; 100 eases in across all of it.')} />
     </FineGroup>
   );
 }
 
 export function ProvidersFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
-    <FineGroup label="Where to watch chips">
-      <PosSelect id={`${uid}-provider-pos`} label="Position" value={config.providersPos}
+    <FineGroup label={t('Where to watch chips')}>
+      <PosSelect id={`${uid}-provider-pos`} label={t('Position')} value={config.providersPos}
         onChange={v => onUpdate('providersPos', v)} />
-      <NumField id={`${uid}-provider-scale`} label="Scale (%)" value={config.providerBadgeScale}
+      <NumField id={`${uid}-provider-scale`} label={t('Scale (%)')} value={config.providerBadgeScale}
         onChange={v => onUpdate('providerBadgeScale', v)} min={70} max={400} step={5}
-        hint="70\u2013200. Blank keeps the default size." />
-      <NumField id={`${uid}-provider-offset-x`} label="Offset X (px)" value={config.providerBadgeOffsetX}
+        hint={t('70–200. Blank keeps the default size.')} />
+      <NumField id={`${uid}-provider-offset-x`} label={t('Offset X (px)')} value={config.providerBadgeOffsetX}
         onChange={v => onUpdate('providerBadgeOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
-      <NumField id={`${uid}-provider-offset-y`} label="Offset Y (px)" value={config.providerBadgeOffsetY}
+      <NumField id={`${uid}-provider-offset-y`} label={t('Offset Y (px)')} value={config.providerBadgeOffsetY}
         onChange={v => onUpdate('providerBadgeOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
     </FineGroup>
   );
 }
 
 export function AgeFine({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
-    <FineGroup label="Age rating badge">
+    <FineGroup label={t('Age rating badge')}>
       <StyleGrid
         id={`${uid}-age-style-label`}
-        label="Style"
+        label={t('Style')}
         options={AGE_STYLE_OPTIONS}
         value={config.ageRatingBadgeStyle}
         onChange={v => onUpdate('ageRatingBadgeStyle', v)}
@@ -1809,43 +1827,43 @@ export function AgeFine({ uid, config, onUpdate }: GroupProps) {
       />
       {config.ageRatingBadgeStyle !== 'plain' && config.ageRatingBadgeStyle !== 'media' && (
         <ColorField id={`${uid}-age-tile-color`}
-          label={config.ageRatingBadgeStyle === 'tile' ? 'Tile color' : 'Border color'}
+          label={config.ageRatingBadgeStyle === 'tile' ? t('Tile color') : t('Border color')}
           value={config.ageRatingTileColor}
           onChange={v => onUpdate('ageRatingTileColor', v)}
-          fallback="#3355ff" resetLabel="Default" />
+          fallback="#3355ff" resetLabel={t('Default')} />
       )}
       {config.ageRatingBadgeStyle !== 'plain' && (
         <>
-          <NumField id={`${uid}-age-op`} label="Background opacity (%)" value={config.ageRatingBackgroundOpacity}
+          <NumField id={`${uid}-age-op`} label={t('Background opacity (%)')} value={config.ageRatingBackgroundOpacity}
             onChange={v => onUpdate('ageRatingBackgroundOpacity', v)} min={5} max={100} step={5}
-            placeholder="per style" />
+            placeholder={t('per style')} />
           <StyleGrid
             id={`${uid}-age-border-mode-label`}
-            label="Border"
+            label={t('Border')}
             options={GENRE_BORDER_OPTIONS}
             value={genreBorderMode(config.ageRatingBorderWidth)}
             onChange={v => onUpdate('ageRatingBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
           />
           {genreBorderMode(config.ageRatingBorderWidth) === 'custom' && (
-            <NumField id={`${uid}-age-border`} label="Border width (px)" value={config.ageRatingBorderWidth}
+            <NumField id={`${uid}-age-border`} label={t('Border width (px)')} value={config.ageRatingBorderWidth}
               onChange={v => onUpdate('ageRatingBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
           )}
           <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
-            <ColorField id={`${uid}-age-label-color`} label="Label colour" value={config.ageRatingLabelColor}
-              onChange={v => onUpdate('ageRatingLabelColor', v)} fallback="#ffffff" resetLabel="Per style" />
-            <ColorField id={`${uid}-age-border-color`} label="Border colour" value={config.ageRatingBorderColor}
-              onChange={v => onUpdate('ageRatingBorderColor', v)} fallback="#ffffff" resetLabel="Per style" />
+            <ColorField id={`${uid}-age-label-color`} label={t('Label colour')} value={config.ageRatingLabelColor}
+              onChange={v => onUpdate('ageRatingLabelColor', v)} fallback="#ffffff" resetLabel={t('Per style')} />
+            <ColorField id={`${uid}-age-border-color`} label={t('Border colour')} value={config.ageRatingBorderColor}
+              onChange={v => onUpdate('ageRatingBorderColor', v)} fallback="#ffffff" resetLabel={t('Per style')} />
           </div>
-          <NumField id={`${uid}-age-border-op`} label="Border opacity (%)" value={config.ageRatingBorderOpacity}
-            onChange={v => onUpdate('ageRatingBorderOpacity', v)} min={5} max={100} step={5} placeholder="per style" />
+          <NumField id={`${uid}-age-border-op`} label={t('Border opacity (%)')} value={config.ageRatingBorderOpacity}
+            onChange={v => onUpdate('ageRatingBorderOpacity', v)} min={5} max={100} step={5} placeholder={t('per style')} />
         </>
       )}
-      <NumField id={`${uid}-age-scale`} label="Scale (%)" value={config.ageRatingScale}
+      <NumField id={`${uid}-age-scale`} label={t('Scale (%)')} value={config.ageRatingScale}
         onChange={v => onUpdate('ageRatingScale', v)} min={50} max={300} step={5} />
       <div className="numfield-pair">
-        <NumField id={`${uid}-age-ox`} label="Offset X (px)" value={config.ageRatingOffsetX}
+        <NumField id={`${uid}-age-ox`} label={t('Offset X (px)')} value={config.ageRatingOffsetX}
           onChange={v => onUpdate('ageRatingOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
-        <NumField id={`${uid}-age-oy`} label="Offset Y (px)" value={config.ageRatingOffsetY}
+        <NumField id={`${uid}-age-oy`} label={t('Offset Y (px)')} value={config.ageRatingOffsetY}
           onChange={v => onUpdate('ageRatingOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
       </div>
     </FineGroup>
@@ -1853,17 +1871,18 @@ export function AgeFine({ uid, config, onUpdate }: GroupProps) {
 }
 
 export function AwardsBorderFields({ uid, config, onUpdate }: GroupProps) {
+  const t = useT();
   return (
     <>
       <StyleGrid
         id={`${uid}-awards-border-mode-label`}
-        label="Awards badge border"
+        label={t('Awards badge border')}
         options={GENRE_BORDER_OPTIONS}
         value={genreBorderMode(config.awardsBorderWidth)}
         onChange={v => onUpdate('awardsBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
       />
       {genreBorderMode(config.awardsBorderWidth) === 'custom' && (
-        <NumField id={`${uid}-awards-border`} label="Border width (px)" value={config.awardsBorderWidth}
+        <NumField id={`${uid}-awards-border`} label={t('Border width (px)')} value={config.awardsBorderWidth}
           onChange={v => onUpdate('awardsBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
       )}
     </>
@@ -1871,52 +1890,53 @@ export function AwardsBorderFields({ uid, config, onUpdate }: GroupProps) {
 }
 
 export function TrendingFine({ uid, config, onUpdate, rankOnly = false }: GroupProps & { rankOnly?: boolean }) {
+  const t = useT();
   return (
-    <FineGroup label={rankOnly ? 'Trending rank' : 'Trending badge'}>
+    <FineGroup label={rankOnly ? t('Trending rank') : t('Trending badge')}>
       <StyleGrid
         id={`${uid}-trending-tag-style-label`}
-        label="Surface"
+        label={t('Surface')}
         options={TREND_TAG_STYLE_OPTIONS}
         value={config.trendingTagStyle}
         onChange={v => onUpdate('trendingTagStyle', v)}
-        hint="Glass keeps the warm capsule; plain drops the surface behind the tag. Pill draws the rank as a capsule like the genre pill."
+        hint={t('Glass keeps the warm capsule; plain drops the surface behind the tag. Pill draws the rank as a capsule like the genre pill.')}
       />
       {!rankOnly && (
-        <PosSelect id={`${uid}-trending-pos`} label="Position" value={config.trendingPos}
+        <PosSelect id={`${uid}-trending-pos`} label={t('Position')} value={config.trendingPos}
           onChange={v => onUpdate('trendingPos', v)} />
       )}
-      <ColorField id={`${uid}-trending-color`} label="Text color" value={config.trendingTextColor}
-        onChange={v => onUpdate('trendingTextColor', v)} fallback="#fff4ee" resetLabel="Default" />
+      <ColorField id={`${uid}-trending-color`} label={t('Text color')} value={config.trendingTextColor}
+        onChange={v => onUpdate('trendingTextColor', v)} fallback="#fff4ee" resetLabel={t('Default')} />
       {config.trendingTagStyle !== 'plain' && (
-        <ColorField id={`${uid}-trending-accent`} label="Border color" value={config.trendingAccentColor}
-          onChange={v => onUpdate('trendingAccentColor', v)} fallback="#ff7e2a" resetLabel="Default" />
+        <ColorField id={`${uid}-trending-accent`} label={t('Border color')} value={config.trendingAccentColor}
+          onChange={v => onUpdate('trendingAccentColor', v)} fallback="#ff7e2a" resetLabel={t('Default')} />
       )}
       {config.trendingTagStyle !== 'plain' && (
-        <ColorField id={`${uid}-trending-tile`} label="Tile color" value={config.trendingTileColor}
-          onChange={v => onUpdate('trendingTileColor', v)} fallback="#12141a" resetLabel="Dark" />
+        <ColorField id={`${uid}-trending-tile`} label={t('Tile color')} value={config.trendingTileColor}
+          onChange={v => onUpdate('trendingTileColor', v)} fallback="#12141a" resetLabel={t('Dark')} />
       )}
       {config.trendingRank && config.trendingTagStyle !== 'plain' && (
-        <NumField id={`${uid}-trending-rank-op`} label="Rank background opacity (%)" value={config.trendingRankBackgroundOpacity}
+        <NumField id={`${uid}-trending-rank-op`} label={t('Rank background opacity (%)')} value={config.trendingRankBackgroundOpacity}
           onChange={v => onUpdate('trendingRankBackgroundOpacity', v)} min={5} max={100} step={5} />
       )}
       {config.trendingRank && config.trendingTagStyle === 'pill' && (
         <>
       <StyleGrid
             id={`${uid}-trending-rank-border-mode-label`}
-            label="Border"
+            label={t('Border')}
             options={GENRE_BORDER_OPTIONS}
             value={genreBorderMode(config.trendingRankBorderWidth)}
             onChange={v => onUpdate('trendingRankBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
           />
           {genreBorderMode(config.trendingRankBorderWidth) === 'custom' && (
-            <NumField id={`${uid}-trending-rank-border`} label="Border width (px)" value={config.trendingRankBorderWidth}
+            <NumField id={`${uid}-trending-rank-border`} label={t('Border width (px)')} value={config.trendingRankBorderWidth}
               onChange={v => onUpdate('trendingRankBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
           )}
           {config.trendingRankBorderWidth >= 0 && (
             <>
-              <ColorField id={`${uid}-trending-rank-border-color`} label="Border colour" value={config.trendingRankBorderColor}
-                onChange={v => onUpdate('trendingRankBorderColor', v)} fallback="#ff7e2a" resetLabel="Default" />
-              <NumField id={`${uid}-trending-rank-border-op`} label="Border opacity (%)" value={config.trendingRankBorderOpacity}
+              <ColorField id={`${uid}-trending-rank-border-color`} label={t('Border colour')} value={config.trendingRankBorderColor}
+                onChange={v => onUpdate('trendingRankBorderColor', v)} fallback="#ff7e2a" resetLabel={t('Default')} />
+              <NumField id={`${uid}-trending-rank-border-op`} label={t('Border opacity (%)')} value={config.trendingRankBorderOpacity}
                 onChange={v => onUpdate('trendingRankBorderOpacity', v)} min={5} max={100} step={5} />
             </>
           )}

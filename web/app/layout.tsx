@@ -3,6 +3,8 @@ import { Bricolage_Grotesque, Jost } from 'next/font/google';
 import './styles/globals.css';
 import { NavBar } from '@/components/nav-bar';
 import { SiteFooter } from '@/components/site-footer';
+import { SkipLink } from '@/components/skip-link';
+import { Providers } from '@/components/providers';
 import { BRAND_DISPLAY_NAME } from '@/lib/brand';
 
 const fontBody = Jost({
@@ -35,13 +37,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${fontBody.variable} ${fontDisplay.variable}`} suppressHydrationWarning>
       <body>
+        <Providers>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        <a href="#main" className="skip-link">Skip to content</a>
+        <SkipLink />
         <NavBar />
         <main id="main" className="page">
           {children}
         </main>
         <SiteFooter />
+        </Providers>
       </body>
     </html>
   );

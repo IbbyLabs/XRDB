@@ -1,3 +1,5 @@
+'use client';
+
 import {
   BRAND_DEVELOPER,
   BRAND_DEVELOPER_URL,
@@ -6,6 +8,7 @@ import {
   BRAND_GITHUB_URL,
   BRAND_SUPPORT_URL,
 } from '@/lib/brand';
+import { useT } from '@/lib/i18n';
 
 /** Attribution required by the data providers, plus who built this.
  *
@@ -13,6 +16,7 @@ import {
  *  courtesy, and the IMDb line is asked for by their non-commercial licence.
  *  Both are reproduced verbatim; do not reword them. */
 export function SiteFooter() {
+  const t = useT();
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
@@ -22,12 +26,12 @@ export function SiteFooter() {
             href="https://www.themoviedb.org"
             target="_blank"
             rel="noreferrer"
-            title="The Movie Database"
+            title={t('The Movie Database')}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/rating-logos/tmdb.svg" alt="TMDB" width={44} height={44} />
           </a>
-          <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+          <p>{t('This product uses the TMDB API but is not endorsed or certified by TMDB.')}</p>
         </div>
 
         <div className="attribution">
@@ -42,9 +46,9 @@ export function SiteFooter() {
             <img src="/rating-logos/imdb.png" alt="IMDb" width={32} height={32} />
           </a>
           <p>
-            Information courtesy of{' '}
+            {t('Information courtesy of')}{' '}
             <a href="https://www.imdb.com" target="_blank" rel="noreferrer">IMDb</a>
-            . Used with permission.
+            {t('. Used with permission.')}
           </p>
         </div>
 
@@ -52,20 +56,20 @@ export function SiteFooter() {
           <a href={BRAND_DEVELOPER_URL} target="_blank" rel="noreferrer" className="credit-link">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/ibbylabs-icon-hex.png" alt="" width={18} height={18} aria-hidden />
-            Developed by {BRAND_DEVELOPER}
+            {t('Developed by {name}', { name: BRAND_DEVELOPER })}
           </a>
           <span className="credit-sep" aria-hidden>·</span>
-          <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer">GitHub</a>
+          <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer">{t('GitHub')}</a>
           <span className="credit-sep" aria-hidden>·</span>
-          <a href={BRAND_DISCORD_URL} target="_blank" rel="noreferrer">Discord</a>
+          <a href={BRAND_DISCORD_URL} target="_blank" rel="noreferrer">{t('Discord')}</a>
           <span className="credit-sep" aria-hidden>·</span>
           <a
             href={BRAND_DISCORD_DM_URL}
             target="_blank"
             rel="noreferrer"
-            title="Message the developer directly on Discord"
+            title={t('Message the developer directly on Discord')}
           >
-            DM
+            {t('DM')}
           </a>
           <span className="credit-sep" aria-hidden>·</span>
           <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer">Ko-fi</a>

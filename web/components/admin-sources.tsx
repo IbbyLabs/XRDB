@@ -1,4 +1,6 @@
 import type { SourceHealthRow, SourcesResponse } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import type { TFunction } from '@/lib/i18n';
 
 interface SourceCounts {
   requests: number;
@@ -21,12 +23,12 @@ export function sourceCounts(s: SourceHealthRow): SourceCounts {
   };
 }
 
-function status(s: SourceHealthRow): { text: string; tone: string } {
-  if (s.coolingOff) return { text: 'Cooling off', tone: 'var(--warn)' };
-  if (s.failing) return { text: 'Failing', tone: 'var(--err)' };
-  if (!s.healthy) return { text: 'Recent failure', tone: 'var(--warn)' };
-  if (s.consecutiveUncounted > 0) return { text: 'Unclassified answers', tone: 'var(--warn)' };
-  return { text: 'Healthy', tone: 'var(--ok)' };
+function status(t: TFunction, s: SourceHealthRow): { text: string; tone: string } {
+  if (s.coolingOff) return { text: t('Cooling off'), tone: 'var(--warn)' };
+  if (s.failing) return { text: t('Failing'), tone: 'var(--err)' };
+  if (!s.healthy) return { text: t('Recent failure'), tone: 'var(--warn)' };
+  if (s.consecutiveUncounted > 0) return { text: t('Unclassified answers'), tone: 'var(--warn)' };
+  return { text: t('Healthy'), tone: 'var(--ok)' };
 }
 
 function pct(rate: number | null): string {
@@ -34,6 +36,7 @@ function pct(rate: number | null): string {
 }
 
 export function SourcesPanel({ data }: { data: SourcesResponse }) {
+  const t = useT();
   const rows = data.sources
     .map(s => ({ s, c: sourceCounts(s) }))
     .sort((a, b) => b.c.requests - a.c.requests);
@@ -45,7 +48,7 @@ export function SourcesPanel({ data }: { data: SourcesResponse }) {
   if (rows.length === 0) {
     return (
       <p className="page-sub" style={{ margin: 0 }}>
-        No source has been asked for a rating since this process started.
+        {t('No source has been asked for a rating since this process started.')}
       </p>
     );
   }
@@ -55,11 +58,11 @@ export function SourcesPanel({ data }: { data: SourcesResponse }) {
       <div className="admin-section">
         <div className="stat-strip">
           {([
-            { label: 'Sources', value: rows.length.toLocaleString() },
-            { label: 'Requests', value: total.requests.toLocaleString() },
-            { label: 'Success rate', value: pct(total.requests > 0 ? total.ok / total.requests : null) },
-            { label: 'Timeouts', value: total.timeouts.toLocaleString() },
-            { label: 'Degraded', value: data.degraded.toLocaleString() },
+            { label: t('Sources'), value: rows.length.toLocaleString() },
+            { label: t('Requests'), value: total.requests.toLocaleString() },
+            { label: t('Success rate'), value: pct(total.requests > 0 ? total.ok / total.requests : null) },
+            { label: t('Timeouts'), value: total.timeouts.toLocaleString() },
+            { label: t('Degraded'), value: data.degraded.toLocaleString() },
           ]).map(({ label, value }) => (
             <div key={label} className="stat-cell">
               <span className="stat-label">{label}</span>
@@ -74,19 +77,19 @@ export function SourcesPanel({ data }: { data: SourcesResponse }) {
           <table className="table">
             <thead>
               <tr>
-                <th scope="col">Source</th>
-                <th scope="col">Requests</th>
-                <th scope="col">Success</th>
-                <th scope="col">Timeouts</th>
-                <th scope="col">Other failures</th>
-                <th scope="col">Unclassified</th>
-                <th scope="col">Cut off</th>
-                <th scope="col">Status</th>
+                <th scope="col">{t('Source')}</th>
+                <th scope="col">{t('Requests')}</th>
+                <th scope="col">{t('Success')}</th>
+                <th scope="col">{t('Timeouts')}</th>
+                <th scope="col">{t('Other failures')}</th>
+                <th scope="col">{t('Unclassified')}</th>
+                <th scope="col">{t('Cut off')}</th>
+                <th scope="col">{t('Status')}</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ s, c }) => {
-                const st = status(s);
+                const st = status(t, s);
                 return (
                   <tr key={s.source}>
                     <td><span className="mono">{s.source}</span></td>
@@ -108,12 +111,7 @@ export function SourcesPanel({ data }: { data: SourcesResponse }) {
       </div>
 
       <p className="page-sub" style={{ margin: 'var(--sp-2) 0 0' }}>
-        Counts run from when this process started. Success is answers the source gave, empty ones included, out of
-        every request counting unclassified answers, so a source refusing with a status nothing recognises
-        reads low rather than perfect. Timeouts are split out of failures; other failures are errors, 5xx
-        and rate limits. Cut off is fetches our own ratings deadline stopped waiting
-        for; it lands on every source still in flight, so the slow one stands out by count, and it is not in
-        the success rate. Hover a status for the last error.
+        {t('Counts run from when this process started. Success is answers the source gave, empty ones included, out of every request counting unclassified answers, so a source refusing with a status nothing recognises reads low rather than perfect. Timeouts are split out of failures; other failures are errors, 5xx and rate limits. Cut off is fetches our own ratings deadline stopped waiting for; it lands on every source still in flight, so the slow one stands out by count, and it is not in the success rate. Hover a status for the last error.')}
       </p>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState, useEffect, useId } from 'react';
 import { Lock } from 'lucide-react';
 import { adminAccessStatus } from '@/lib/api';
 import { setAdminKey, clearAdminKey } from '@/lib/admin-key';
+import { useT } from '@/lib/i18n';
 
 type GateState = 'checking' | 'open' | 'locked';
 
@@ -14,6 +15,7 @@ type GateState = 'checking' | 'open' | 'locked';
  * error states explain the situation better than a lock screen would).
  */
 export function AdminGate({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const uid = useId();
   const [state, setState] = useState<GateState>('checking');
   const [key, setKey] = useState('');
@@ -30,14 +32,14 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
 
   const handleUnlock = async () => {
     const trimmed = key.trim();
-    if (!trimmed) { setError('Enter the admin key'); return; }
+    if (!trimmed) { setError(t('Enter the admin key')); return; }
     setVerifying(true);
     setError('');
     const status = await adminAccessStatus(trimmed);
     setVerifying(false);
     if (status === 'locked') {
       clearAdminKey();
-      setError('That key was rejected by the server.');
+      setError(t('That key was rejected by the server.'));
       return;
     }
     setAdminKey(trimmed);
@@ -60,18 +62,18 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
       <div className="panel admin-lock-panel">
         <div className="panel-body admin-lock-body">
           <Lock size={20} aria-hidden style={{ color: 'var(--muted)' }} />
-          <h1 className="admin-lock-title">Admin access</h1>
+          <h1 className="admin-lock-title">{t('Admin access')}</h1>
           <p className="hint" style={{ marginTop: 0, textAlign: 'center' }}>
-            This area is for the instance owner. Enter the admin key
-            (<code>XRDB_ADMIN_KEY</code>) configured on the server.
+            {t('This area is for the instance owner. Enter the admin key')}
+            {' '}(<code>XRDB_ADMIN_KEY</code>){' '}{t('configured on the server.')}
           </p>
           <p className="hint" style={{ marginTop: 0, textAlign: 'center' }}>
-            Looking to use your own API keys? You do not need this. Open the{' '}
-            <a href="/configurator?tab=profile">configurator</a>, load your
-            profile and set them there — a profile needs a password first.
+            {t('Looking to use your own API keys? You do not need this. Open the')}{' '}
+            <a href="/configurator?tab=profile">{t('configurator')}</a>
+            {t(', load your profile and set them there — a profile needs a password first.')}
           </p>
           <div className="field" style={{ width: '100%' }}>
-            <label className="label" htmlFor={`${uid}-key`}>Admin key</label>
+            <label className="label" htmlFor={`${uid}-key`}>{t('Admin key')}</label>
             <input
               id={`${uid}-key`}
               className="input"
@@ -90,7 +92,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
             onClick={handleUnlock}
             disabled={verifying || !key.trim()}
           >
-            {verifying ? 'Checking…' : 'Unlock'}
+            {verifying ? t('Checking…') : t('Unlock')}
           </button>
         </div>
       </div>

@@ -6,6 +6,8 @@ import { installToAIOM, renderOrigin } from '@/lib/api';
 import { CopyButton } from './copy-button';
 import { PUBLIC_INSTANCE_NAME, PUBLIC_INSTANCE_URL } from '@/lib/brand';
 import { useIsCanonicalHost } from './public-instance-card';
+import { useT } from '@/lib/i18n';
+import { msg } from '@/lib/i18n-msg';
 
 const PUBLIC_INSTANCES = [
   { label: 'ElfHosted', url: 'https://aiometadata.elfhosted.com' },
@@ -100,6 +102,7 @@ interface InstallPanelProps {
 }
 
 export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyChange, remember, onRememberChange, onNotice }: InstallPanelProps) {
+  const t = useT();
   const canonicalHost = useIsCanonicalHost();
   const uid = useId();
   const [selectedInstance, setSelectedInstance] = useState(PUBLIC_INSTANCES[0].url);
@@ -145,39 +148,38 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
       <div className="panel-body cfg-fields">
         {canonicalHost && (
         <div className="field">
-          <span className="label">Not saved a profile yet?</span>
+          <span className="label">{t('Not saved a profile yet?')}</span>
           <span className="hint" style={{ marginTop: 0 }}>
-            The public instance at{' '}
-            <a href={PUBLIC_INSTANCE_URL} target="_blank" rel="noreferrer">xrdb.elfhosted.com</a>, hosted by {PUBLIC_INSTANCE_NAME}, has
-            far more capacity than this server. Configure and save there instead. Profiles do not carry across: one saved here stays here.
+            {t('The public instance at')}{' '}
+            <a href={PUBLIC_INSTANCE_URL} target="_blank" rel="noreferrer">xrdb.elfhosted.com</a>
+            {t(', hosted by {name}, has far more capacity than this server. Configure and save there instead. Profiles do not carry across: one saved here stays here.', { name: PUBLIC_INSTANCE_NAME })}
           </span>
         </div>
         )}
         <div className="field">
-          <label className="label" htmlFor={`${uid}-instance-key`}>Instance API key</label>
+          <label className="label" htmlFor={`${uid}-instance-key`}>{t('Instance API key')}</label>
           <input
             id={`${uid}-instance-key`}
             className="input"
             type="password"
             value={renderKey}
             onChange={e => onRenderKeyChange(e.target.value)}
-            placeholder="Only if this instance sets XRDB_API_KEY"
+            placeholder={t('Only if this instance sets XRDB_API_KEY')}
             spellCheck={false}
             autoComplete="off"
-            aria-label="Instance API key"
+            aria-label={t('Instance API key')}
           />
           <span className="hint">
-            Needed only when the server sets <code>XRDB_API_KEY</code>. It&apos;s woven
-            into the preview, image URLs, and the patterns below, and lets you save
-            profiles. {remember ? 'Remembered on this device.' : 'Kept in this browser session only.'}
+            {t('Needed only when the server sets')} <code>XRDB_API_KEY</code>
+            {t(". It's woven into the preview, image URLs, and the patterns below, and lets you save profiles.")} {remember ? t('Remembered on this device.') : t('Kept in this browser session only.')}
           </span>
         </div>
 
         <div className="toggle-row">
           <div>
-            <span className="label" style={{ marginBottom: 0 }} id={`${uid}-remember-label`}>Remember on this device</span>
+            <span className="label" style={{ marginBottom: 0 }} id={`${uid}-remember-label`}>{t('Remember on this device')}</span>
             <span className="hint" style={{ marginTop: 0 }}>
-              Keeps the instance API key and profile passwords in this browser after it closes. Leave it off on a shared computer. Turning it off forgets them.
+              {t('Keeps the instance API key and profile passwords in this browser after it closes. Leave it off on a shared computer. Turning it off forgets them.')}
             </span>
           </div>
           <button
@@ -193,33 +195,29 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
         </div>
 
         <p className="hint" style={{ marginTop: 0 }}>
-          XRDB can also run on your own machine, with your own API keys and no
-          shared rate limits.{' '}
+          {t('XRDB can also run on your own machine, with your own API keys and no shared rate limits.')}{' '}
           <a href="https://github.com/IbbyLabs/XRDB" target="_blank" rel="noreferrer">
-            Run your own instance
+            {t('Run your own instance')}
           </a>.
         </p>
 
         {!configKey && (
           <p className="hint" style={{ marginTop: 0 }}>
-            Save a profile first in the <strong>Profile</strong> tab. The
-            one-click install and the artwork URL patterns both need a saved
-            config key — without one the links carry no styling and AIOMetadata
-            falls back to default art.
+            {t('Save a profile first in the')} <strong>{t('Profile')}</strong>
+            {t(' tab. The one-click install and the artwork URL patterns both need a saved config key — without one the links carry no styling and AIOMetadata falls back to default art.')}
           </p>
         )}
 
         {configKey && (<>
         <div className="field">
-          <span className="label">AIOMetadata — one-click setup</span>
+          <span className="label">{t('AIOMetadata — one-click setup')}</span>
           <span className="hint" style={{ marginTop: 0 }}>
-            Writes the XRDB artwork patterns into your AIOMetadata profile.
-            Your AIOM credentials go directly to your chosen instance.
+            {t('Writes the XRDB artwork patterns into your AIOMetadata profile. Your AIOM credentials go directly to your chosen instance.')}
           </span>
         </div>
 
         <div className="field">
-          <label className="label" htmlFor={`${uid}-base`}>Instance</label>
+          <label className="label" htmlFor={`${uid}-base`}>{t('Instance')}</label>
           <select
             id={`${uid}-base`}
             className="select"
@@ -229,7 +227,7 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
             {PUBLIC_INSTANCES.map(i => (
               <option key={i.url} value={i.url}>{i.label}</option>
             ))}
-            <option value="__custom__">Custom URL…</option>
+            <option value="__custom__">{t('Custom URL…')}</option>
           </select>
           {isCustom && (
             <input
@@ -241,26 +239,26 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
               placeholder="https://your-aiom-instance.example.com"
               spellCheck={false}
               required
-              aria-label="Custom instance URL"
+              aria-label={t('Custom instance URL')}
             />
           )}
         </div>
 
         <div className="field">
-          <label className="label" htmlFor={`${uid}-uuid`}>AIOM profile UUID</label>
+          <label className="label" htmlFor={`${uid}-uuid`}>{t('AIOM profile UUID')}</label>
           <input
             id={`${uid}-uuid`}
             className="input"
             value={userUUID}
             onChange={e => setUserUUID(e.target.value)}
-            placeholder="e.g. 1f0a4b…"
+            placeholder={t('e.g. 1f0a4b…')}
             spellCheck={false}
             autoComplete="off"
           />
         </div>
 
         <div className="field">
-          <label className="label" htmlFor={`${uid}-pw`}>AIOM profile password</label>
+          <label className="label" htmlFor={`${uid}-pw`}>{t('AIOM profile password')}</label>
           <input
             id={`${uid}-pw`}
             className="input"
@@ -273,7 +271,7 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
 
         {!isPublic && (
           <div className="field">
-            <label className="label" htmlFor={`${uid}-apw`}>Addon password</label>
+            <label className="label" htmlFor={`${uid}-apw`}>{t('Addon password')}</label>
             <input
               id={`${uid}-apw`}
               className="input"
@@ -282,7 +280,7 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
               onChange={e => setAddonPassword(e.target.value)}
               autoComplete="off"
             />
-            <span className="hint">Only needed when your instance sets ADDON_PASSWORD</span>
+            <span className="hint">{t('Only needed when your instance sets ADDON_PASSWORD')}</span>
           </div>
         )}
 
@@ -292,16 +290,16 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
           disabled={installing || !configKey || !userUUID.trim() || !password || !customUrlIsValid}
         >
           <Rocket size={14} aria-hidden />
-          {installing ? 'Installing…' : 'Install to AIOMetadata'}
+          {installing ? t('Installing…') : t('Install to AIOMetadata')}
         </button>
 
         {installUrl && (
           <div className="field">
-            <span className="label">Stremio install link</span>
+            <span className="label">{t('Stremio install link')}</span>
             <div className="urlbar">
               <code className="urlbar-code" title={installUrl}>{installUrl}</code>
-              <CopyButton text={installUrl} label="Copy install link" />
-              <a className="btn btn-ghost btn-sm" href={installUrl} target="_blank" rel="noreferrer" aria-label="Open install link">
+              <CopyButton text={installUrl} label={t('Copy install link')} />
+              <a className="btn btn-ghost btn-sm" href={installUrl} target="_blank" rel="noreferrer" aria-label={t('Open install link')}>
                 <ExternalLink size={13} aria-hidden />
               </a>
             </div>
@@ -309,62 +307,56 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
         )}
 
         <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
-          <span className="label">Stremio — install this profile directly</span>
+          <span className="label">{t('Stremio — install this profile directly')}</span>
           <span className="hint" style={{ marginTop: 0 }}>
-            XRDB serves its own addon, so Stremio can use this profile without
-            AIOMetadata. It supplies metadata for a title you open and no
-            catalogue rows of its own, so rows and your library keep the posters
-            their own source supplied. AIOMetadata above serves the rows itself,
-            which is what puts badges on them, along with logos, episode
-            thumbnails and full metadata.
+            {t('XRDB serves its own addon, so Stremio can use this profile without AIOMetadata. It supplies metadata for a title you open and no catalogue rows of its own, so rows and your library keep the posters their own source supplied. AIOMetadata above serves the rows itself, which is what puts badges on them, along with logos, episode thumbnails and full metadata.')}
           </span>
         </div>
 
         <div className="field">
-          <span className="label">Addon manifest URL</span>
+          <span className="label">{t('Addon manifest URL')}</span>
           <div className="urlbar">
             <code className="urlbar-code" title={stremio.manifest}>
               {stremio.manifest}
             </code>
-            <CopyButton text={stremio.manifest} label="Copy addon manifest URL" />
+            <CopyButton text={stremio.manifest} label={t('Copy addon manifest URL')} />
             <a
               className="btn btn-ghost btn-sm"
               href={stremio.deepLink}
-              aria-label="Open in Stremio"
-              title="Open in Stremio"
+              aria-label={t('Open in Stremio')}
+              title={t('Open in Stremio')}
             >
               <ExternalLink size={13} aria-hidden />
             </a>
           </div>
           <span className="hint">
-            Editing this profile updates the art in place — no need to reinstall.
+            {t('Editing this profile updates the art in place — no need to reinstall.')}
           </span>
         </div>
         {canonicalHost && (
         <span className="hint" style={{ marginTop: 0 }}>
-          Already on {PUBLIC_INSTANCE_NAME}? Save your profile on the public instance and use the manifest it gives you.
+          {t('Already on {name}? Save your profile on the public instance and use the manifest it gives you.', { name: PUBLIC_INSTANCE_NAME })}
         </span>
         )}
 
         <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
-          <span className="label">Manual setup</span>
+          <span className="label">{t('Manual setup')}</span>
           <span className="hint" style={{ marginTop: 0 }}>
-            Prefer doing it yourself? Paste these into AIOMetadata&apos;s custom
-            artwork fields (set poster provider to “custom”).
+            {t("Prefer doing it yourself? Paste these into AIOMetadata's custom artwork fields (set poster provider to “custom”).")}
           </span>
         </div>
 
         {([
-          ['Poster URL pattern', patterns.poster],
-          ['Background URL pattern', patterns.backdrop],
-          ['Logo URL pattern', patterns.logo],
-          ['Episode thumbnail URL pattern', patterns.thumbnail],
+          [msg('Poster URL pattern'), patterns.poster],
+          [msg('Background URL pattern'), patterns.backdrop],
+          [msg('Logo URL pattern'), patterns.logo],
+          [msg('Episode thumbnail URL pattern'), patterns.thumbnail],
         ] as const).map(([label, value]) => (
           <div className="field" key={label}>
-            <span className="label">{label}</span>
+            <span className="label">{t(label)}</span>
             <div className="urlbar">
               <code className="urlbar-code" title={maskRenderKey(value)}>{maskRenderKey(value)}</code>
-              <CopyButton text={value} label={`Copy ${label.toLowerCase()}`} />
+              <CopyButton text={value} label={t('Copy {label}', { label: t(label).toLowerCase() })} />
             </div>
           </div>
         ))}

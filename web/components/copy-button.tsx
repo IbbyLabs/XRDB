@@ -3,8 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Check, Copy, X } from 'lucide-react';
 import { copyText } from '@/lib/clipboard';
+import { useT } from '@/lib/i18n';
 
 export function CopyButton({ text, label }: { text: string; label: string }) {
+  const t = useT();
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -23,9 +25,9 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
   const icon = state === 'copied' ? <Check size={13} aria-hidden />
     : state === 'failed' ? <X size={13} aria-hidden />
     : <Copy size={13} aria-hidden />;
-  const caption = state === 'copied' ? 'Copied'
-    : state === 'failed' ? 'Copy failed'
-    : 'Copy';
+  const caption = state === 'copied' ? t('Copied')
+    : state === 'failed' ? t('Copy failed')
+    : t('Copy');
 
   return (
     <button

@@ -10,6 +10,8 @@ import {
 import { toStoredConfig, fromStoredConfig, type SurfaceConfigs } from './configurator-types';
 import { migrateLegacyConfig, type MigrateResult } from '@/lib/api';
 import { CopyButton } from './copy-button';
+import { useT } from '@/lib/i18n';
+import { msg } from '@/lib/i18n-msg';
 
 const ALIAS_RE = /^[a-z]{3,32}$/;
 
@@ -82,15 +84,16 @@ const PROVIDER_KEY_FIELDS = [
   { id: 'mdblist', label: 'MDBList' },
   { id: 'omdb',    label: 'OMDb' },
   { id: 'fanart',  label: 'Fanart.tv' },
-  { id: 'trakt',   label: 'Trakt client ID' },
-  { id: 'simkl',   label: 'SIMKL client ID' },
+  { id: 'trakt',   label: msg('Trakt client ID') },
+  { id: 'simkl',   label: msg('SIMKL client ID') },
   { id: 'pmdb',    label: 'PMDB' },
-  { id: 'customrating', label: 'Custom rating URL', placeholder: 'https://…?id={imdb}&key=…' },
+  { id: 'customrating', label: msg('Custom rating URL'), placeholder: 'https://…?id={imdb}&key=…' },
 ] as const satisfies readonly { id: string; label: string; placeholder?: string }[];
 
 export function ProfilePanel({
   configs, mediaType, mediaId, mediaTitle, loaded, setLoaded, onLoadConfigs, onLoadPreview, flash,
 }: ProfilePanelProps) {
+  const t = useT();
   const uid = useId();
   const [alias, setAlias] = useState('');
   const [password, setPassword] = useState('');
@@ -134,7 +137,7 @@ export function ProfilePanel({
   const handleRevert = () => {
     if (!canRevert) return;
     onLoadConfigs(JSON.parse(checkpoint) as SurfaceConfigs);
-    flash('info', 'Settings put back to the last saved version');
+    flash('info', t('Settings put back to the last saved version'));
   };
 
   // Restored after mount — localStorage reads during the first render
@@ -156,11 +159,11 @@ export function ProfilePanel({
 
   const validateAlias = (value: string): boolean => {
     if (!value) {
-      flash('error', 'Pick a username — it is what you sign in with');
+      flash('error', t('Pick a username — it is what you sign in with'));
       return false;
     }
     if (!ALIAS_RE.test(value)) {
-      flash('error', 'Username must be 3-32 lowercase letters (a-z only)');
+      flash('error', t('Username must be 3-32 lowercase letters (a-z only)'));
       return false;
     }
     return true;
@@ -193,7 +196,7 @@ export function ProfilePanel({
         key: created.alias || created.id,
         name: created.name || created.alias || created.id,
       }));
-      flash('success', `Profile saved — your config key is "${created.alias || created.id}"`, { persist: true });
+      flash('success', t('Profile saved — your config key is "{key}"', { key: created.alias || created.id }), { persist: true });
     } catch (e) {
       flash('error', (e as Error).message);
     } finally {
@@ -207,7 +210,7 @@ export function ProfilePanel({
     // way for the user to see why. Put the key in the form and ask for the
     // password rather than reporting an authorisation failure they cannot act on.
     const fromChip = keyOverride !== undefined;
-    if (!key) { flash('error', 'Enter your username, or the profile ID if you made one before usernames'); return; }
+    if (!key) { flash('error', t('Enter your username, or the profile ID if you made one before usernames')); return; }
     setBusy(true);
     try {
       const p = await getProfile(key, loadPassword || undefined);
@@ -230,16 +233,16 @@ export function ProfilePanel({
         key: p.alias || p.id,
         name: p.name || p.alias || p.id,
       }));
-      flash('success', `Loaded "${p.name || p.alias || p.id}" — you're now editing it`);
+      flash('success', t('Loaded "{name}" — you\'re now editing it', { name: p.name || p.alias || p.id }));
     } catch (e) {
-      const msg = (e as Error).message;
-      if (fromChip && !loadPassword && /unauthorized/i.test(msg)) {
+      const text = (e as Error).message;
+      if (fromChip && !loadPassword && /unauthorized/i.test(text)) {
         setLoadKey(key);
         setNeedsPasswordFor(key);
-        flash('info', `"${key}" is password-protected — enter its password to open it`);
+        flash('info', t('"{key}" is password-protected — enter its password to open it', { key }));
         requestAnimationFrame(() => document.getElementById(`${uid}-loadpw`)?.focus());
       } else {
-        flash('error', msg);
+        flash('error', text);
       }
     } finally {
       setBusy(false);
@@ -255,7 +258,9 @@ export function ProfilePanel({
       const cfgs = fromStoredConfig(result.config as Record<string, unknown>);
       onLoadConfigs(cfgs);
       setMigrateResult(result);
-      flash('success', `Brought ${result.read} setting${result.read === 1 ? '' : 's'} across. Save it as a profile to keep it.`);
+      flash('success', result.read === 1
+        ? t('Brought 1 setting across. Save it as a profile to keep it.')
+        : t('Brought {n} settings across. Save it as a profile to keep it.', { n: result.read }));
     } catch (e) {
       setMigrateError((e as Error).message);
     } finally {
@@ -299,8 +304,8 @@ export function ProfilePanel({
       // Only a deliberate save moves the checkpoint; the autosave must not, or
       // there would be nothing left to revert to.
       if (!silent) setCheckpoint(JSON.stringify(configs));
-      if (keysDropped) flash('info', 'Your changes are saved, but this server cannot store API keys, so the key you entered was not kept.');
-      else if (!silent) flash('success', 'Profile updated');
+      if (keysDropped) flash('info', t('Your changes are saved, but this server cannot store API keys, so the key you entered was not kept.'));
+      else if (!silent) flash('success', t('Profile updated'));
     } catch (e) {
       setRefused({ attempt, message: (e as Error).message });
       flash('error', (e as Error).message);
@@ -332,10 +337,10 @@ export function ProfilePanel({
       } catch (e) {
         reattachedRef.current = '';
         if (loaded.hasPassword) { forgetPassword(loaded.id); setLoaded({ ...loaded, password: '' }); }
-        flash('error', `Could not reattach to "${loaded.name || loaded.id}" — ${(e as Error).message}`);
+        flash('error', t('Could not reattach to "{name}" — {error}', { name: loaded.name || loaded.id, error: (e as Error).message }));
       }
     })();
-  }, [loaded, reattaching, locked, busy, flash, setLoaded]);
+  }, [loaded, reattaching, locked, busy, flash, setLoaded, t]);
 
   const autoSave = useRef(handleUpdate);
   useEffect(() => { autoSave.current = handleUpdate; });
@@ -354,7 +359,7 @@ export function ProfilePanel({
       setRecents(r => dropRecent(r, loaded.id, loaded.alias));
       setLoaded(null);
       setConfirmDelete(false);
-      flash('success', 'Profile deleted');
+      flash('success', t('Profile deleted'));
     } catch (e) {
       flash('error', (e as Error).message);
     } finally {
@@ -378,7 +383,7 @@ export function ProfilePanel({
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
-      flash('success', 'Profile exported');
+      flash('success', t('Profile exported'));
     } catch (e) {
       flash('error', (e as Error).message);
     }
@@ -391,12 +396,14 @@ export function ProfilePanel({
     try {
       const envelope = JSON.parse(await file.text());
       const result = await importProfiles(envelope);
-      const parts = [`Imported ${result.imported} profile${result.imported === 1 ? '' : 's'}`];
-      if (result.skipped) parts.push(`${result.skipped} skipped`);
-      flash(result.imported > 0 ? 'success' : 'info', parts.join(', ') + '. Load one by its ID or alias.');
+      const parts = [result.imported === 1
+        ? t('Imported 1 profile')
+        : t('Imported {n} profiles', { n: result.imported })];
+      if (result.skipped) parts.push(t('{n} skipped', { n: result.skipped }));
+      flash(result.imported > 0 ? 'success' : 'info', parts.join(', ') + t('. Load one by its ID or alias.'));
     } catch (e) {
-      const msg = e instanceof SyntaxError ? 'not a valid XRDB profile file' : (e as Error).message;
-      flash('error', `Import failed — ${msg}`);
+      const reason = e instanceof SyntaxError ? t('not a valid XRDB profile file') : (e as Error).message;
+      flash('error', t('Import failed — {reason}', { reason }));
     } finally {
       setBusy(false);
     }
@@ -410,32 +417,31 @@ export function ProfilePanel({
           <div className="profile-banner">
             <span className="profile-banner-name">
               {loaded.name || loaded.alias || loaded.id}
-              {isDirty && <span className="profile-dirty">{saveError ? ' · Not saved' : ' · Saving…'}</span>}
-              {locked && <span className="profile-locked"> · Locked</span>}
+              {isDirty && <span className="profile-dirty">{saveError ? ` · ${t('Not saved')}` : ` · ${t('Saving…')}`}</span>}
+              {locked && <span className="profile-locked"> · {t('Locked')}</span>}
             </span>
             <span className="hint" style={{ marginTop: 0 }} role="status">
               {locked
-                ? `Nothing is being saved. ${isRemembering() ? 'Enter the password once and this device remembers it.' : 'Your password is not kept after a page reload.'}`
+                ? t('Nothing is being saved. {reason}', { reason: isRemembering() ? t('Enter the password once and this device remembers it.') : t('Your password is not kept after a page reload.') })
                 : reattaching
-                  ? 'Reconnecting to this profile…'
+                  ? t('Reconnecting to this profile…')
                   : isDirty && saveError
-                    ? `Not saved: ${saveError.replace(/\.?$/, '.')} Edit anything to try again.`
+                    ? t('Not saved: {error} Edit anything to try again.', { error: saveError.replace(/\.?$/, '.') })
                   : isDirty
-                    ? `Storing your changes to “${configKey}”.`
-                    : `Saving to “${configKey}” as you edit. Only artwork URLs with config=${configKey} change.`}
+                    ? t('Storing your changes to “{key}”.', { key: configKey })
+                    : t('Saving to “{key}” as you edit. Only artwork URLs with config={key} change.', { key: configKey })}
             </span>
             {otherUsernames.length > 0 && !locked && (
               <div className="notice notice-warn" role="note" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                 <span>
-                  This profile has no username. If your addon’s artwork URL says
-                  config={otherUsernames.join(' or config=')}, that is a different profile and
-                  these edits do not reach it.
+                  {t('This profile has no username. If your addon’s artwork URL says')}
+                  {' '}config={otherUsernames.join(` ${t('or')} config=`)}{t(', that is a different profile and these edits do not reach it.')}
                 </span>
                 <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
                   {otherUsernames.map(k => (
                     <button key={k} type="button" className="btn btn-ghost btn-sm" disabled={busy}
                       onClick={() => void handleLoad(k)}>
-                      Open {k}
+                      {t('Open {name}', { name: k })}
                     </button>
                   ))}
                 </div>
@@ -449,7 +455,7 @@ export function ProfilePanel({
                 <Lock size={14} aria-hidden />
                 <div className="field" style={{ flex: 1, minWidth: 0 }}>
                   <label className="label" htmlFor={`${uid}-unlock`}>
-                    Password for “{loaded.name || loaded.alias || loaded.id}”
+                    {t('Password for “{name}”', { name: loaded.name || loaded.alias || loaded.id })}
                   </label>
                   <input
                     id={`${uid}-unlock`}
@@ -460,12 +466,11 @@ export function ProfilePanel({
                     autoComplete="current-password"
                   />
                   <span className="hint">
-                    Enter it to carry on where you left off. The edits you have made
-                    since are saved as soon as it unlocks.
+                    {t('Enter it to carry on where you left off. The edits you have made since are saved as soon as it unlocks.')}
                   </span>
                 </div>
                 <button type="submit" className="btn btn-primary btn-sm" disabled={busy || !unlockPassword}>
-                  Unlock
+                  {t('Unlock')}
                 </button>
               </form>
             )}
@@ -475,61 +480,55 @@ export function ProfilePanel({
                 className="btn btn-ghost btn-sm"
                 onClick={handleRevert}
                 disabled={busy}
-                title="Put the settings back to how they were when you opened this profile"
+                title={t('Put the settings back to how they were when you opened this profile')}
               >
                 <History size={13} aria-hidden />
-                Revert changes
+                {t('Revert changes')}
               </button>
             )}
           </div>
 
           <div className="field">
-            <span className="label">Config key</span>
+            <span className="label">{t('Config key')}</span>
             <div className="urlbar">
               <code className="urlbar-code">{configKey}</code>
-              <CopyButton text={configKey} label="Copy config key" />
+              <CopyButton text={configKey} label={t('Copy config key')} />
             </div>
             {loaded.alias && (
-              <span className="hint">Alias “{loaded.alias}” — ID {loaded.id} also works</span>
+              <span className="hint">{t('Alias “{alias}” — ID {id} also works', { alias: loaded.alias, id: loaded.id })}</span>
             )}
           </div>
 
           <div className="field">
-            <span className="label">Artwork URL for this title</span>
+            <span className="label">{t('Artwork URL for this title')}</span>
             <div className="urlbar">
               <code className="urlbar-code" title={sampleUrl}>{sampleUrl}</code>
-              <CopyButton text={sampleUrl} label="Copy artwork URL" />
+              <CopyButton text={sampleUrl} label={t('Copy artwork URL')} />
             </div>
             <span className="hint">
-              One example image, for previewing or sharing. This is not the value your
-              addon wants — that is the config key above.
+              {t('One example image, for previewing or sharing. This is not the value your addon wants — that is the config key above.')}
             </span>
           </div>
 
           <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
-            <span className="label">Your own API keys</span>
+            <span className="label">{t('Your own API keys')}</span>
             {!loaded.hasPassword ? (
               <div className="notice notice-warn" role="note">
                 <span>
-                  Set a password on this profile before adding your own API keys.
-                  Without one, anyone who knows the profile ID can read it — and
-                  that would include your keys.
+                  {t('Set a password on this profile before adding your own API keys. Without one, anyone who knows the profile ID can read it — and that would include your keys.')}
                 </span>
               </div>
             ) : (
               <>
                 <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
-                  Optional. A key here is used for this profile instead of the
-                  server&rsquo;s, which gets you your own rate limits. Leave a field
-                  blank to keep using the server&rsquo;s key. Saved keys are never shown
-                  again and never leave the server.
+                  {t('Optional. A key here is used for this profile instead of the server’s, which gets you your own rate limits. Leave a field blank to keep using the server’s key. Saved keys are never shown again and never leave the server.')}
                 </span>
                 {PROVIDER_KEY_FIELDS.map(f => (
                   <div className="field" key={f.id} style={{ marginBottom: 'var(--sp-2)' }}>
                     <label className="label" htmlFor={`${uid}-key-${f.id}`}>
-                      {f.label}
+                      {t(f.label)}
                       {loaded.keysSet?.includes(f.id) && (
-                        <span className="hint" style={{ marginLeft: 'var(--sp-2)' }}>saved</span>
+                        <span className="hint" style={{ marginLeft: 'var(--sp-2)' }}>{t('saved')}</span>
                       )}
                     </label>
                     <input
@@ -538,14 +537,14 @@ export function ProfilePanel({
                       type="password"
                       value={providerKeys[f.id] ?? ''}
                       onChange={e => setProviderKeys({ ...providerKeys, [f.id]: e.target.value })}
-                      placeholder={loaded.keysSet?.includes(f.id) ? 'Saved — type to replace' : ('placeholder' in f ? f.placeholder : 'Using the server key')}
+                      placeholder={loaded.keysSet?.includes(f.id) ? t('Saved — type to replace') : ('placeholder' in f ? f.placeholder : t('Using the server key'))}
                       spellCheck={false}
                       autoComplete="new-password"
                     />
                   </div>
                 ))}
                 <span className="hint">
-                  Removing the password removes the stored keys with it.
+                  {t('Removing the password removes the stored keys with it.')}
                 </span>
               </>
             )}
@@ -554,11 +553,11 @@ export function ProfilePanel({
           <div className="cfg-actions">
             <button className="btn btn-primary" onClick={() => void handleUpdate()} disabled={busy}>
               <RefreshCw size={13} aria-hidden />
-              Update profile
+              {t('Update profile')}
             </button>
-            <button className="btn btn-ghost" onClick={handleExport} disabled={busy} aria-label="Export profile as JSON">
+            <button className="btn btn-ghost" onClick={handleExport} disabled={busy} aria-label={t('Export profile as JSON')}>
               <Download size={13} aria-hidden />
-              Export
+              {t('Export')}
             </button>
           </div>
 
@@ -569,16 +568,16 @@ export function ProfilePanel({
               disabled={busy}
             >
               <LogOut size={13} aria-hidden />
-              Close
+              {t('Close')}
             </button>
             <button className="btn btn-danger" onClick={handleDelete} disabled={busy}>
               <Trash2 size={13} aria-hidden />
-              {confirmDelete ? 'Press again to delete' : 'Delete'}
+              {confirmDelete ? t('Press again to delete') : t('Delete')}
             </button>
           </div>
           {confirmDelete && (
             <span className="hint hint-error" role="alert">
-              Deleting removes this profile permanently — every URL using it stops working.
+              {t('Deleting removes this profile permanently — every URL using it stops working.')}
             </span>
           )}
         </div>
@@ -590,11 +589,11 @@ export function ProfilePanel({
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
-        <h3 className="label" style={{ margin: 0 }}>Sign in</h3>
+        <h3 className="label" style={{ margin: 0 }}>{t('Sign in')}</h3>
         <div className="field">
-          <label className="label" htmlFor={`${uid}-loadkey`}>Username</label>
+          <label className="label" htmlFor={`${uid}-loadkey`}>{t('Username')}</label>
           <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-1)' }}>
-            A profile made before usernames signs in with its ID.
+            {t('A profile made before usernames signs in with its ID.')}
           </span>
           <input
             id={`${uid}-loadkey`}
@@ -602,14 +601,14 @@ export function ProfilePanel({
             value={loadKey}
             onChange={e => setLoadKey(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') void handleLoad(); }}
-            placeholder="username or profile ID"
+            placeholder={t('username or profile ID')}
             spellCheck={false}
             autoComplete="username"
           />
         </div>
         <div className="field">
           <label className="label" htmlFor={`${uid}-loadpw`}>
-            Password{needsPasswordFor && needsPasswordFor === loadKey.trim() ? ' — required for this profile' : ''}
+            {t('Password')}{needsPasswordFor && needsPasswordFor === loadKey.trim() ? ` ${t('— required for this profile')}` : ''}
           </label>
           <input
             id={`${uid}-loadpw`}
@@ -623,37 +622,35 @@ export function ProfilePanel({
         </div>
         <button className="btn btn-ghost" onClick={() => void handleLoad()} disabled={busy}>
           <FolderOpen size={13} aria-hidden />
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? t('Signing in…') : t('Sign in')}
         </button>
 
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
-          <h3 className="label" style={{ margin: 0 }}>New here?</h3>
+          <h3 className="label" style={{ margin: 0 }}>{t('New here?')}</h3>
           <span className="hint" style={{ marginTop: 'var(--sp-1)', display: 'block' }}>
-            Pick a username and a password, and the settings you have now are
-            saved under them.
+            {t('Pick a username and a password, and the settings you have now are saved under them.')}
           </span>
         </div>
 
         <div className="field">
-          <label className="label" htmlFor={`${uid}-alias`}>Username</label>
+          <label className="label" htmlFor={`${uid}-alias`}>{t('Username')}</label>
           <input
             id={`${uid}-alias`}
             data-register-username
             className="input"
             value={alias}
             onChange={e => setAlias(e.target.value.toLowerCase())}
-            placeholder="myposters"
+            placeholder={t('myposters')}
             spellCheck={false}
             autoComplete="username"
           />
           <span className="hint">
-            Three to thirty-two lowercase letters. This is what you sign in with
-            and what your config key becomes.
+            {t('Three to thirty-two lowercase letters. This is what you sign in with and what your config key becomes.')}
           </span>
         </div>
 
         <div className="field">
-          <label className="label" htmlFor={`${uid}-pw`}>Password</label>
+          <label className="label" htmlFor={`${uid}-pw`}>{t('Password')}</label>
           <input
             id={`${uid}-pw`}
             className="input"
@@ -662,20 +659,18 @@ export function ProfilePanel({
             onChange={e => setPassword(e.target.value)}
             autoComplete="new-password"
           />
-          <span className="hint">Protects your profile from edits — recommended</span>
+          <span className="hint">{t('Protects your profile from edits — recommended')}</span>
         </div>
 
         <button className="btn btn-primary" onClick={handleCreate} disabled={busy}>
           <Save size={13} aria-hidden />
-          {busy ? 'Creating…' : 'Create profile'}
+          {busy ? t('Creating…') : t('Create profile')}
         </button>
 
         <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
-          <label className="label" htmlFor={`${uid}-legacy`}>Coming from v2?</label>
+          <label className="label" htmlFor={`${uid}-legacy`}>{t('Coming from v2?')}</label>
           <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
-            Paste an old artwork URL, its query string, or the config JSON. Your
-            settings are translated into this configurator, then you can save
-            them as a profile.
+            {t('Paste an old artwork URL, its query string, or the config JSON. Your settings are translated into this configurator, then you can save them as a profile.')}
           </span>
           <textarea
             id={`${uid}-legacy`}
@@ -691,17 +686,16 @@ export function ProfilePanel({
           />
           {migrateError && (
             <span className="hint hint-error" id={`${uid}-legacy-error`} role="alert">
-              {migrateError}{' '}Copy the whole URL from your media app, including
-              everything after the <code>?</code>.
+              {migrateError}{' '}{t('Copy the whole URL from your media app, including everything after the')} <code>?</code>.
             </span>
           )}
           {migrateResult && !migrateError && (
             <span className="hint" role="status">
-              Brought {migrateResult.read} setting{migrateResult.read === 1 ? '' : 's'} across.
+              {migrateResult.read === 1 ? t('Brought 1 setting across.') : t('Brought {n} settings across.', { n: migrateResult.read })}
               {migrateResult.carriedUntouched?.length
-                ? ` ${migrateResult.carriedUntouched.length} had no match here and were left off: ${migrateResult.carriedUntouched.join(', ')}.`
-                : ' Everything had a match here.'}
-              {' '}Check the preview, then save it as a profile below.
+                ? ` ${t('{n} had no match here and were left off: {list}.', { n: migrateResult.carriedUntouched.length, list: migrateResult.carriedUntouched.join(', ') })}`
+                : ` ${t('Everything had a match here.')}`}
+              {' '}{t('Check the preview, then save it as a profile below.')}
             </span>
           )}
           <button
@@ -711,7 +705,7 @@ export function ProfilePanel({
             disabled={migrating || !legacyInput.trim()}
           >
             <Wand2 size={13} aria-hidden />
-            {migrating ? 'Converting…' : 'Convert to v3'}
+            {migrating ? t('Converting…') : t('Convert to v3')}
           </button>
         </div>
 
@@ -731,17 +725,17 @@ export function ProfilePanel({
           className="btn btn-ghost"
           onClick={() => fileInputRef.current?.click()}
           disabled={busy}
-          aria-label="Import a profile from a JSON file"
+          aria-label={t('Import a profile from a JSON file')}
         >
           <Upload size={13} aria-hidden />
-          Import from file
+          {t('Import from file')}
         </button>
 
         {recents.length > 0 && (
           <div className="field">
             <span className="label">
               <History size={12} aria-hidden style={{ verticalAlign: '-2px', marginRight: 'var(--sp-1)' }} />
-              Recent on this browser
+              {t('Recent on this browser')}
             </span>
             <div className="pin-row">
               {recents.map(r => (
@@ -750,14 +744,14 @@ export function ProfilePanel({
                   className="chip"
                   onClick={() => void handleLoad(r.key)}
                   disabled={busy}
-                  title={`Load "${r.name}" (${r.key})`}
+                  title={t('Load "{name}" ({key})', { name: r.name, key: r.key })}
                 >
                   {r.name}
                 </button>
               ))}
             </div>
             <span className="hint">
-              Password-protected profiles still need their password above.
+              {t('Password-protected profiles still need their password above.')}
             </span>
           </div>
         )}

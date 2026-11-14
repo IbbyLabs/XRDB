@@ -1,52 +1,53 @@
 import type { MediaType } from '@/lib/api';
+import { msg } from '@/lib/i18n-msg';
 
 export type { MediaType } from '@/lib/api';
 
 // ── Option arrays ─────────────────────────────────────────────────────────────
 
 export const MEDIA_TYPES: { id: MediaType; label: string; aspect: string }[] = [
-  { id: 'poster',    label: 'Poster',    aspect: '2/3'  },
-  { id: 'backdrop',  label: 'Backdrop',  aspect: '16/9' },
-  { id: 'thumbnail', label: 'Thumbnail', aspect: '16/9' },
-  { id: 'logo',      label: 'Logo',      aspect: '4/1'  },
+  { id: 'poster',    label: msg('Poster'),    aspect: '2/3'  },
+  { id: 'backdrop',  label: msg('Backdrop'),  aspect: '16/9' },
+  { id: 'thumbnail', label: msg('Thumbnail'), aspect: '16/9' },
+  { id: 'logo',      label: msg('Logo'),      aspect: '4/1'  },
 ];
 
 export const ARTWORK_OPTIONS = [
-  { id: 'tmdb',     label: 'TMDB',      desc: 'The Movie Database — broad, reliable poster coverage' },
-  { id: 'fanart',   label: 'Fanart.tv', desc: 'Fanart.tv — high-resolution, often textless artwork' },
-  { id: 'cinemeta', label: 'Cinemeta',  desc: "Stremio's Cinemeta catalogue artwork" },
-  { id: 'omdb',     label: 'OMDb',      desc: 'OMDb poster art; posters only, and needs an OMDb API key' },
-  { id: 'random',   label: 'Random',    desc: 'Pick a different source on each render' },
+  { id: 'tmdb',     label: 'TMDB',      desc: msg('The Movie Database — broad, reliable poster coverage') },
+  { id: 'fanart',   label: 'Fanart.tv', desc: msg('Fanart.tv — high-resolution, often textless artwork') },
+  { id: 'cinemeta', label: 'Cinemeta',  desc: msg("Stremio's Cinemeta catalogue artwork") },
+  { id: 'omdb',     label: 'OMDb',      desc: msg('OMDb poster art; posters only, and needs an OMDb API key') },
+  { id: 'random',   label: msg('Random'),    desc: msg('Pick a different source on each render') },
 ] as const;
 
 export const SIZE_OPTIONS = [
-  { id: 'small',  label: 'Small'  },
-  { id: 'normal', label: 'Normal' },
-  { id: 'large',  label: 'Large'  },
-  { id: '4k',     label: 'Largest' },
+  { id: 'small',  label: msg('Small')  },
+  { id: 'normal', label: msg('Normal') },
+  { id: 'large',  label: msg('Large')  },
+  { id: '4k',     label: msg('Largest') },
 ] as const;
 
 export const OUTPUT_FORMAT_OPTIONS = [
-  { id: '',     label: 'Auto' },
+  { id: '',     label: msg('Auto') },
   { id: 'jpeg', label: 'JPEG' },
   { id: 'png',  label: 'PNG'  },
 ] as const;
 
 export const TOP_RATED_STYLE_OPTIONS = [
-  { id: '',       label: 'Default' },
-  { id: 'glass',  label: 'Glass'   },
-  { id: 'square', label: 'Square'  },
-  { id: 'plain',  label: 'Plain'   },
-  { id: 'tile',   label: 'Tile'    },
-  { id: 'silver', label: 'Silver'  },
+  { id: '',       label: msg('Default') },
+  { id: 'glass',  label: msg('Glass')   },
+  { id: 'square', label: msg('Square')  },
+  { id: 'plain',  label: msg('Plain')   },
+  { id: 'tile',   label: msg('Tile')    },
+  { id: 'silver', label: msg('Silver')  },
 ] as const;
 
 export const TEXT_PREF_OPTIONS = [
-  { id: 'original',    label: 'Original',    desc: 'The poster as-is, including its title text' },
-  { id: 'clean',       label: 'Clean',       desc: 'Prefer artwork with minimal text' },
-  { id: 'textless',    label: 'Textless',    desc: 'Prefer artwork with no title text at all' },
-  { id: 'alternative', label: 'Alternative', desc: 'An alternate poster where one is available' },
-  { id: 'random',      label: 'Random',      desc: 'A different pick on each render' },
+  { id: 'original',    label: msg('Original'),    desc: msg('The poster as-is, including its title text') },
+  { id: 'clean',       label: msg('Clean'),       desc: msg('Prefer artwork with minimal text') },
+  { id: 'textless',    label: msg('Textless'),    desc: msg('Prefer artwork with no title text at all') },
+  { id: 'alternative', label: msg('Alternative'), desc: msg('An alternate poster where one is available') },
+  { id: 'random',      label: msg('Random'),      desc: msg('A different pick on each render') },
 ] as const;
 
 // 'original' resolves per title from the language it was made in, so Seven
@@ -54,49 +55,49 @@ export const TEXT_PREF_OPTIONS = [
 export const ORIGINAL_LANGUAGE = 'original';
 
 export const LANG_OPTIONS: { id: string; label: string }[] = [
-  { id: ORIGINAL_LANGUAGE, label: "Original (the title's own)" },
-  { id: 'en', label: 'English'    },
-  { id: 'ar', label: 'Arabic'     },
-  { id: 'bg', label: 'Bulgarian'  },
-  { id: 'cs', label: 'Czech'      },
-  { id: 'da', label: 'Danish'     },
-  { id: 'nl', label: 'Dutch'      },
-  { id: 'fi', label: 'Finnish'    },
-  { id: 'fr', label: 'French'     },
-  { id: 'de', label: 'German'     },
-  { id: 'el', label: 'Greek'      },
-  { id: 'he', label: 'Hebrew'     },
-  { id: 'hi', label: 'Hindi'      },
-  { id: 'hu', label: 'Hungarian'  },
-  { id: 'id', label: 'Indonesian' },
-  { id: 'it', label: 'Italian'    },
-  { id: 'ja', label: 'Japanese'   },
-  { id: 'ko', label: 'Korean'     },
-  { id: 'no', label: 'Norwegian'  },
-  { id: 'fa', label: 'Persian'    },
-  { id: 'pl', label: 'Polish'     },
-  { id: 'pt', label: 'Portuguese' },
-  { id: 'ro', label: 'Romanian'   },
-  { id: 'ru', label: 'Russian'    },
-  { id: 'zh', label: 'Chinese'    },
-  { id: 'es', label: 'Spanish'    },
-  { id: 'sv', label: 'Swedish'    },
-  { id: 'ta', label: 'Tamil'      },
-  { id: 'te', label: 'Telugu'     },
-  { id: 'th', label: 'Thai'       },
-  { id: 'tr', label: 'Turkish'    },
-  { id: 'uk', label: 'Ukrainian'  },
-  { id: 'vi', label: 'Vietnamese' },
+  { id: ORIGINAL_LANGUAGE, label: msg("Original (the title's own)") },
+  { id: 'en', label: msg('English')    },
+  { id: 'ar', label: msg('Arabic')     },
+  { id: 'bg', label: msg('Bulgarian')  },
+  { id: 'cs', label: msg('Czech')      },
+  { id: 'da', label: msg('Danish')     },
+  { id: 'nl', label: msg('Dutch')      },
+  { id: 'fi', label: msg('Finnish')    },
+  { id: 'fr', label: msg('French')     },
+  { id: 'de', label: msg('German')     },
+  { id: 'el', label: msg('Greek')      },
+  { id: 'he', label: msg('Hebrew')     },
+  { id: 'hi', label: msg('Hindi')      },
+  { id: 'hu', label: msg('Hungarian')  },
+  { id: 'id', label: msg('Indonesian') },
+  { id: 'it', label: msg('Italian')    },
+  { id: 'ja', label: msg('Japanese')   },
+  { id: 'ko', label: msg('Korean')     },
+  { id: 'no', label: msg('Norwegian')  },
+  { id: 'fa', label: msg('Persian')    },
+  { id: 'pl', label: msg('Polish')     },
+  { id: 'pt', label: msg('Portuguese') },
+  { id: 'ro', label: msg('Romanian')   },
+  { id: 'ru', label: msg('Russian')    },
+  { id: 'zh', label: msg('Chinese')    },
+  { id: 'es', label: msg('Spanish')    },
+  { id: 'sv', label: msg('Swedish')    },
+  { id: 'ta', label: msg('Tamil')      },
+  { id: 'te', label: msg('Telugu')     },
+  { id: 'th', label: msg('Thai')       },
+  { id: 'tr', label: msg('Turkish')    },
+  { id: 'uk', label: msg('Ukrainian')  },
+  { id: 'vi', label: msg('Vietnamese') },
 ];
 
 export const LAYOUT_OPTIONS = [
-  { id: 'bottom',     label: 'Bottom'       },
-  { id: 'top',        label: 'Top'          },
-  { id: 'left',       label: 'Left'         },
-  { id: 'right',      label: 'Right'        },
-  { id: 'split-side', label: 'Split sides'  },
-  { id: 'top-bottom', label: 'Top & bottom' },
-  { id: 'none',       label: 'Hidden'       },
+  { id: 'bottom',     label: msg('Bottom')       },
+  { id: 'top',        label: msg('Top')          },
+  { id: 'left',       label: msg('Left')         },
+  { id: 'right',      label: msg('Right')        },
+  { id: 'split-side', label: msg('Split sides')  },
+  { id: 'top-bottom', label: msg('Top & bottom') },
+  { id: 'none',       label: msg('Hidden')       },
 ] as const;
 
 // Layouts that stack ratings in a column against an edge, so they share the
@@ -104,271 +105,271 @@ export const LAYOUT_OPTIONS = [
 export const SIDE_LAYOUTS: readonly string[] = ['split-side', 'left', 'right'];
 
 export const BADGE_STYLE_OPTIONS = [
-  { id: 'pill',    label: 'Pill'          },
-  { id: 'square',  label: 'Square'        },
-  { id: 'glass',   label: 'Glass'         },
-  { id: 'tile',    label: 'Tile'          },
-  { id: 'stacked', label: 'Stacked'       },
-  { id: 'plain',   label: 'No background' },
+  { id: 'pill',    label: msg('Pill')          },
+  { id: 'square',  label: msg('Square')        },
+  { id: 'glass',   label: msg('Glass')         },
+  { id: 'tile',    label: msg('Tile')          },
+  { id: 'stacked', label: msg('Stacked')       },
+  { id: 'plain',   label: msg('No background') },
 ] as const;
 
 export const BADGE_THEME_OPTIONS = [
-  { id: 'dark',  label: 'Dark'  },
-  { id: 'light', label: 'Light' },
+  { id: 'dark',  label: msg('Dark')  },
+  { id: 'light', label: msg('Light') },
 ] as const;
 
 export const TREND_STYLE_OPTIONS = [
-  { id: 'arrow-word', label: 'Arrow + word' },
-  { id: 'flame-word', label: 'Flame + word' },
-  { id: 'arrow',      label: 'Arrow only'   },
-  { id: 'flame',      label: 'Flame only'   },
-  { id: 'word',       label: 'Word only'    },
+  { id: 'arrow-word', label: msg('Arrow + word') },
+  { id: 'flame-word', label: msg('Flame + word') },
+  { id: 'arrow',      label: msg('Arrow only')   },
+  { id: 'flame',      label: msg('Flame only')   },
+  { id: 'word',       label: msg('Word only')    },
 ] as const;
 
 export const RATING_OPTIONS: { id: string; label: string; accent: string; icon: string; group?: string }[] = [
-  { id: 'imdb',           label: 'IMDb',            accent: '#f5c518', icon: '/rating-logos/imdb.png' },
-  { id: 'tmdb',           label: 'TMDB',            accent: '#01b4e4', icon: '/rating-logos/tmdb.svg' },
-  { id: 'rt',             label: 'RT Critics',      accent: '#fa320a', icon: '/rating-logos/rt.svg' },
-  { id: 'rtaudience',     label: 'RT Audience',     accent: '#fa320a', icon: '/rating-logos/rtaudience.svg' },
-  { id: 'metacritic',     label: 'Metacritic',      accent: '#ffcc34', icon: '/rating-logos/metacritic.png' },
-  { id: 'metacriticuser', label: 'Metacritic User', accent: '#ffcc34', icon: '/rating-logos/metacriticuser.svg' },
-  { id: 'letterboxd',     label: 'Letterboxd',      accent: '#00a99d', icon: '/rating-logos/letterboxd.png' },
-  { id: 'mdblist',        label: 'MDBList',         accent: '#8b5cf6', icon: '/rating-logos/mdblist.png' },
-  { id: 'trakt',          label: 'Trakt',           accent: '#ed1c24', icon: '/rating-logos/trakt.svg' },
-  { id: 'simkl',          label: 'SIMKL',           accent: '#1cb0f6', icon: '/rating-logos/simkl.svg' },
-  { id: 'pmdb',           label: 'PMDB',            accent: '#ebebeb', icon: '/rating-logos/pmdb.svg' },
-  { id: 'rogerebert',     label: 'Roger Ebert',     accent: '#c1121f', icon: '/rating-logos/rogerebert.png' },
-  { id: 'allocine',       label: 'AlloCiné',        accent: '#fecc00', icon: '/rating-logos/allocine.svg' },
-  { id: 'allocinepress',  label: 'AlloCiné Press',  accent: '#f59e0b', icon: '/rating-logos/allocinepress.svg' },
-  { id: 'filmweb',        label: 'Filmweb',         accent: '#ecb014', icon: '/rating-logos/filmweb.png' },
-  { id: 'custom',         label: 'Custom',          accent: '#9ca3af', icon: '/rating-logos/custom.svg' },
-  { id: 'mal',            label: 'MyAnimeList',     accent: '#2c6fbb', icon: '/rating-logos/mal.png', group: 'anime' },
-  { id: 'anilist',        label: 'AniList',         accent: '#02a9ff', icon: '/rating-logos/anilist.png', group: 'anime' },
-  { id: 'kitsu',          label: 'Kitsu',           accent: '#f76e18', icon: '/rating-logos/kitsu.svg', group: 'anime' },
+  { id: 'imdb',           label: msg('IMDb'),            accent: '#f5c518', icon: '/rating-logos/imdb.png' },
+  { id: 'tmdb',           label: msg('TMDB'),            accent: '#01b4e4', icon: '/rating-logos/tmdb.svg' },
+  { id: 'rt',             label: msg('RT Critics'),      accent: '#fa320a', icon: '/rating-logos/rt.svg' },
+  { id: 'rtaudience',     label: msg('RT Audience'),     accent: '#fa320a', icon: '/rating-logos/rtaudience.svg' },
+  { id: 'metacritic',     label: msg('Metacritic'),      accent: '#ffcc34', icon: '/rating-logos/metacritic.png' },
+  { id: 'metacriticuser', label: msg('Metacritic User'), accent: '#ffcc34', icon: '/rating-logos/metacriticuser.svg' },
+  { id: 'letterboxd',     label: msg('Letterboxd'),      accent: '#00a99d', icon: '/rating-logos/letterboxd.png' },
+  { id: 'mdblist',        label: msg('MDBList'),         accent: '#8b5cf6', icon: '/rating-logos/mdblist.png' },
+  { id: 'trakt',          label: msg('Trakt'),           accent: '#ed1c24', icon: '/rating-logos/trakt.svg' },
+  { id: 'simkl',          label: msg('SIMKL'),           accent: '#1cb0f6', icon: '/rating-logos/simkl.svg' },
+  { id: 'pmdb',           label: msg('PMDB'),            accent: '#ebebeb', icon: '/rating-logos/pmdb.svg' },
+  { id: 'rogerebert',     label: msg('Roger Ebert'),     accent: '#c1121f', icon: '/rating-logos/rogerebert.png' },
+  { id: 'allocine',       label: msg('AlloCiné'),        accent: '#fecc00', icon: '/rating-logos/allocine.svg' },
+  { id: 'allocinepress',  label: msg('AlloCiné Press'),  accent: '#f59e0b', icon: '/rating-logos/allocinepress.svg' },
+  { id: 'filmweb',        label: msg('Filmweb'),         accent: '#ecb014', icon: '/rating-logos/filmweb.png' },
+  { id: 'custom',         label: msg('Custom'),          accent: '#9ca3af', icon: '/rating-logos/custom.svg' },
+  { id: 'mal',            label: msg('MyAnimeList'),     accent: '#2c6fbb', icon: '/rating-logos/mal.png', group: 'anime' },
+  { id: 'anilist',        label: msg('AniList'),         accent: '#02a9ff', icon: '/rating-logos/anilist.png', group: 'anime' },
+  { id: 'kitsu',          label: msg('Kitsu'),           accent: '#f76e18', icon: '/rating-logos/kitsu.svg', group: 'anime' },
 ];
 
 export const AGE_POS_OPTIONS = [
-  { id: 'inherit', label: 'Auto'         },
-  { id: 'tl',      label: 'Top left'     },
-  { id: 'tr',      label: 'Top right'    },
-  { id: 'bl',      label: 'Bottom left'  },
-  { id: 'br',      label: 'Bottom right' },
+  { id: 'inherit', label: msg('Auto')         },
+  { id: 'tl',      label: msg('Top left')     },
+  { id: 'tr',      label: msg('Top right')    },
+  { id: 'bl',      label: msg('Bottom left')  },
+  { id: 'br',      label: msg('Bottom right') },
 ] as const;
 
 export const GENRE_POS_OPTIONS = [
-  { id: 'inherit', label: 'Auto'          },
-  { id: 'tl',      label: 'Top left'      },
-  { id: 'tc',      label: 'Top center'    },
-  { id: 'tr',      label: 'Top right'     },
-  { id: 'bl',      label: 'Bottom left'   },
-  { id: 'bc',      label: 'Bottom center' },
-  { id: 'br',      label: 'Bottom right'  },
+  { id: 'inherit', label: msg('Auto')          },
+  { id: 'tl',      label: msg('Top left')      },
+  { id: 'tc',      label: msg('Top center')    },
+  { id: 'tr',      label: msg('Top right')     },
+  { id: 'bl',      label: msg('Bottom left')   },
+  { id: 'bc',      label: msg('Bottom center') },
+  { id: 'br',      label: msg('Bottom right')  },
 ] as const;
 
 export const RING_POS_OPTIONS = [
-  { id: 'br', label: 'Bottom right' },
-  { id: 'bl', label: 'Bottom left'  },
-  { id: 'tr', label: 'Top right'    },
-  { id: 'tl', label: 'Top left'     },
+  { id: 'br', label: msg('Bottom right') },
+  { id: 'bl', label: msg('Bottom left')  },
+  { id: 'tr', label: msg('Top right')    },
+  { id: 'tl', label: msg('Top left')     },
 ] as const;
 
 // Six-position placement (four corners + horizontal centres) for the advanced
 // badge controls. "inherit" leaves the element at its default position.
 export const SIX_POS_OPTIONS = [
-  { id: 'inherit', label: 'Auto'          },
-  { id: 'tl',      label: 'Top left'      },
-  { id: 'tc',      label: 'Top center'    },
-  { id: 'tr',      label: 'Top right'     },
-  { id: 'bl',      label: 'Bottom left'   },
-  { id: 'bc',      label: 'Bottom center' },
-  { id: 'br',      label: 'Bottom right'  },
+  { id: 'inherit', label: msg('Auto')          },
+  { id: 'tl',      label: msg('Top left')      },
+  { id: 'tc',      label: msg('Top center')    },
+  { id: 'tr',      label: msg('Top right')     },
+  { id: 'bl',      label: msg('Bottom left')   },
+  { id: 'bc',      label: msg('Bottom center') },
+  { id: 'br',      label: msg('Bottom right')  },
 ] as const;
 
 // How an accent colour marks a pill that carries no label.
 export const ACCENT_SHAPE_OPTIONS = [
-  { id: 'outline', label: 'Outline', desc: 'Trace the pill in the accent colour and keep the body dark' },
-  { id: 'strip',   label: 'Top strip', desc: 'A centred bar along the top edge of the pill' },
+  { id: 'outline', label: msg('Outline'), desc: msg('Trace the pill in the accent colour and keep the body dark') },
+  { id: 'strip',   label: msg('Top strip'), desc: msg('A centred bar along the top edge of the pill') },
 ] as const;
 
 export const RATING_PRESENTATION_OPTIONS = [
-  { id: 'standard',  label: 'Standard',  desc: 'A row of individual rating badges' },
-  { id: 'minimal',   label: 'Minimal',   desc: 'One pill with the overall average score' },
-  { id: 'average',   label: 'Average',   desc: 'One pill labelled AVG with the overall average' },
-  { id: 'dual',      label: 'Dual',      desc: 'Critics score on top, audience score below' },
-  { id: 'dual-minimal', label: 'Dual (minimal)', desc: 'Critics and audience pills without labels' },
-  { id: 'scorebar',  label: 'Score bar', desc: 'A full-width bar coloured by the average score' },
-  { id: 'editorial', label: 'Editorial', desc: 'Magazine style: a genre label over a large score' },
-  { id: 'none',      label: 'Hidden',    desc: 'Hide ratings on this surface entirely' },
+  { id: 'standard',  label: msg('Standard'),  desc: msg('A row of individual rating badges') },
+  { id: 'minimal',   label: msg('Minimal'),   desc: msg('One pill with the overall average score') },
+  { id: 'average',   label: msg('Average'),   desc: msg('One pill labelled AVG with the overall average') },
+  { id: 'dual',      label: msg('Dual'),      desc: msg('Critics score on top, audience score below') },
+  { id: 'dual-minimal', label: msg('Dual (minimal)'), desc: msg('Critics and audience pills without labels') },
+  { id: 'scorebar',  label: msg('Score bar'), desc: msg('A full-width bar coloured by the average score') },
+  { id: 'editorial', label: msg('Editorial'), desc: msg('Magazine style: a genre label over a large score') },
+  { id: 'none',      label: msg('Hidden'),    desc: msg('Hide ratings on this surface entirely') },
 ] as const;
 
 export const RATING_VALUE_MODE_OPTIONS = [
-  { id: 'native',          label: 'Provider default', desc: 'Every source keeps its own scale, so Letterboxd stays out of five and Rotten Tomatoes stays a percentage' },
-  { id: 'normalized',      label: 'Out of ten',       desc: 'Put every source on a ten point scale so the badges can be read against each other' },
-  { id: 'normalizedclean', label: 'Out of ten, clean', desc: 'The same ten point scale with a trailing .0 trimmed, so 8.0 reads as 8' },
-  { id: 'normalized100',   label: 'Out of a hundred', desc: 'Round every source to a whole number out of a hundred to keep badges compact' },
+  { id: 'native',          label: msg('Provider default'), desc: msg('Every source keeps its own scale, so Letterboxd stays out of five and Rotten Tomatoes stays a percentage') },
+  { id: 'normalized',      label: msg('Out of ten'),       desc: msg('Put every source on a ten point scale so the badges can be read against each other') },
+  { id: 'normalizedclean', label: msg('Out of ten, clean'), desc: msg('The same ten point scale with a trailing .0 trimmed, so 8.0 reads as 8') },
+  { id: 'normalized100',   label: msg('Out of a hundred'), desc: msg('Round every source to a whole number out of a hundred to keep badges compact') },
 ] as const;
 
 export const ICON_SHAPE_OPTIONS = [
-  { id: '',         label: 'Original' },
-  { id: 'circle',   label: 'Circle'   },
-  { id: 'squircle', label: 'Squircle' },
-  { id: 'rounded',  label: 'Rounded'  },
+  { id: '',         label: msg('Original') },
+  { id: 'circle',   label: msg('Circle')   },
+  { id: 'squircle', label: msg('Squircle') },
+  { id: 'rounded',  label: msg('Rounded')  },
 ] as const;
 
 export const QUALITY_STYLE_OPTIONS = [
-  { id: 'default', label: 'Glass' },
-  { id: 'plain',   label: 'Plain' },
-  { id: 'tile',    label: 'Tile'  },
+  { id: 'default', label: msg('Glass') },
+  { id: 'plain',   label: msg('Plain') },
+  { id: 'tile',    label: msg('Tile')  },
 ] as const;
 
 export const RELEASE_STATUS_STYLE_OPTIONS = [
-  { id: '',       label: 'Accent'  },
-  { id: 'glass',  label: 'Glass'   },
-  { id: 'square',  label: 'Square' },
-  { id: 'plain',  label: 'Plain'   },
-  { id: 'silver', label: 'Silver'  },
-  { id: 'tile',   label: 'Tile'    },
-  { id: 'pill',   label: 'Pill'    },
+  { id: '',       label: msg('Accent')  },
+  { id: 'glass',  label: msg('Glass')   },
+  { id: 'square',  label: msg('Square') },
+  { id: 'plain',  label: msg('Plain')   },
+  { id: 'silver', label: msg('Silver')  },
+  { id: 'tile',   label: msg('Tile')    },
+  { id: 'pill',   label: msg('Pill')    },
 ] as const;
 
 export const RELEASE_CASE_OPTIONS = [
-  { id: 'default', label: 'Auto',     desc: 'Normal case on the pill, capitals on the other styles' },
-  { id: 'upper',   label: 'Capitals', desc: 'IN CINEMAS' },
-  { id: 'normal',  label: 'Normal',   desc: 'In cinemas' },
-  { id: 'title',   label: 'Title',    desc: 'In Cinemas' },
+  { id: 'default', label: msg('Auto'),     desc: msg('Normal case on the pill, capitals on the other styles') },
+  { id: 'upper',   label: msg('Capitals'), desc: msg('IN CINEMAS') },
+  { id: 'normal',  label: msg('Normal'),   desc: msg('In cinemas') },
+  { id: 'title',   label: msg('Title'),    desc: msg('In Cinemas') },
 ] as const;
 
 export const RELEASE_DATE_FORMAT_OPTIONS = [
-  { id: 'default',   label: '23 Oct 2026' },
-  { id: 'day-month', label: '23 Oct' },
-  { id: 'month-day', label: 'Oct 23' },
+  { id: 'default',   label: msg('23 Oct 2026') },
+  { id: 'day-month', label: msg('23 Oct') },
+  { id: 'month-day', label: msg('Oct 23') },
 ] as const;
 
 export const LOGO_SHADOW_STYLE_OPTIONS = [
-  { id: '',        label: 'Shadow'  },
-  { id: 'extrude', label: 'Extrude' },
-  { id: 'emboss', label: 'Emboss' },
-  { id: 'gel',     label: 'Gel'     },
+  { id: '',        label: msg('Shadow')  },
+  { id: 'extrude', label: msg('Extrude') },
+  { id: 'emboss', label: msg('Emboss') },
+  { id: 'gel',     label: msg('Gel')     },
 ] as const;
 
 export const AGE_STYLE_OPTIONS = [
-  { id: 'default', label: 'Glass'  },
-  { id: 'square',  label: 'Square' },
-  { id: 'plain',   label: 'Plain'  },
-  { id: 'tile',    label: 'Tile'   },
-  { id: 'media',   label: 'Media'  },
-  { id: 'silver',  label: 'Silver' },
+  { id: 'default', label: msg('Glass')  },
+  { id: 'square',  label: msg('Square') },
+  { id: 'plain',   label: msg('Plain')  },
+  { id: 'tile',    label: msg('Tile')   },
+  { id: 'media',   label: msg('Media')  },
+  { id: 'silver',  label: msg('Silver') },
 ] as const;
 
 export const ANIME_GROUPING_OPTIONS = [
-  { id: 'default',   label: 'Own badge',  desc: 'Anime gets its own ANIME badge' },
-  { id: 'animation', label: 'As animation', desc: 'Anime is folded in with animation generally' },
-  { id: 'secondary', label: 'Next genre', desc: 'Anime and animation defer to the next strongest genre' },
+  { id: 'default',   label: msg('Own badge'),  desc: msg('Anime gets its own ANIME badge') },
+  { id: 'animation', label: msg('As animation'), desc: msg('Anime is folded in with animation generally') },
+  { id: 'secondary', label: msg('Next genre'), desc: msg('Anime and animation defer to the next strongest genre') },
 ] as const;
 
 export const GENRE_CASE_OPTIONS = [
-  { id: 'default', label: 'Auto',       desc: 'Capitals for First only, the source\u2019s spelling otherwise' },
-  { id: 'upper',   label: 'Capitals',   desc: 'Shout the label whichever one is chosen' },
-  { id: 'normal',  label: 'As written', desc: 'Keep the spelling as the source has it' },
+  { id: 'default', label: msg('Auto'),       desc: msg('Capitals for First only, the source\u2019s spelling otherwise') },
+  { id: 'upper',   label: msg('Capitals'),   desc: msg('Shout the label whichever one is chosen') },
+  { id: 'normal',  label: msg('As written'), desc: msg('Keep the spelling as the source has it') },
 ] as const;
 
 export const GENRE_COUNT_OPTIONS = [
-  { id: 'default', label: 'Auto', desc: 'Up to three, trimmed to whatever fits the artwork' },
-  { id: '1',       label: 'One',  desc: 'The strongest genre only' },
-  { id: '2',       label: 'Two',  desc: 'Two genres, where the second carries the meaning' },
-  { id: '3',       label: 'Three', desc: 'Three, still trimmed if they do not fit' },
+  { id: 'default', label: msg('Auto'), desc: msg('Up to three, trimmed to whatever fits the artwork') },
+  { id: '1',       label: msg('One'),  desc: msg('The strongest genre only') },
+  { id: '2',       label: msg('Two'),  desc: msg('Two genres, where the second carries the meaning') },
+  { id: '3',       label: msg('Three'), desc: msg('Three, still trimmed if they do not fit') },
 ] as const;
 
 export const GENRE_BORDER_OPTIONS = [
-  { id: 'off',      label: 'Off' },
-  { id: 'hairline', label: 'Hairline' },
-  { id: 'custom',   label: 'Custom' },
+  { id: 'off',      label: msg('Off') },
+  { id: 'hairline', label: msg('Hairline') },
+  { id: 'custom',   label: msg('Custom') },
 ] as const;
 
 export const RING_SHAPE_OPTIONS = [
-  { id: 'ring',    label: 'Ring' },
-  { id: 'disc',    label: 'Solid disc' },
-  { id: 'chip',    label: 'Chip' },
-  { id: 'hexagon', label: 'Hexagon' },
-  { id: 'shield',  label: 'Shield' },
-  { id: 'verdict', label: 'Verdict pill' },
+  { id: 'ring',    label: msg('Ring') },
+  { id: 'disc',    label: msg('Solid disc') },
+  { id: 'chip',    label: msg('Chip') },
+  { id: 'hexagon', label: msg('Hexagon') },
+  { id: 'shield',  label: msg('Shield') },
+  { id: 'verdict', label: msg('Verdict pill') },
 ] as const;
 
 export const RING_CENTER_OPTIONS = [
-  { id: 'default',   label: 'Default' },
-  { id: 'invisible', label: 'Invisible' },
-  { id: 'custom',    label: 'Custom' },
+  { id: 'default',   label: msg('Default') },
+  { id: 'invisible', label: msg('Invisible') },
+  { id: 'custom',    label: msg('Custom') },
 ] as const;
 
 export const GENRE_MODE_OPTIONS = [
-  { id: 'default', label: 'Text' },
-  { id: 'icon',    label: 'Icon' },
-  { id: 'both',    label: 'Both' },
+  { id: 'default', label: msg('Text') },
+  { id: 'icon',    label: msg('Icon') },
+  { id: 'both',    label: msg('Both') },
 ] as const;
 
 export const GENRE_STYLE_OPTIONS = [
-  { id: 'default', label: 'Default' },
-  { id: 'glass',   label: 'Glass'   },
-  { id: 'pill',    label: 'Pill'    },
-  { id: 'square',  label: 'Square'  },
-  { id: 'plain',   label: 'Plain'   },
-  { id: 'clean',   label: 'Clean'   },
-  { id: 'tile',    label: 'Tile'    },
+  { id: 'default', label: msg('Default') },
+  { id: 'glass',   label: msg('Glass')   },
+  { id: 'pill',    label: msg('Pill')    },
+  { id: 'square',  label: msg('Square')  },
+  { id: 'plain',   label: msg('Plain')   },
+  { id: 'clean',   label: msg('Clean')   },
+  { id: 'tile',    label: msg('Tile')    },
 ] as const;
 
 export const BADGE_FONT_OPTIONS = [
-  { id: 'default', label: 'Default' },
-  { id: 'sans',    label: 'Sans' },
-  { id: 'serif',   label: 'Serif' },
-  { id: 'mono',    label: 'Mono' },
-  { id: 'display', label: 'Display (caps)' },
+  { id: 'default', label: msg('Default') },
+  { id: 'sans',    label: msg('Sans') },
+  { id: 'serif',   label: msg('Serif') },
+  { id: 'mono',    label: msg('Mono') },
+  { id: 'display', label: msg('Display (caps)') },
 ] as const;
 
 export const GENRE_ACCENT_OPTIONS = [
-  { id: 'default', label: 'Per style', desc: 'Square caps the label, the others carry no accent' },
-  { id: 'left',    label: 'Left edge', desc: 'A stripe down the left of the plate, the way v2 drew it' },
-  { id: 'top',     label: 'Above',     desc: 'A short bar centred above the label' },
-  { id: 'none',    label: 'None',      desc: 'No accent' },
+  { id: 'default', label: msg('Per style'), desc: msg('Square caps the label, the others carry no accent') },
+  { id: 'left',    label: msg('Left edge'), desc: msg('A stripe down the left of the plate, the way v2 drew it') },
+  { id: 'top',     label: msg('Above'),     desc: msg('A short bar centred above the label') },
+  { id: 'none',    label: msg('None'),      desc: msg('No accent') },
 ] as const;
 
 export const GENRE_LABEL_OPTIONS = [
-  { id: 'default', label: 'Genre list', desc: 'Up to three genres, as the source spells them' },
-  { id: 'primary', label: 'First only', desc: 'The strongest genre alone, in capitals, the way v2 read' },
-  { id: 'family',  label: 'Family name', desc: 'The group the genres resolve to, e.g. SCI FI, matching the glyph' },
+  { id: 'default', label: msg('Genre list'), desc: msg('Up to three genres, as the source spells them') },
+  { id: 'primary', label: msg('First only'), desc: msg('The strongest genre alone, in capitals, the way v2 read') },
+  { id: 'family',  label: msg('Family name'), desc: msg('The group the genres resolve to, e.g. SCI FI, matching the glyph') },
 ] as const;
 
 export const AGGREGATE_SOURCE_OPTIONS = [
-  { id: 'overall',  label: 'Overall'  },
-  { id: 'critics',  label: 'Critics'  },
-  { id: 'audience', label: 'Audience' },
+  { id: 'overall',  label: msg('Overall')  },
+  { id: 'critics',  label: msg('Critics')  },
+  { id: 'audience', label: msg('Audience') },
 ] as const;
 
 export const TREND_TAG_STYLE_OPTIONS = [
-  { id: '',       label: 'Glass'  },
-  { id: 'square', label: 'Square' },
-  { id: 'plain',  label: 'Plain'  },
-  { id: 'pill',   label: 'Pill'   },
+  { id: '',       label: msg('Glass')  },
+  { id: 'square', label: msg('Square') },
+  { id: 'plain',  label: msg('Plain')  },
+  { id: 'pill',   label: msg('Pill')   },
 ] as const;
 
 export const TRENDING_RANK_POS_OPTIONS = [
-  { id: '',   label: 'Top centre' },
-  { id: 'tl', label: 'Top left' },
-  { id: 'tr', label: 'Top right' },
+  { id: '',   label: msg('Top centre') },
+  { id: 'tl', label: msg('Top left') },
+  { id: 'tr', label: msg('Top right') },
 ] as const;
 
 export const AGGREGATE_ACCENT_MODE_OPTIONS = [
-  { id: 'default', label: 'Score bands' },
-  { id: 'genre',   label: 'Genre'       },
-  { id: 'source',  label: 'Source'      },
-  { id: 'dynamic', label: 'By score'    },
-  { id: 'custom',  label: 'Custom'      },
+  { id: 'default', label: msg('Score bands') },
+  { id: 'genre',   label: msg('Genre')       },
+  { id: 'source',  label: msg('Source')      },
+  { id: 'dynamic', label: msg('By score')    },
+  { id: 'custom',  label: msg('Custom')      },
 ] as const;
 
 export const SCOREBAR_STYLE_OPTIONS = [
-  { id: 'progress', label: 'Progress' },
-  { id: 'solid',    label: 'Solid'    },
-  { id: 'gradient', label: 'Gradient' },
-  { id: 'dynamic',  label: 'Dynamic'  },
+  { id: 'progress', label: msg('Progress') },
+  { id: 'solid',    label: msg('Solid')    },
+  { id: 'gradient', label: msg('Gradient') },
+  { id: 'dynamic',  label: msg('Dynamic')  },
 ] as const;
 
 // Every token the renderer draws needs a chip here, or a config carrying one
@@ -392,8 +393,8 @@ export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
 ];
 
 export const QUALITY_MODE_OPTIONS = [
-  { id: '',     label: 'Every picked format' },
-  { id: 'best', label: 'Best resolution only' },
+  { id: '',     label: msg('Every picked format') },
+  { id: 'best', label: msg('Best resolution only') },
 ] as const;
 
 // Best mode needs the finer tiers to choose between.
@@ -1185,10 +1186,10 @@ export function decodeShare(fragment: string): ShareState | null {
 }
 
 export function normalizeError(e: unknown): string {
-  const msg = (e as Error).message ?? 'Unknown error';
-  if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))
-    return 'Could not reach the backend.';
-  return msg;
+  const text = (e as Error).message ?? 'Unknown error';
+  if (text.includes('Failed to fetch') || text.includes('NetworkError'))
+    return msg('Could not reach the backend.');
+  return text;
 }
 
 // The preview URL a first visit asks for. Built from the same constants the

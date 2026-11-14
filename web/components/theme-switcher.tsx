@@ -2,16 +2,18 @@
 
 import { useState, useEffect, useRef, useId, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Palette, Check } from 'lucide-react';
+import { useT } from '@/lib/i18n';
+import { msg } from '@/lib/i18n-msg';
 
 // Each theme recolors the entire token system through one hue.
 // Swatch colors approximate each theme's accent for the picker.
 const THEMES = [
-  { id: 'midnight', label: 'Midnight', swatch: 'oklch(52% 0.165 238)' },
-  { id: 'violet',   label: 'Violet',   swatch: 'oklch(52% 0.165 300)' },
-  { id: 'emerald',  label: 'Emerald',  swatch: 'oklch(50% 0.165 165)' },
-  { id: 'ember',    label: 'Ember',    swatch: 'oklch(52% 0.165 50)' },
-  { id: 'crimson',  label: 'Crimson',  swatch: 'oklch(52% 0.165 20)' },
-  { id: 'slate',    label: 'Slate',    swatch: 'oklch(52% 0.03 238)' },
+  { id: 'midnight', label: msg('Midnight'), swatch: 'oklch(52% 0.165 238)' },
+  { id: 'violet',   label: msg('Violet'),   swatch: 'oklch(52% 0.165 300)' },
+  { id: 'emerald',  label: msg('Emerald'),  swatch: 'oklch(50% 0.165 165)' },
+  { id: 'ember',    label: msg('Ember'),    swatch: 'oklch(52% 0.165 50)' },
+  { id: 'crimson',  label: msg('Crimson'),  swatch: 'oklch(52% 0.165 20)' },
+  { id: 'slate',    label: msg('Slate'),    swatch: 'oklch(52% 0.03 238)' },
 ] as const;
 
 type ThemeId = typeof THEMES[number]['id'];
@@ -37,6 +39,7 @@ function storedTheme(): ThemeId {
 }
 
 export function ThemeSwitcher() {
+  const t = useT();
   const uid = useId();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<ThemeId>(storedTheme);
@@ -98,10 +101,10 @@ export function ThemeSwitcher() {
         onClick={() => setOpen(v => !v)}
         aria-expanded={open}
         aria-controls={`${uid}-menu`}
-        aria-label="UI theme"
+        aria-label={t('UI theme')}
       >
         <Palette size={14} aria-hidden="true" />
-        <span className="sr-only">UI theme</span>
+        <span className="sr-only">{t('UI theme')}</span>
       </button>
 
       {open && (
@@ -109,22 +112,22 @@ export function ThemeSwitcher() {
           id={`${uid}-menu`}
           className="theme-menu"
           role="radiogroup"
-          aria-label="UI theme"
+          aria-label={t('UI theme')}
           onKeyDown={onMenuKeyDown}
         >
-          {THEMES.map((t, i) => (
+          {THEMES.map((th, i) => (
             <button
-              key={t.id}
+              key={th.id}
               ref={el => { optionsRef.current[i] = el; }}
               role="radio"
-              aria-checked={active === t.id}
-              tabIndex={active === t.id ? 0 : -1}
+              aria-checked={active === th.id}
+              tabIndex={active === th.id ? 0 : -1}
               className="theme-option"
-              onClick={() => select(t.id)}
+              onClick={() => select(th.id)}
             >
-              <span className="theme-swatch" style={{ background: t.swatch }} aria-hidden />
-              {t.label}
-              {active === t.id && (
+              <span className="theme-swatch" style={{ background: th.swatch }} aria-hidden />
+              {t(th.label)}
+              {active === th.id && (
                 <span className="theme-check" aria-hidden><Check size={13} /></span>
               )}
             </button>
