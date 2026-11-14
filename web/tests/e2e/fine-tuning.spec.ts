@@ -7,7 +7,7 @@ const DESKTOP = { width: 1280, height: 900 };
 
 /** The genre badge is off by default; its controls only exist once it's on. */
 async function enableGenreBadge(page: Page) {
-  const toggle = page.getByRole('switch', { name: /toggle genre badge/i });
+  const toggle = page.getByRole('switch', { name: /^genre badge$/i });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
 }
@@ -38,7 +38,7 @@ test.beforeEach(async ({ page }) => {
 test('fine tuning is off until asked for', async ({ page }) => {
   await enableGenreBadge(page);
 
-  const fine = page.getByRole('switch', { name: /toggle fine tuning/i });
+  const fine = page.getByRole('switch', { name: /^fine tuning$/i });
   await expect(fine).toHaveAttribute('aria-checked', 'false');
 
   // the genre badge shows only its common controls
@@ -55,7 +55,7 @@ test('fine tuning is off until asked for', async ({ page }) => {
 
 test('a badge is configured in one place', async ({ page }) => {
   await enableGenreBadge(page);
-  await page.getByRole('switch', { name: /toggle fine tuning/i }).click();
+  await page.getByRole('switch', { name: /^fine tuning$/i }).click();
 
   const labels = await labelOrder(page);
   const genre = labels.indexOf('Genre position');
@@ -73,13 +73,13 @@ test('a badge is configured in one place', async ({ page }) => {
 });
 
 test('the fine tuning preference outlives a reload', async ({ page }) => {
-  const fine = page.getByRole('switch', { name: /toggle fine tuning/i });
+  const fine = page.getByRole('switch', { name: /^fine tuning$/i });
   await fine.click();
   await expect(fine).toHaveAttribute('aria-checked', 'true');
 
   await page.reload();
   await expect(page.locator('.preview-actions')).toBeVisible();
-  await expect(page.getByRole('switch', { name: /toggle fine tuning/i }))
+  await expect(page.getByRole('switch', { name: /^fine tuning$/i }))
     .toHaveAttribute('aria-checked', 'true');
 });
 
@@ -92,7 +92,7 @@ test('the revealed controls fit a phone', async ({ page }) => {
   // narrowest viewport has none of.
   await page.setViewportSize({ width: 390, height: 844 });
   await enableGenreBadge(page);
-  await page.getByRole('switch', { name: /toggle fine tuning/i }).click();
+  await page.getByRole('switch', { name: /^fine tuning$/i }).click();
   await expect(page.locator('.fine-group').first()).toBeVisible();
 
   expect(await page.evaluate(() =>

@@ -12,7 +12,7 @@ async function openFineTuning(page: Page) {
   // which makes them a real ready signal.
   await expect(page.locator('.preview-actions')).toBeVisible();
   await page.getByRole('tab', { name: /ratings/i }).click();
-  const toggle = page.getByRole('switch', { name: /toggle fine tuning/i });
+  const toggle = page.getByRole('switch', { name: /^fine tuning$/i });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
 }
