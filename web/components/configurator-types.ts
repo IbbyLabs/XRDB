@@ -508,6 +508,7 @@ export interface ConfigState {
   providersCountry: string; // ISO country for watch providers; '' = default
   networkTileColor: string; // '#RRGGBB' tile behind provider chips; '' = default
   providersPos: string; // 'inherit' | six positions
+  providersLayout: string; // '' row | 'column'
   providersAllow: string[]; // services to show, most wanted first; [] = all
   providersMax: number; // 1-5; 0 = 5
   providersSubscriptionOnly: boolean;
@@ -776,6 +777,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   providersCountry: '',
   networkTileColor: '',
   providersPos: 'inherit',
+  providersLayout: '',
   providersAllow: [],
   providersMax: 0,
   providersSubscriptionOnly: false,

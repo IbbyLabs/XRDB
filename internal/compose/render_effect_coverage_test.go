@@ -491,6 +491,7 @@ func keyMutations() map[string]keyOverride {
 		"genrePos":          {mut: func(c *imageconfig.Config) { c.GenrePos = "tr" }},
 		"providersPos":      {mut: func(c *imageconfig.Config) { c.ProvidersPos = "tl" }},
 		"providersMax":      {mut: func(c *imageconfig.Config) { c.ProvidersMax = 1 }},
+		"providersLayout":   {mut: func(c *imageconfig.Config) { c.ProvidersLayout = "column" }},
 		"providersAllow":    {mut: func(c *imageconfig.Config) { c.ProvidersAllow = []string{"Disney Plus", "Netflix"} }},
 		"aggregateBarPos":   {mut: func(c *imageconfig.Config) { c.AggregateBarPos = "top" }},
 		"ratingRingPos":     {mut: func(c *imageconfig.Config) { c.RatingRingPos = "bl" }},

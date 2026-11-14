@@ -236,6 +236,8 @@ type Config struct {
 	// as every other badge family. ProvidersPos is tl|tr|bl|br|tc|bc; "" keeps
 	// the wide strip centred along the bottom edge.
 	ProvidersPos string `json:"providersPos,omitempty"`
+	// ProvidersLayout is "column" to stack the chips; "" is a row.
+	ProvidersLayout string `json:"providersLayout,omitempty"`
 	// ProvidersAllow limits the chips to these services, most wanted first; empty shows every service.
 	ProvidersAllow []string `json:"providersAllow,omitempty"`
 	// ProvidersMax caps how many chips draw, 1-5; 0 = 5.
@@ -929,6 +931,7 @@ type raw struct {
 	ProvidersCountry              *string   `json:"providersCountry"`
 	NetworkTileColor              *string   `json:"networkTileColor"`
 	ProvidersPos                  *string   `json:"providersPos"`
+	ProvidersLayout               *string   `json:"providersLayout"`
 	ProvidersAllow                *[]string `json:"providersAllow"`
 	ProvidersMax                  *int      `json:"providersMax"`
 	ProvidersSubscriptionOnly     *bool     `json:"providersSubscriptionOnly"`
@@ -1453,6 +1456,14 @@ func Parse(data json.RawMessage) Config {
 	if r.ProvidersPos != nil {
 		if p := sixPos(*r.ProvidersPos); p != "" {
 			cfg.ProvidersPos = p
+		}
+	}
+	if r.ProvidersLayout != nil {
+		switch strings.ToLower(strings.TrimSpace(*r.ProvidersLayout)) {
+		case "column", "vertical", "stack", "stacked":
+			cfg.ProvidersLayout = "column"
+		case "row", "horizontal":
+			cfg.ProvidersLayout = ""
 		}
 	}
 	if r.ProvidersAllow != nil {
@@ -2890,6 +2901,7 @@ func CacheKey(cfg Config) string {
 		Providers                     bool           `json:"providers"`
 		ProvidersCountry              string         `json:"providersCountry"`
 		ProvidersPos                  string         `json:"providersPos"`
+		ProvidersLayout               string         `json:"providersLayout,omitempty"`
 		ProvidersAllow                []string       `json:"providersAllow,omitempty"`
 		ProvidersMax                  int            `json:"providersMax,omitempty"`
 		ProvidersSubscriptionOnly     bool           `json:"providersSubscriptionOnly,omitempty"`
@@ -3034,6 +3046,7 @@ func CacheKey(cfg Config) string {
 		Providers:                     cfg.Providers,
 		ProvidersCountry:              cfg.ProvidersCountry,
 		ProvidersPos:                  cfg.ProvidersPos,
+		ProvidersLayout:               cfg.ProvidersLayout,
 		ProvidersAllow:                cfg.ProvidersAllow,
 		ProvidersMax:                  cfg.ProvidersMax,
 		ProvidersSubscriptionOnly:     cfg.ProvidersSubscriptionOnly,

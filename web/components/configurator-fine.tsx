@@ -1802,6 +1802,15 @@ export function ProvidersFine({ uid, config, onUpdate }: GroupProps) {
     <FineGroup label={t('Where to watch chips')}>
       <PosSelect id={`${uid}-provider-pos`} label={t('Position')} value={config.providersPos}
         onChange={v => onUpdate('providersPos', v)} />
+      <div className="field">
+        <label className="label" htmlFor={`${uid}-provider-layout`}>{t('Layout')}</label>
+        <select id={`${uid}-provider-layout`} className="select" value={config.providersLayout}
+          onChange={e => onUpdate('providersLayout', e.target.value)} style={{ maxWidth: '12rem' }}>
+          <option value="">{t('Side by side')}</option>
+          <option value="column">{t('Stacked')}</option>
+        </select>
+        <span className="hint">{t('Stacked puts the chips one above the other, along the edge they sit on.')}</span>
+      </div>
       <NumField id={`${uid}-provider-scale`} label={t('Scale (%)')} value={config.providerBadgeScale}
         onChange={v => onUpdate('providerBadgeScale', v)} min={70} max={400} step={5}
         hint={t('70–200. Blank keeps the default size.')} />

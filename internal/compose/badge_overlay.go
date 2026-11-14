@@ -1213,10 +1213,12 @@ type providerBadgeOpts struct {
 	noShadow     bool
 	frost        int
 	max          int // 0 = 5
+	column       bool
 }
 
 func providerOptsFromConfig(cfg imageconfig.Config) providerBadgeOpts {
 	return providerBadgeOpts{
+		column:       cfg.ProvidersLayout == "column",
 		pos:          cfg.ProvidersPos,
 		scalePercent: cfg.ProviderBadgeScale,
 		offsetX:      cfg.ProviderBadgeOffsetX,
@@ -1344,7 +1346,7 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	}
 
 	chips := make([]chip, 0, len(shown))
-	totalW := 0
+	totalW, widest := 0, 0
 	for i, p := range shown {
 		var c chip
 		if raw := logos[i]; raw != nil {
@@ -1379,6 +1381,12 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 		if i > 0 {
 			totalW += gap
 		}
+		widest = max(widest, c.w)
+	}
+
+	stripW, stripH := totalW, tileH
+	if opts.column {
+		stripW, stripH = widest, len(chips)*tileH+(len(chips)-1)*gap
 	}
 
 	// Place the whole strip through the occupancy tracker so it stacks above
@@ -1389,14 +1397,17 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	// one of them runs.
 	var strip image.Rectangle
 	if opts.pos == "" {
-		strip = occ.placeCenteredNudged(totalW, tileH, edgeX, edgeY, s(8), opts.offsetX, opts.offsetY)
+		strip = occ.placeCenteredNudged(stripW, stripH, edgeX, edgeY, s(8), opts.offsetX, opts.offsetY)
 	} else {
-		strip = occ.placeNudged(opts.pos, totalW, tileH, edgeX, edgeY, s(8), opts.offsetX, opts.offsetY)
+		strip = occ.placeNudged(opts.pos, stripW, stripH, edgeX, edgeY, s(8), opts.offsetX, opts.offsetY)
 	}
 	x, y := strip.Min.X, strip.Min.Y
 
 	shadow := color.NRGBA{R: 0, G: 0, B: 0, A: 80}
 	for _, c := range chips {
+		if opts.column {
+			x = columnChipX(strip, c.w, opts.pos)
+		}
 		r := image.Rect(x, y, x+c.w, y+tileH)
 		if !c.baked {
 			frostRoundedRect(base, r, radius, squareNone, opts.frost)
@@ -1443,8 +1454,23 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 			ty := r.Min.Y + (tileH-(ascent+descent))/2 + ascent
 			drawText(base, face, r.Min.X+textPadX, ty, color.NRGBA{R: 240, G: 240, B: 245, A: 255}, c.label)
 		}
-		x += c.w + gap
+		if opts.column {
+			y += tileH + gap
+		} else {
+			x += c.w + gap
+		}
 	}
+}
+
+// columnChipX aligns a stacked chip to the strip's anchored edge.
+func columnChipX(strip image.Rectangle, w int, pos string) int {
+	switch pos {
+	case "tl", "bl":
+		return strip.Min.X
+	case "tr", "br":
+		return strip.Max.X - w
+	}
+	return strip.Min.X + (strip.Dx()-w)/2
 }
 
 // drawLogoScaled composites src into dst rectangle using CatmullRom

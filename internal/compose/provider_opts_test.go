@@ -44,6 +44,41 @@ func TestUnplacedProviderChipsStayOnTheBottomStrip(t *testing.T) {
 	}
 }
 
+// The column layout stacks the chips down the anchored edge instead of across it.
+func TestColumnProviderChipsStackDownTheRightEdge(t *testing.T) {
+	row := paintedBounds(t, renderProviders(providerBadgeOpts{pos: "tr"}))
+	col := paintedBounds(t, renderProviders(providerBadgeOpts{pos: "tr", column: true}))
+	if col.Dy() <= row.Dy() || col.Dx() >= row.Dx() {
+		t.Fatalf("column %v is not taller and narrower than row %v", col, row)
+	}
+	if d := row.Max.X - col.Max.X; d < -1 || d > 1 {
+		t.Errorf("the column should keep the row's right edge: row %v, column %v", row, col)
+	}
+	if col.Min.Y > row.Min.Y+1 {
+		t.Errorf("the column should start at the top like the row: row %v, column %v", row, col)
+	}
+}
+
+func TestColumnChipAlignsToTheAnchoredEdge(t *testing.T) {
+	strip := image.Rect(100, 0, 200, 50)
+	for pos, want := range map[string]int{"tl": 100, "bl": 100, "tr": 160, "br": 160, "tc": 130, "bc": 130, "": 130} {
+		if got := columnChipX(strip, 40, pos); got != want {
+			t.Errorf("columnChipX(%q) = %d, want %d", pos, got, want)
+		}
+	}
+}
+
+func TestProvidersLayoutParses(t *testing.T) {
+	for in, want := range map[string]string{`"column"`: "column", `"Vertical"`: "column", `"row"`: "", `"diagonal"`: ""} {
+		if got := imageconfig.Parse([]byte(`{"providersLayout":` + in + `}`)).ProvidersLayout; got != want {
+			t.Errorf("providersLayout %s parsed to %q, want %q", in, got, want)
+		}
+	}
+	if !providerOptsFromConfig(imageconfig.Parse([]byte(`{"providersLayout":"column"}`))).column {
+		t.Error("the column layout did not reach the renderer")
+	}
+}
+
 // A chosen position hands them to the shared corner placement.
 func TestAPlacedProviderStripMovesToThatCorner(t *testing.T) {
 	top, bottom := paintedHalves(renderProviders(providerBadgeOpts{pos: "tl"}))
