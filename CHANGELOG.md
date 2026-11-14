@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.145.0](https://github.com/IbbyLabs/XRDB/compare/v3.144.0...v3.145.0) (2026-11-14)
+
+
+### Added
+
+* **render:** stack the Where to watch chips in a column (FR-245) ([6a09cdd](https://github.com/IbbyLabs/XRDB/commit/6a09cdd171844192d17fd7bc2cfa77cd37c76fb3))
+
 ## [3.144.0](https://github.com/IbbyLabs/XRDB/compare/v3.143.1...v3.144.0) (2026-11-14)
 
 
