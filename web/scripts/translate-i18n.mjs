@@ -14,6 +14,7 @@ const NAMES = {
   fr: 'French', he: 'Hebrew', hi: 'Hindi', hu: 'Hungarian', id: 'Indonesian', it: 'Italian', ja: 'Japanese', ko: 'Korean', nl: 'Dutch',
   no: 'Norwegian Bokmål', pl: 'Polish', pt: 'Portuguese', ro: 'Romanian', ru: 'Russian', sv: 'Swedish', ta: 'Tamil', te: 'Telugu',
   th: 'Thai', tr: 'Turkish', uk: 'Ukrainian', vi: 'Vietnamese', zh: 'Simplified Chinese',
+  'zh-Hant': 'Traditional Chinese (Taiwan usage)',
 };
 
 const log = (level, msg, fields = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), level, msg, ...fields }));

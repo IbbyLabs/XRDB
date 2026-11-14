@@ -11,8 +11,7 @@ test('the browser language is matched by its base subtag', () => {
   assert.equal(matchLang(['en-GB']), 'en');
   assert.equal(matchLang(['de-AT', 'en']), 'de');
   assert.equal(matchLang(['pt-BR']), 'pt');
-  assert.equal(matchLang(['zh-TW']), 'zh');
-  assert.equal(matchLang(['zh-Hant-TW']), 'zh');
+  assert.equal(matchLang(['zh-CN']), 'zh');
 });
 
 test("the poster default keeps the browser's country for region-preferring artwork", () => {
@@ -41,7 +40,13 @@ test('the first supported language in the list wins, else English', () => {
 
 test('every interface language is a poster language a person can pick', () => {
   assert.ok(POSTER_LANGS.length > 20);
-  for (const { id } of UI_LANGS) assert.ok(POSTER_LANGS.includes(id), `${id} is not a poster language`);
+  for (const { id } of UI_LANGS) assert.ok(POSTER_LANGS.includes(id.split('-')[0]), `${id} is not a poster language`);
+});
+
+test('Taiwan, Hong Kong, Macau and Traditional script get Traditional Chinese, other Chinese gets Simplified', () => {
+  for (const tag of ['zh-TW', 'zh-HK', 'zh-MO', 'zh-Hant', 'zh-Hant-TW', 'zh_TW']) assert.equal(matchLang([tag]), 'zh-Hant', tag);
+  for (const tag of ['zh', 'zh-CN', 'zh-SG', 'zh-Hans', 'zh-Hans-TW']) assert.equal(matchLang([tag]), 'zh', tag);
+  assert.ok(isUiLang('zh-Hant'));
 });
 
 test('only listed languages are accepted from storage', () => {

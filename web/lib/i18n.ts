@@ -34,8 +34,10 @@ export const UI_LANGS: readonly { id: Lang; name: string }[] = [
   { id: 'pt', name: 'Português' }, { id: 'ro', name: 'Română' }, { id: 'ru', name: 'Русский' },
   { id: 'sv', name: 'Svenska' }, { id: 'ta', name: 'தமிழ்' }, { id: 'te', name: 'తెలుగు' },
   { id: 'th', name: 'ไทย' }, { id: 'tr', name: 'Türkçe' }, { id: 'uk', name: 'Українська' },
-  { id: 'vi', name: 'Tiếng Việt' }, { id: 'zh', name: '中文' },
+  { id: 'vi', name: 'Tiếng Việt' }, { id: 'zh', name: '简体中文' }, { id: 'zh-Hant', name: '繁體中文' },
 ];
+
+const TRADITIONAL_ZH = /^zh[-_](hant|tw|hk|mo)\b/i;
 
 export const RTL_LANGS: ReadonlySet<Lang> = new Set(['ar', 'he', 'fa']);
 export const LANG_STORAGE_KEY = 'xrdb-ui-lang';
@@ -44,6 +46,7 @@ const ALIASES: Record<string, Lang> = { nb: 'no', nn: 'no', iw: 'he', in: 'id' }
 /** The first supported language in a browser's preference list, by base subtag; English when none match. */
 export function matchLang(tags: readonly string[] | undefined): Lang {
   for (const tag of tags ?? []) {
+    if (TRADITIONAL_ZH.test(String(tag))) return 'zh-Hant';
     const base = String(tag).toLowerCase().split(/[-_]/)[0];
     const id = ALIASES[base] ?? base;
     if (UI_LANGS.some((l) => l.id === id)) return id;
