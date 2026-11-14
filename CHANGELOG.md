@@ -2,6 +2,15 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.144.0](https://github.com/IbbyLabs/XRDB/compare/v3.143.1...v3.144.0) (2026-11-14)
+
+
+### Added
+
+* **web:** configurator in every poster language (FR-244) ([427ed66](https://github.com/IbbyLabs/XRDB/commit/427ed6662cd64349d034130adab38a7b0155d204))
+* **web:** route configurator text through a translation layer (FR-244) ([3090974](https://github.com/IbbyLabs/XRDB/commit/3090974b192a792157c0e959e05031b532c71c8d))
+* **web:** Traditional Chinese for Taiwan and Hong Kong (FR-244) ([0476c48](https://github.com/IbbyLabs/XRDB/commit/0476c48f5b450e45183d00df9fe42efbbd3a197f))
+
 ## [3.143.1](https://github.com/IbbyLabs/XRDB/compare/v3.143.0...v3.143.1) (2026-11-11)
 
 
