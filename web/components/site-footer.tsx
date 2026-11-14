@@ -8,7 +8,7 @@ import {
   BRAND_GITHUB_URL,
   BRAND_SUPPORT_URL,
 } from '@/lib/brand';
-import { useT } from '@/lib/i18n';
+import { UI_LANGS, useLang, useSetLang, useT } from '@/lib/i18n';
 
 /** Attribution required by the data providers, plus who built this.
  *
@@ -17,6 +17,8 @@ import { useT } from '@/lib/i18n';
  *  Both are reproduced verbatim; do not reword them. */
 export function SiteFooter() {
   const t = useT();
+  const lang = useLang();
+  const setLang = useSetLang();
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
@@ -73,6 +75,11 @@ export function SiteFooter() {
           </a>
           <span className="credit-sep" aria-hidden>·</span>
           <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer">Ko-fi</a>
+          <span className="credit-sep" aria-hidden>·</span>
+          <label className="sr-only" htmlFor="ui-lang">{t('Language')}</label>
+          <select id="ui-lang" className="footer-lang" value={lang} onChange={(e) => setLang(e.target.value)}>
+            {UI_LANGS.map((l) => <option key={l.id} value={l.id} lang={l.id}>{l.name}</option>)}
+          </select>
         </div>
       </div>
     </footer>

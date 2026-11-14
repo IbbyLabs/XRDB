@@ -1,4 +1,4 @@
-import { createContext, createElement, Fragment, useCallback, useContext } from 'react';
+import { createContext, createElement, Fragment, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 export type Lang = string;
@@ -22,15 +22,130 @@ export type TFunction = (text: string, vars?: Vars) => string;
 
 export const tOr = (t: TFunction, text?: string): string | undefined => (text ? t(text) : undefined);
 
-export const LangContext = createContext<Lang>(DEFAULT_LANG);
+/** The interface languages, each named in its own language. Same set as the poster languages. */
+export const UI_LANGS: readonly { id: Lang; name: string }[] = [
+  { id: 'en', name: 'English' }, { id: 'ar', name: 'العربية' }, { id: 'bg', name: 'Български' },
+  { id: 'cs', name: 'Čeština' }, { id: 'da', name: 'Dansk' }, { id: 'de', name: 'Deutsch' },
+  { id: 'el', name: 'Ελληνικά' }, { id: 'es', name: 'Español' }, { id: 'fa', name: 'فارسی' },
+  { id: 'fi', name: 'Suomi' }, { id: 'fr', name: 'Français' }, { id: 'he', name: 'עברית' },
+  { id: 'hi', name: 'हिन्दी' }, { id: 'hu', name: 'Magyar' }, { id: 'id', name: 'Bahasa Indonesia' },
+  { id: 'it', name: 'Italiano' }, { id: 'ja', name: '日本語' }, { id: 'ko', name: '한국어' },
+  { id: 'nl', name: 'Nederlands' }, { id: 'no', name: 'Norsk' }, { id: 'pl', name: 'Polski' },
+  { id: 'pt', name: 'Português' }, { id: 'ro', name: 'Română' }, { id: 'ru', name: 'Русский' },
+  { id: 'sv', name: 'Svenska' }, { id: 'ta', name: 'தமிழ்' }, { id: 'te', name: 'తెలుగు' },
+  { id: 'th', name: 'ไทย' }, { id: 'tr', name: 'Türkçe' }, { id: 'uk', name: 'Українська' },
+  { id: 'vi', name: 'Tiếng Việt' }, { id: 'zh', name: '中文' },
+];
 
-export function LangProvider({ lang = DEFAULT_LANG, children }: { lang?: Lang; children?: ReactNode }) {
-  return createElement(LangContext.Provider, { value: lang }, children);
+export const RTL_LANGS: ReadonlySet<Lang> = new Set(['ar', 'he', 'fa']);
+export const LANG_STORAGE_KEY = 'xrdb-ui-lang';
+const ALIASES: Record<string, Lang> = { nb: 'no', nn: 'no', iw: 'he', in: 'id' };
+
+/** The first supported language in a browser's preference list, by base subtag; English when none match. */
+export function matchLang(tags: readonly string[] | undefined): Lang {
+  for (const tag of tags ?? []) {
+    const base = String(tag).toLowerCase().split(/[-_]/)[0];
+    const id = ALIASES[base] ?? base;
+    if (UI_LANGS.some((l) => l.id === id)) return id;
+  }
+  return DEFAULT_LANG;
+}
+
+export function isUiLang(value: unknown): value is Lang {
+  return typeof value === 'string' && UI_LANGS.some((l) => l.id === value);
+}
+
+async function loadDictionary(lang: Lang): Promise<boolean> {
+  if (lang === DEFAULT_LANG || DICTIONARIES[lang]) return true;
+  try {
+    const res = await fetch(`/i18n/${lang}.json`, { cache: 'force-cache' });
+    if (!res.ok) return false;
+    DICTIONARIES[lang] = (await res.json()) as Record<string, string>;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+type LangState = { lang: Lang; setLang: (lang: Lang) => void };
+
+export const LangContext = createContext<LangState>({ lang: DEFAULT_LANG, setLang: () => {} });
+
+function readStoredLang(): Lang | null {
+  try {
+    const stored = window.localStorage.getItem(LANG_STORAGE_KEY);
+    return isUiLang(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function browserTags(): readonly string[] {
+  if (typeof navigator === 'undefined') return [];
+  return navigator.languages?.length ? navigator.languages : [navigator.language];
+}
+
+/** The browser's interface language. */
+export function browserLang(): Lang {
+  return matchLang(browserTags());
+}
+
+/**
+ * A poster language from a browser's tags, keeping a country (`pt-BR`, `es-MX`) since the renderer prefers that
+ * country's posters. A script subtag is dropped (`zh-Hant-TW` gives `zh-TW`); no supported language gives English.
+ */
+export function matchPosterLang(tags: readonly string[] | undefined): string {
+  for (const tag of tags ?? []) {
+    const parts = String(tag).split(/[-_]/);
+    const base = ALIASES[parts[0].toLowerCase()] ?? parts[0].toLowerCase();
+    if (!UI_LANGS.some((l) => l.id === base)) continue;
+    const region = parts.slice(1).find((p) => /^[a-z]{2}$/i.test(p));
+    return region ? `${base}-${region.toUpperCase()}` : base;
+  }
+  return DEFAULT_LANG;
+}
+
+export function browserPosterLang(): string {
+  return matchPosterLang(browserTags());
+}
+
+/** English on the server and first paint; then the saved choice, else the browser's language, once its text has loaded. */
+export function LangProvider({ lang: fixed, children }: { lang?: Lang; children?: ReactNode }) {
+  const [lang, setActive] = useState<Lang>(fixed ?? DEFAULT_LANG);
+
+  const apply = useCallback((next: Lang, remember: boolean) => {
+    if (remember) {
+      try {
+        window.localStorage.setItem(LANG_STORAGE_KEY, next);
+      } catch {
+        // Private browsing: the choice lasts for this visit only.
+      }
+    }
+    void loadDictionary(next).then((ok) => setActive(ok ? next : DEFAULT_LANG));
+  }, []);
+
+  useEffect(() => {
+    if (fixed) return;
+    apply(readStoredLang() ?? browserLang(), false);
+  }, [fixed, apply]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.lang = lang;
+    root.dir = RTL_LANGS.has(lang) ? 'rtl' : 'ltr';
+  }, [lang]);
+
+  const value = useMemo(() => ({ lang, setLang: (next: Lang) => apply(next, true) }), [lang, apply]);
+  return createElement(LangContext.Provider, { value }, children);
 }
 
 export function useT(): TFunction {
-  const lang = useContext(LangContext);
+  const { lang } = useContext(LangContext);
   return useCallback((text, vars) => translate(lang, text, vars), [lang]);
+}
+
+export function useSetLang(): (lang: Lang) => void {
+  return useContext(LangContext).setLang;
 }
 
 export type RichTags = Record<string, (children: string) => ReactNode>;
@@ -56,5 +171,5 @@ export function useRich(): (text: string, tags: RichTags) => ReactNode[] {
 }
 
 export function useLang(): Lang {
-  return useContext(LangContext);
+  return useContext(LangContext).lang;
 }

@@ -24,7 +24,7 @@ import { tablistKeyNav } from './tablist';
 import { NuvioFrame } from './nuvio-frame';
 import { BRAND_DISCORD_URL } from '@/lib/brand';
 import { useInstanceFeatures } from '@/lib/instance-features';
-import { useT } from '@/lib/i18n';
+import { browserPosterLang, useT } from '@/lib/i18n';
 import { msg } from '@/lib/i18n-msg';
 
 // A media id that already names a season and episode.
@@ -134,7 +134,7 @@ export function ConfiguratorClient() {
         setConfigs(fromStoredConfig({ surfaces: storedSurfaces }));
       } else {
         const legacy = readSession<Partial<ConfigState> | null>('xrdb-config', null);
-        setConfigs(legacy ? cloneToAllSurfaces({ ...DEFAULT_CONFIG, ...legacy }) : DEFAULT_SURFACE_CONFIGS);
+        setConfigs(legacy ? cloneToAllSurfaces({ ...DEFAULT_CONFIG, ...legacy }) : cloneToAllSurfaces({ ...DEFAULT_CONFIG, language: browserPosterLang() }));
       }
     }
     // The loaded profile is restored alongside the settings. Autosave is gated

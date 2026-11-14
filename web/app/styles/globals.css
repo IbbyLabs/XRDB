@@ -2192,6 +2192,17 @@ textarea.input { min-height: 0; line-height: 1.5; }
 }
 .site-footer a:hover { color: var(--ink); }
 .credit-sep { opacity: 0.4; }
+.footer-lang {
+  font: inherit;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 2px var(--sp-1);
+  cursor: pointer;
+}
+.footer-lang:hover { color: var(--ink); }
+.footer-lang:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; color: var(--ink); }
 
 @media (max-width: 720px) {
   /* Stacked, and the credit stops being pushed to its own far edge. */

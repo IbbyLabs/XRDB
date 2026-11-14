@@ -22,6 +22,13 @@ const STREAMING_SERVICES = [
 ];
 
 // An unset position falls back to the top right, matching the renderer.
+/** "Portuguese (BR)" for `pt-BR`; a code with no listed language shows as written. */
+function langWithRegion(code: string, t: TFunction): string {
+  const [base, region] = code.split('-');
+  const known = LANG_OPTIONS.find(o => o.id === base.toLowerCase());
+  return known && region ? `${t(known.label)} (${region.toUpperCase()})` : code.toUpperCase();
+}
+
 function qualityPosLabel(t: TFunction, pos: string): string {
   const id = !pos || pos === 'inherit' ? 'tr' : pos;
   return t('in the {position}', { position: t(SIX_POS_OPTIONS.find(o => o.id === id)?.label ?? 'Top right').toLowerCase() });
@@ -284,7 +291,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               {/* The renderer accepts any code, so one set by hand has to appear
                   here too, or the select shows blank and overwrites it. */}
               {!LANG_OPTIONS.some(o => o.id === config.language) && config.language && (
-                <option value={config.language}>{config.language.toUpperCase()}</option>
+                <option value={config.language}>{langWithRegion(config.language, t)}</option>
               )}
               {LANG_OPTIONS.map(o => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
             </select>

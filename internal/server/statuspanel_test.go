@@ -253,7 +253,7 @@ func TestThePanelNamesRatingsLikeTheConfigurator(t *testing.T) {
 	}
 	block = block[start : start+end]
 
-	pattern := regexp.MustCompile(`id:\s*'([^']+)',\s*label:\s*'([^']+)'`)
+	pattern := regexp.MustCompile(`id:\s*'([^']+)',\s*label:\s*(?:msg\()?'([^']+)'`)
 	matches := pattern.FindAllStringSubmatch(block, -1)
 	if len(matches) == 0 {
 		t.Fatal("no rating options were parsed, the declaration's shape has changed")

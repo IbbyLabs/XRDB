@@ -686,7 +686,7 @@ export function ProfilePanel({
           />
           {migrateError && (
             <span className="hint hint-error" id={`${uid}-legacy-error`} role="alert">
-              {migrateError}{' '}{t('Copy the whole URL from your media app, including everything after the')} <code>?</code>.
+              {migrateError}{' '}{t('Copy the whole URL from your media app, including everything after the question mark (?).')}
             </span>
           )}
           {migrateResult && !migrateError && (
