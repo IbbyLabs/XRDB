@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.145.1](https://github.com/IbbyLabs/XRDB/compare/v3.145.0...v3.145.1) (2026-11-15)
+
+
+### Fixed
+
+* **render:** logo surface never returns the poster (BUG-304) ([31386f8](https://github.com/IbbyLabs/XRDB/commit/31386f872bee5af7e7ec2ee42af3aaba3b5792b9))
+* **render:** transparent placeholder for a missing logo (BUG-304) ([ed80377](https://github.com/IbbyLabs/XRDB/commit/ed80377bef6fc59931fa7e4f93ae7738077cf340))
+
 ## [3.145.0](https://github.com/IbbyLabs/XRDB/compare/v3.144.0...v3.145.0) (2026-11-14)
 
 
