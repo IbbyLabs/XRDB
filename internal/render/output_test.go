@@ -121,3 +121,13 @@ func TestDimensionsForSize(t *testing.T) {
 		}
 	}
 }
+
+func TestLogoPlaceholderIsTransparent(t *testing.T) {
+	img, err := png.Decode(bytes.NewReader(PlaceholderPNG("logo")))
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if _, _, _, a := img.At(10, 10).RGBA(); a != 0 {
+		t.Errorf("the logo placeholder is not transparent: alpha %d", a)
+	}
+}

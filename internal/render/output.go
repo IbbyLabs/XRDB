@@ -69,7 +69,8 @@ var placeholderColors = map[string]color.NRGBA{
 	"poster":    {R: 30, G: 30, B: 50, A: 255},
 	"backdrop":  {R: 20, G: 40, B: 30, A: 255},
 	"thumbnail": {R: 40, G: 20, B: 40, A: 255},
-	"logo":      {R: 50, G: 40, B: 20, A: 255},
+	// A logo slot draws over artwork, so its placeholder is fully transparent.
+	"logo": {A: 0},
 }
 
 // placeholderPNGs holds pre-built PNG bytes indexed by media type.
