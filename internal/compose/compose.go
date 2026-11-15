@@ -2829,10 +2829,8 @@ func selectArtworkURL(meta *provider.MediaMeta, mediaType string, cfg imageconfi
 		}
 		return meta.PosterURL
 	case "logo":
-		if meta.LogoURL != "" {
-			return meta.LogoURL
-		}
-		return meta.PosterURL
+		// A poster never stands in for a logo; no logo art means an empty logo.
+		return meta.LogoURL
 	default: // poster
 		if cfg.BackdropAsPoster && meta.BackdropURL != "" {
 			// Use the backdrop center-cropped to poster dimensions.

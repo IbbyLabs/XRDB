@@ -1115,9 +1115,7 @@ func TestPrimaryLogoWinsWithoutFallback(t *testing.T) {
 	}
 }
 
-func TestLogoLastResortFallsBackToPoster(t *testing.T) {
-	// No provider has a logo: the last-resort selection lets the poster stand in
-	// rather than returning a placeholder.
+func TestLogoWithNoLogoArtNeverFetchesThePoster(t *testing.T) {
 	fetched := ""
 	fetcher := &recordingFetcher{
 		data:    makeTestPNG(300, 450, color.NRGBA{10, 10, 10, 255}),
@@ -1129,11 +1127,9 @@ func TestLogoLastResortFallsBackToPoster(t *testing.T) {
 
 	cfg := imageconfig.Default()
 	cfg.ArtworkSource = imageconfig.ArtworkTMDB
-	if _, err := p.Render(context.Background(), Request{MediaType: "logo", MediaID: "tt1", Config: cfg}); err != nil {
-		t.Fatalf("Render: %v", err)
-	}
-	if fetched != "http://tmdb/poster.jpg" {
-		t.Errorf("expected poster last-resort fallback, got %q", fetched)
+	_, _ = p.Render(context.Background(), Request{MediaType: "logo", MediaID: "tt1", Config: cfg})
+	if fetched != "" {
+		t.Errorf("the logo surface fetched %q for a title with no logo", fetched)
 	}
 }
 
