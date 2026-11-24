@@ -134,9 +134,11 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 					http.Error(w, "profile already exists", http.StatusConflict)
 				case errors.Is(err, profile.ErrAliasTaken):
 					http.Error(w, "alias already in use", http.StatusConflict)
-				case errors.Is(err, profile.ErrInvalidAlias):
+				case errors.Is(err, profile.ErrInvalidAlias), errors.Is(err, profile.ErrInvalidProfile):
 					http.Error(w, err.Error(), http.StatusBadRequest)
 				default:
+					logger.ErrorContext(r.Context(), "Failed to save a new profile",
+						"id", logging.RequestID(r.Context()), "error", err)
 					http.Error(w, "failed to save profile", http.StatusInternalServerError)
 				}
 				return
@@ -305,9 +307,11 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 					http.Error(w, "not found", http.StatusNotFound)
 				case errors.Is(err, profile.ErrAliasTaken):
 					http.Error(w, "alias already in use", http.StatusConflict)
-				case errors.Is(err, profile.ErrInvalidAlias):
+				case errors.Is(err, profile.ErrInvalidAlias), errors.Is(err, profile.ErrInvalidProfile):
 					http.Error(w, err.Error(), http.StatusBadRequest)
 				default:
+					logger.ErrorContext(r.Context(), "Failed to update a profile",
+						"id", logging.RequestID(r.Context()), "profile_id", existing.ID, "error", err)
 					http.Error(w, "failed to update profile", http.StatusInternalServerError)
 				}
 				return

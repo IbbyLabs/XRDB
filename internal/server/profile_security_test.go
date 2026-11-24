@@ -52,6 +52,14 @@ func TestCreatingAProfileRequiresAPassword(t *testing.T) {
 	}
 }
 
+func TestAProfileWithoutATypeIsABadRequest(t *testing.T) {
+	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
+	rr := profileRequest(h, http.MethodPost, "/profile", `{"config":{},"password":"pw"}`, "", "")
+	if rr.Code != http.StatusBadRequest || !strings.Contains(rr.Body.String(), "profile type is required") {
+		t.Errorf("create without a type: %d %q, want 400 naming the type", rr.Code, rr.Body.String())
+	}
+}
+
 func TestALegacyPasswordlessProfileStaysEditableAndIsFlagged(t *testing.T) {
 	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
 	id := postProfile(t, h, `{"type":"poster","config":{"v":1}}`)

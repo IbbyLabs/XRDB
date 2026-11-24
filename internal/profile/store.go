@@ -81,6 +81,9 @@ var ErrAliasTaken = errors.New("alias already in use")
 // ErrInvalidAlias is returned for aliases that aren't 3-32 lowercase letters.
 var ErrInvalidAlias = errors.New("alias must be 3-32 lowercase letters (a-z only)")
 
+// ErrInvalidProfile wraps a profile the caller sent wrong: a missing type or a config that does not parse.
+var ErrInvalidProfile = errors.New("invalid profile")
+
 var aliasRe = regexp.MustCompile(`^[a-z]{3,32}$`)
 
 // ValidAlias reports whether alias is acceptable: lowercase letters only.
@@ -174,11 +177,11 @@ func (s *Store) Save(p *Profile) error {
 		return errors.New("profile id is required")
 	}
 	if p.Type == "" {
-		return errors.New("profile type is required")
+		return fmt.Errorf("%w: profile type is required", ErrInvalidProfile)
 	}
 	cfg, err := normalizeConfig(p.Config)
 	if err != nil {
-		return fmt.Errorf("invalid config: %w", err)
+		return fmt.Errorf("%w: invalid config: %w", ErrInvalidProfile, err)
 	}
 	alias, err := validateAlias(p.Alias)
 	if err != nil {
@@ -372,7 +375,7 @@ func (s *Store) Update(p *Profile) error {
 	}
 	cfg, err := normalizeConfig(p.Config)
 	if err != nil {
-		return fmt.Errorf("invalid config: %w", err)
+		return fmt.Errorf("%w: invalid config: %w", ErrInvalidProfile, err)
 	}
 	alias, err := validateAlias(p.Alias)
 	if err != nil {
