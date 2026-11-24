@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.146.1](https://github.com/IbbyLabs/XRDB/compare/v3.146.0...v3.146.1) (2026-11-24)
+
+
+### Fixed
+
+* **profiles:** a profile without a type is a bad request ([34f6b28](https://github.com/IbbyLabs/XRDB/commit/34f6b286a6e7bb6b737a80be355e5c9003cd8c8e))
+
 ## [3.146.0](https://github.com/IbbyLabs/XRDB/compare/v3.145.1...v3.146.0) (2026-11-24)
 
 
