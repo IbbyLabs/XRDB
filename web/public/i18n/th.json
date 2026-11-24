@@ -699,7 +699,6 @@
  "Profile updated": "อัปเดตโปรไฟล์แล้ว",
  "Profiles do not carry across. One saved here stays here, and every artwork URL it feeds keeps working.": "โปรไฟล์ไม่ถูกย้ายข้ามที่ บันทึกที่นี่จะอยู่ที่นี่ และ URL งานศิลป์ที่ให้จะยังใช้งานได้",
  "Progress": "ความคืบหน้า",
- "Protects your profile from edits — recommended": "ป้องกันโปรไฟล์จากการแก้ไข — แนะนำ",
  "Provider": "ผู้ให้บริการ",
  "Provider cache TTLs (hours)": "เวลาเก็บแคชผู้ให้บริการ (ชั่วโมง)",
  "Provider country": "ประเทศผู้ให้บริการ",

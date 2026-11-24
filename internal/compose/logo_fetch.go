@@ -7,6 +7,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 const (
 	tmdbLogoBase          = "https://image.tmdb.org/t/p/w185"
 	logoFailureRetryAfter = 10 * time.Minute
+	maxLogoBytes          = 10 << 20
 )
 
 type logoCacheEntry struct {
@@ -55,8 +57,18 @@ func fetchProviderLogo(logoPath string) *image.NRGBA {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxLogoBytes+1))
 	if err != nil {
+		logoCache.Store(logoPath, logoCacheEntry{failedAt: time.Now()})
+		return nil
+	}
+	if len(body) > maxLogoBytes {
+		slog.Warn("A provider logo exceeded the size cap", "logo_path", logoPath, "cap_bytes", maxLogoBytes)
+		logoCache.Store(logoPath, logoCacheEntry{failedAt: time.Now()})
+		return nil
+	}
+	if err := checkImagePixels(body); err != nil {
+		slog.Warn("A provider logo was refused before decoding", "logo_path", logoPath, "error", err)
 		logoCache.Store(logoPath, logoCacheEntry{failedAt: time.Now()})
 		return nil
 	}

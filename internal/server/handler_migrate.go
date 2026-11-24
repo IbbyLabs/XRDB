@@ -19,7 +19,7 @@ func registerMigrateRoutes(mux *http.ServeMux, cfg config.Config) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) && !sameOriginRender(r) {
+		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) && !keyParamMatches(r.URL.RawQuery, cfg.APIKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}

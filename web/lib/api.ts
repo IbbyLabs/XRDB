@@ -51,6 +51,11 @@ export interface Profile {
   versionToken?: string;
   /** Absent when the owner has not picked one, leaving the built-in default. */
   preview?: ProfilePreview;
+  /** Short-lived signed token the preview sends as `pkt` so the server applies
+   *  this profile's own provider keys. Issued on load, create and save. */
+  previewToken?: string;
+  /** Set on a save of a profile that has no password. */
+  passwordRequired?: boolean;
 }
 
 function profilePasswordHeaders(password?: string): Record<string, string> {
@@ -105,17 +110,18 @@ export function renderPath(
   id: string,
   config?: string,
   key?: string,
-  keysFrom?: string,
+  previewToken?: string,
 ): string {
   const params = new URLSearchParams();
   if (config) params.set('config', config);
   // On an instance with XRDB_API_KEY set, render routes require the key.
   // URLSearchParams appends it as a proper &key= arg — no double-? footgun.
   if (key) params.set('key', key);
-  // When previewing unsaved edits to a saved profile, name it so the server
-  // applies that profile's own provider keys to this inline render. The preview
-  // is same-origin, which is where the server accepts this.
-  if (keysFrom) params.set('pk', keysFrom);
+  // When previewing unsaved edits to a saved profile, the signed token from
+  // loading or saving it lets the server apply that profile's own provider keys
+  // to this inline render. It expires after two hours; reloading the profile
+  // issues a new one.
+  if (previewToken) params.set('pkt', previewToken);
   const qs = params.toString();
   return `/${type}/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`;
 }
@@ -125,9 +131,9 @@ export function renderUrl(
   id: string,
   config?: string,
   key?: string,
-  keysFrom?: string,
+  previewToken?: string,
 ): string {
-  return `${base()}${renderPath(type, id, config, key, keysFrom)}`;
+  return `${base()}${renderPath(type, id, config, key, previewToken)}`;
 }
 
 /** Authorization header carrying the instance render key, when the operator
@@ -225,15 +231,23 @@ export async function exportProfile(id: string, password?: string): Promise<Expo
   return res.json() as Promise<ExportEnvelope>;
 }
 
-export async function importProfiles(envelope: ExportEnvelope): Promise<{ imported: number; skipped: number; errors?: string[] }> {
+/** Imported profiles need a password and exports carry none, so it travels
+ *  beside the envelope and applies to every profile in it. */
+export async function importProfiles(envelope: ExportEnvelope, password: string): Promise<{ imported: number; skipped: number; errors?: string[] }> {
   const res = await fetch(`${base()}/profile/import`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...renderAuthHeaders() },
-    body: JSON.stringify(envelope),
+    body: JSON.stringify({ ...envelope, password }),
   });
   if (res.status === 401) throw new Error(NEEDS_RENDER_KEY);
   if (!res.ok) {
     const text = await res.text();
+    try {
+      const body = JSON.parse(text) as { errors?: string[] };
+      if (body.errors?.length) throw new Error(body.errors.join('; '));
+    } catch (e) {
+      if (e instanceof Error && !(e instanceof SyntaxError)) throw e;
+    }
     throw new Error(text || `import failed: ${res.status}`);
   }
   return res.json() as Promise<{ imported: number; skipped: number; errors?: string[] }>;
@@ -595,6 +609,7 @@ export async function migrateLegacyConfig(input: string): Promise<MigrateResult>
     headers: { 'Content-Type': 'application/json', ...renderAuthHeaders() },
     body: JSON.stringify({ input }),
   });
+  if (res.status === 401) throw new Error(NEEDS_RENDER_KEY);
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     throw new Error(body?.error || `Could not read that (${res.status})`);

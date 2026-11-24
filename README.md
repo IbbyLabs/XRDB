@@ -93,10 +93,10 @@ cd web && npm ci && npm run dev   # web on :3001
 |---|---|---|
 | `GET` | `/{type}/{id}?config=…` | Render image — `type` is `poster`, `backdrop`, `thumbnail`, or `logo`; `config` is a profile ID, alias, or inline JSON |
 | `GET` | `/healthz`, `/readyz` | Health and readiness |
-| `GET/POST` | `/profile` | List / create profiles (ID generated when omitted) |
+| `GET/POST` | `/profile` | List / create profiles (ID generated when omitted; a password is required to create) |
 | `GET/PUT/DELETE` | `/profile/{id-or-alias}` | Read / update / delete (password-protected when set) |
 | `GET` | `/profile/{id}/export` | Export a profile as JSON |
-| `POST` | `/profile/import` | Import profiles from JSON |
+| `POST` | `/profile/import` | Import profiles from JSON (each needs a `password`, in the file or per profile) |
 | `GET` | `/api/templates` | Built-in config templates |
 | `GET` | `/api/search?q=` | Title search (TMDB-backed) |
 | `GET` | `/api/trending` | Trending titles |

@@ -33,7 +33,7 @@ func TestProfileListRequiresAdminKeyEvenWithNoAPIKey(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			mux := http.NewServeMux()
-			registerProfileRoutes(mux, store, tc.cfg, nil)
+			registerProfileRoutes(mux, store, tc.cfg, nil, nil)
 
 			req := httptest.NewRequest(http.MethodGet, "/profile", nil)
 			if tc.bearer != "" {
@@ -58,7 +58,7 @@ func TestProfileCreateStaysOpenWithNoAPIKey(t *testing.T) {
 		t.Fatalf("profile store: %v", err)
 	}
 	mux := http.NewServeMux()
-	registerProfileRoutes(mux, store, config.Config{AdminKey: "sekrit"}, nil)
+	registerProfileRoutes(mux, store, config.Config{AdminKey: "sekrit"}, nil, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/profile", nil)
 	rec := httptest.NewRecorder()

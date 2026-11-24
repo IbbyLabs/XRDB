@@ -99,15 +99,17 @@ func TestStremioMetaSeries(t *testing.T) {
 	}
 }
 
-func TestStremioMetaWithAPIKey(t *testing.T) {
+func TestStremioMetaNeverCarriesAPIKey(t *testing.T) {
 	h := NewHandler("test", nil, nil, nil, nil, config.Config{APIKey: "secret123"})
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/stremio/meta/movie/tt1234567.json", nil))
 
 	var resp stremioMetaResponse
 	_ = json.NewDecoder(rr.Body).Decode(&resp)
-	if !strings.Contains(resp.Meta.Poster, "key=secret123") {
-		t.Errorf("expected API key in poster URL, got %q", resp.Meta.Poster)
+	for _, u := range []string{resp.Meta.Poster, resp.Meta.Background} {
+		if strings.Contains(u, "secret123") || strings.Contains(u, "key=") {
+			t.Errorf("artwork URL must not carry the API key, got %q", u)
+		}
 	}
 }
 

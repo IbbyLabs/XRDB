@@ -17,8 +17,9 @@ import (
 // that is neither listed here nor sending the header fails this test rather than
 // reaching a user.
 var profileCallsWithoutAPassword = map[string]string{
-	"createProfile":  "writes a new profile; there is no stored password yet",
-	"importProfiles": "writes profiles from an envelope; reads none",
+	"createProfile":       "writes a new profile; there is no stored password yet",
+	"importProfiles":      "writes profiles from an envelope; reads none",
+	"migrateLegacyConfig": "translates a posted config; touches no profile",
 }
 
 func TestEveryProfileReadSendsThePassword(t *testing.T) {

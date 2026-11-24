@@ -157,6 +157,7 @@ export function ConfiguratorClient() {
   const [previewKey, setPreviewKey] = useState(0);
   const [imgLoading, setImgLoading] = useState(false);
   const [imgError, setImgError]     = useState(false);
+  const [previewNeedsKey, setPreviewNeedsKey] = useState(false);
   // True from the moment a control changes until the debounced render fires, so
   // an edit is acknowledged immediately instead of feeling ignored for ~500ms.
   const [previewPending, setPreviewPending] = useState(false);
@@ -246,8 +247,7 @@ export function ConfiguratorClient() {
     }
     // Name the loaded profile so the preview applies its stored provider keys
     // to these unsaved edits; without it the preview always uses the shared key.
-    const keysFrom = loadedProfile ? (loadedProfile.alias || loadedProfile.id) : undefined;
-    return renderUrl(type, id || DEFAULT_MEDIA_ID, JSON.stringify(payload), renderKey, keysFrom);
+    return renderUrl(type, id || DEFAULT_MEDIA_ID, JSON.stringify(payload), renderKey, loadedProfile?.previewToken);
   }, [renderKey, loadedProfile]);
 
   const applyRenderKey = useCallback((value: string) => {
@@ -261,6 +261,16 @@ export function ConfiguratorClient() {
     if (on && loadedProfile) rememberPassword(loadedProfile.id, loadedProfile.password);
   }, [renderKey, loadedProfile]);
 
+  // A failed <img> does not say why. A keyed instance answers 401, so ask once.
+  const probePreviewKey = useCallback(async (src: string) => {
+    try {
+      const res = await fetch(src, { method: 'HEAD' });
+      setPreviewNeedsKey(res.status === 401);
+    } catch (e) {
+      console.warn('Could not check why the preview failed', e);
+    }
+  }, []);
+
   const triggerPreview = useCallback((type: MediaType, id: string, cfg: ConfigState, immediate = false) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const run = () => {
@@ -268,6 +278,7 @@ export function ConfiguratorClient() {
       setPreviewSrc(buildSrc(type, id, cfg));
       setPreviewKey(k => k + 1);
       setImgError(false);
+      setPreviewNeedsKey(false);
       setImgLoading(true);
     };
     if (immediate) { run(); return; }
@@ -605,10 +616,20 @@ export function ConfiguratorClient() {
               <span className="preview-status" aria-hidden="true">{t('Updating…')}</span>
             )}
             {imgError ? (
-              <div className="preview-empty" role="status">
-                <span>{t('Preview unavailable')}</span>
-                <span className="hint">{t('Check the backend is running')}</span>
-              </div>
+              previewNeedsKey ? (
+                <div className="preview-empty" role="status">
+                  <span>{t('This instance needs its API key')}</span>
+                  <span className="hint">{t('Enter the key under Install and the preview will load')}</span>
+                  <button className="btn btn-primary btn-sm" onClick={() => setActiveTab('install')}>
+                    {t('Open Install')}
+                  </button>
+                </div>
+              ) : (
+                <div className="preview-empty" role="status">
+                  <span>{t('Preview unavailable')}</span>
+                  <span className="hint">{t('Check the backend is running')}</span>
+                </div>
+              )
             ) : (
               <>
                 {imgLoading && <div className="skeleton" style={{ position: 'absolute', inset: 0 }} aria-busy="true" aria-label={t('Loading preview')} />}
@@ -622,7 +643,11 @@ export function ConfiguratorClient() {
                   decoding="async"
                   style={{ opacity: imgLoading ? 0 : 1, transition: 'opacity var(--dur-3) var(--ease-out)' }}
                   onLoad={() => setImgLoading(false)}
-                  onError={() => { setImgLoading(false); setImgError(true); }}
+                  onError={() => {
+                    setImgLoading(false);
+                    setImgError(true);
+                    void probePreviewKey(previewSrc);
+                  }}
                 />
                 )}
               </>

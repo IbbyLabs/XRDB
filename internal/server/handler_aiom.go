@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -18,6 +20,33 @@ import (
 )
 
 const defaultAIOMBase = "https://aiometadata.elfhosted.com"
+
+const (
+	// aiomInstallsPerWindow installs per client address within aiomInstallWindow.
+	aiomInstallsPerWindow = 10
+	aiomInstallWindow     = 10 * time.Minute
+)
+
+var errAIOMInsecureBase = errors.New("XRDB only installs into https AIOMetadata addresses. " +
+	"Use the instance's https URL, or set XRDB_AIOM_ALLOW_PRIVATE=true on XRDB")
+
+// checkAIOMScheme refuses plain http unless the operator allowed private
+// addresses (self-hosted AIOMetadata).
+func checkAIOMScheme(origin string, allowPrivate bool) error {
+	if allowPrivate || strings.HasPrefix(origin, "https://") {
+		return nil
+	}
+	return errAIOMInsecureBase
+}
+
+// newAIOMInstallLimiter allows aiomInstallsPerWindow installs per window per key.
+func newAIOMInstallLimiter() *callerLimiter {
+	perMinute := int(float64(aiomInstallsPerWindow) / aiomInstallWindow.Minutes())
+	if perMinute < 1 {
+		perMinute = 1
+	}
+	return newCallerLimiterWithBurst(perMinute, aiomInstallsPerWindow)
+}
 
 // normalizeAIOMOrigin validates and strips a base URL down to its origin.
 func normalizeAIOMOrigin(raw string) (string, error) {
@@ -110,12 +139,24 @@ func upstreamError(msg, fallback string) string {
 // registerAIOMRoutes mounts the AIOMetadata one-click install proxy.
 // The browser can't reach arbitrary AIOM instances cross-origin, so the
 // server performs the load → merge → update sequence on its behalf.
-func registerAIOMRoutes(mux *http.ServeMux, allowPrivate bool) {
+func registerAIOMRoutes(mux *http.ServeMux, allowPrivate bool, trusts ...proxyTrust) {
 	client := newAIOMClient(allowPrivate)
+	trust := newProxyTrust("", false)
+	if len(trusts) > 0 {
+		trust = trusts[0]
+	}
+	limiter := newAIOMInstallLimiter()
 
 	mux.HandleFunc("/api/aiometadata/install", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		ip := clientIP(r, trust)
+		if ok, _ := limiter.allow(1, ip); !ok {
+			slog.Warn("AIOMetadata install rate limit reached", "client", ip)
+			w.Header().Set("Retry-After", strconv.Itoa(int(aiomInstallWindow.Seconds())/aiomInstallsPerWindow))
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many install attempts, try again shortly"})
 			return
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
@@ -141,6 +182,11 @@ func registerAIOMRoutes(mux *http.ServeMux, allowPrivate bool) {
 
 		base, err := normalizeAIOMOrigin(req.BaseURL)
 		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		if err := checkAIOMScheme(base, allowPrivate); err != nil {
+			slog.Warn("AIOMetadata install refused a plain http address", "client", ip)
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}

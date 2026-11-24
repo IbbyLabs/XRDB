@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useId, useRef } from 'react';
+import { useState, useEffect, useId, useRef, useCallback } from 'react';
 import { forgetPassword, isRemembering } from '@/lib/remember';
 import { Save, Download, Upload, FolderOpen, Trash2, LogOut, RefreshCw, History, Wand2, Lock } from 'lucide-react';
 import {
@@ -50,6 +50,9 @@ function dropRecent(list: RecentProfile[], ...keys: string[]): RecentProfile[] {
   return writeRecents(list.filter(r => !keys.includes(r.key)));
 }
 
+/** Preview tokens last two hours on the server; refresh well inside that. */
+const PREVIEW_TOKEN_REFRESH_MS = 90 * 60 * 1000;
+
 /** A profile this browser session has unlocked. */
 export interface LoadedProfile {
   id: string;
@@ -58,6 +61,8 @@ export interface LoadedProfile {
   hasPassword: boolean;
   password: string; // held in memory for this session only
   versionToken: string;
+  /** Signed token the preview sends so this profile's own keys apply. */
+  previewToken?: string;
   /** Providers this profile has its own key for. Names only — the values stay
    *  on the server. */
   keysSet?: string[];
@@ -172,22 +177,27 @@ export function ProfilePanel({
   const handleCreate = async () => {
     const trimmedAlias = alias.trim().toLowerCase();
     if (!validateAlias(trimmedAlias)) return;
+    if (!password) {
+      flash('error', t('Choose a password — it protects your profile from edits'));
+      return;
+    }
     setBusy(true);
     try {
       const created = await createProfile({
         alias: trimmedAlias,
         type: mediaType,
         config: toStoredConfig(configs),
-        password: password || undefined,
+        password,
         preview: { mediaType, id: mediaId, title: mediaTitle },
       });
       setLoaded({
         id: created.id,
         alias: created.alias ?? '',
         name: created.name ?? '',
-        hasPassword: !!password,
+        hasPassword: true,
         password,
         versionToken: created.versionToken ?? '',
+        previewToken: created.previewToken,
       });
       setAlias(''); setPassword('');
       setSavedSnapshot(JSON.stringify(configs));
@@ -226,9 +236,11 @@ export function ProfilePanel({
         hasPassword: !!p.hasPassword,
         password: loadPassword,
         versionToken: p.versionToken ?? '',
+        previewToken: p.previewToken,
         keysSet: p.keysSet ?? [],
       });
       setLoadKey(''); setLoadPassword(''); setNeedsPasswordFor('');
+      if (p.passwordRequired) promptForPassword(p.id);
       setRecents(r => pushRecent(r, {
         key: p.alias || p.id,
         name: p.name || p.alias || p.id,
@@ -268,6 +280,69 @@ export function ProfilePanel({
     }
   };
 
+  const passwordPromptedRef = useRef('');
+  const promptForPassword = useCallback((id: string) => {
+    if (passwordPromptedRef.current === id) return;
+    passwordPromptedRef.current = id;
+    flash('info', t('This profile has no password. Set one below so only you can edit it.'), { persist: true });
+  }, [flash, t]);
+
+  // Keeps the preview token fresh for a long editing session. A failed refresh
+  // leaves the previous token in place.
+  const loadedRef = useRef(loaded);
+  useEffect(() => { loadedRef.current = loaded; });
+  const canRefresh = loaded !== null && !locked;
+  const refreshId = loaded?.id;
+  useEffect(() => {
+    if (!canRefresh || !refreshId) return;
+    const timer = setInterval(() => {
+      const current = loadedRef.current;
+      if (!current || current.id !== refreshId) return;
+      getProfile(current.id, current.password || undefined)
+        .then(p => {
+          const latest = loadedRef.current;
+          if (p.previewToken && latest && latest.id === current.id) setLoaded({ ...latest, previewToken: p.previewToken });
+        })
+        .catch(e => console.warn('Could not refresh the preview token; keeping the current one', e));
+    }, PREVIEW_TOKEN_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [canRefresh, refreshId, setLoaded]);
+  const [newPassword, setNewPassword] = useState('');
+
+  const handleSetPassword = async () => {
+    if (!loaded || !newPassword) {
+      flash('error', t('Enter the password you want to use'));
+      return;
+    }
+    setBusy(true);
+    try {
+      const updated = await updateProfile(
+        loaded.id,
+        {
+          name: loaded.name,
+          type: mediaType,
+          config: toStoredConfig(configs),
+          preview: { mediaType, id: mediaId, title: mediaTitle },
+          password: newPassword,
+        },
+        undefined,
+      );
+      setLoaded({
+        ...loaded,
+        hasPassword: true,
+        password: newPassword,
+        versionToken: updated.versionToken ?? '',
+        previewToken: updated.previewToken ?? loaded.previewToken,
+      });
+      setNewPassword('');
+      flash('success', t('Password set'));
+    } catch (e) {
+      flash('error', (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleUpdate = async (silent = false) => {
     if (!loaded) return;
     setBusy(true);
@@ -297,7 +372,13 @@ export function ProfilePanel({
       }
       // Adopt the new token so the install URLs shown from here on point at the
       // edited profile rather than the revision the client already handed out.
-      setLoaded({ ...loaded, versionToken: updated.versionToken ?? '', keysSet: updated.keysSet ?? loaded.keysSet });
+      setLoaded({
+        ...loaded,
+        versionToken: updated.versionToken ?? '',
+        previewToken: updated.previewToken ?? loaded.previewToken,
+        keysSet: updated.keysSet ?? loaded.keysSet,
+      });
+      if (updated.passwordRequired) promptForPassword(loaded.id);
       setProviderKeys({});
       setRefused(null);
       setSavedSnapshot(JSON.stringify(configs));
@@ -334,13 +415,15 @@ export function ProfilePanel({
         const stored = JSON.stringify(fromStoredConfig(p.config));
         setSavedSnapshot(stored);
         setCheckpoint(stored);
+        if (p.previewToken) setLoaded({ ...loaded, previewToken: p.previewToken });
+        if (p.passwordRequired) promptForPassword(loaded.id);
       } catch (e) {
         reattachedRef.current = '';
         if (loaded.hasPassword) { forgetPassword(loaded.id); setLoaded({ ...loaded, password: '' }); }
         flash('error', t('Could not reattach to "{name}" — {error}', { name: loaded.name || loaded.id, error: (e as Error).message }));
       }
     })();
-  }, [loaded, reattaching, locked, busy, flash, setLoaded, t]);
+  }, [loaded, reattaching, locked, busy, flash, setLoaded, t, promptForPassword]);
 
   const autoSave = useRef(handleUpdate);
   useEffect(() => { autoSave.current = handleUpdate; });
@@ -392,10 +475,14 @@ export function ProfilePanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportFile = async (file: File) => {
+    if (!password) {
+      flash('error', t('Enter a password above first. Imported profiles are protected with it'));
+      return;
+    }
     setBusy(true);
     try {
       const envelope = JSON.parse(await file.text());
-      const result = await importProfiles(envelope);
+      const result = await importProfiles(envelope, password);
       const parts = [result.imported === 1
         ? t('Imported 1 profile')
         : t('Imported {n} profiles', { n: result.imported })];
@@ -509,6 +596,25 @@ export function ProfilePanel({
               {t('One example image, for previewing or sharing. This is not the value your addon wants — that is the config key above.')}
             </span>
           </div>
+
+          {!loaded.hasPassword && (
+            <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
+              <label className="label" htmlFor={`${uid}-setpw`}>{t('Set a Password')}</label>
+              <input
+                id={`${uid}-setpw`}
+                className="input"
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+              <span className="hint">{t('This profile has no password, so anyone who knows its username can change or delete it. Set one to lock it.')}</span>
+              <button className="btn btn-primary" onClick={() => void handleSetPassword()} disabled={busy || !newPassword}>
+                <Save size={13} aria-hidden />
+                {t('Set Password')}
+              </button>
+            </div>
+          )}
 
           <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
             <span className="label">{t('Your own API keys')}</span>
@@ -659,7 +765,7 @@ export function ProfilePanel({
             onChange={e => setPassword(e.target.value)}
             autoComplete="new-password"
           />
-          <span className="hint">{t('Protects your profile from edits — recommended')}</span>
+          <span className="hint">{t('Required. Protects your profile from edits, and any profile you import')}</span>
         </div>
 
         <button className="btn btn-primary" onClick={handleCreate} disabled={busy}>

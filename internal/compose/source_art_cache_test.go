@@ -207,9 +207,13 @@ func TestSourceArtCacheCorruptFileRefetches(t *testing.T) {
 
 func TestSourceArtCacheNeverStoresMediuxAssets(t *testing.T) {
 	png := makeTestPNG(20, 30, color.NRGBA{1, 2, 3, 255})
-	srv, calls := newArtServer(t, png, "image/png", 200)
+	var calls atomic.Int32
 	f, store := cachedFetcher(t, t.TempDir(), 1<<20, time.Hour)
-	url := srv.URL + "/images.mediux.io/assets/a.png"
+	f.client = &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		calls.Add(1)
+		return okResponse(png), nil
+	})}
+	url := "https://images.mediux.io/assets/a.png"
 	for i := 0; i < 2; i++ {
 		if _, err := f.Fetch(context.Background(), url); err != nil {
 			t.Fatal(err)

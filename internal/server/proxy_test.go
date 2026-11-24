@@ -166,3 +166,21 @@ func TestMappedIPv4PeerMatchesIPv4Prefix(t *testing.T) {
 		t.Errorf("client_ip = %q, want the mapped peer to be trusted", got)
 	}
 }
+
+func TestClientIPIgnoresSpoofedLeftXFFEntries(t *testing.T) {
+	trust := newProxyTrust("", false)
+	cases := []struct {
+		name, xff, want string
+	}{
+		{"spoofed left entry", "6.6.6.6, 198.51.100.7", "198.51.100.7"},
+		{"trusted hops skipped", "6.6.6.6, 198.51.100.7, 10.0.0.9", "198.51.100.7"},
+		{"spoof plus trusted lookalike", "10.1.1.1, 198.51.100.7", "198.51.100.7"},
+		{"only trusted", "10.0.0.5, 10.0.0.9", "10.0.0.5"},
+	}
+	for _, c := range cases {
+		r := reqFrom("10.0.0.1:1", map[string]string{"X-Forwarded-For": c.xff})
+		if got := clientIP(r, trust); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}

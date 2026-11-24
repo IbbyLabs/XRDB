@@ -16,6 +16,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	neturl "net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -638,6 +639,17 @@ func (p *Pipeline) isAnimeTitle(ctx context.Context, req Request) bool {
 	return ok
 }
 
+const mediuxAssetHost = "images.mediux.io"
+
+// isMediuxAssetURL reports whether the URL's host is exactly the MediUX asset host.
+func isMediuxAssetURL(raw string) bool {
+	u, err := neturl.Parse(raw)
+	if err != nil {
+		return false
+	}
+	return strings.EqualFold(u.Hostname(), mediuxAssetHost)
+}
+
 // imageFetcher abstracts HTTP image retrieval for testing.
 type imageFetcher interface {
 	Fetch(ctx context.Context, url string) ([]byte, error)
@@ -658,7 +670,7 @@ type httpFetcher struct {
 
 func (f *httpFetcher) Fetch(ctx context.Context, url string) ([]byte, error) {
 	// MediUX assets need the caller's token, so a stored copy would skip its check.
-	if f.store == nil || strings.Contains(url, "images.mediux.io") {
+	if f.store == nil || isMediuxAssetURL(url) {
 		return f.fetchRemote(ctx, url)
 	}
 	return f.store.fetch(ctx, url, func(ctx context.Context) ([]byte, error) {
@@ -673,7 +685,7 @@ func (f *httpFetcher) fetchRemote(ctx context.Context, url string) ([]byte, erro
 	}
 	// MediUX serves its assets only to an authenticated request, so the token
 	// (owner's own, else the instance default) rides the image fetch too.
-	if strings.Contains(url, "images.mediux.io") {
+	if isMediuxAssetURL(url) {
 		if tok := provider.MediuxTokenFor(ctx, f.mediuxKey); tok != "" {
 			req.Header.Set("Authorization", "Bearer "+tok)
 		}
@@ -2841,8 +2853,28 @@ func selectArtworkURL(meta *provider.MediaMeta, mediaType string, cfg imageconfi
 	}
 }
 
+// maxDecodePixels bounds the pixel count of any fetched image before a full decode.
+const maxDecodePixels = 50_000_000
+
+var errImageTooLarge = errors.New("image dimensions exceed the pixel cap")
+
+// checkImagePixels reads the header and refuses an image over maxDecodePixels.
+func checkImagePixels(data []byte) error {
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 || int64(cfg.Width)*int64(cfg.Height) > maxDecodePixels {
+		return fmt.Errorf("%w: %dx%d", errImageTooLarge, cfg.Width, cfg.Height)
+	}
+	return nil
+}
+
 // decodeImage decodes PNG, JPEG, or WebP bytes into an image.Image.
 func decodeImage(data []byte) (image.Image, error) {
+	if err := checkImagePixels(data); err != nil {
+		return nil, err
+	}
 	img, _, err := image.Decode(bytes.NewReader(data))
 	return img, err
 }

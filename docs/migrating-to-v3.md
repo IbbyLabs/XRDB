@@ -57,8 +57,13 @@ simpler configurator.
    ```sh
    curl -X POST http://localhost:8787/profile/import \
      -H "Content-Type: application/json" \
-     -d @legacy-profiles.json
+     -d "$(jq '. + {password: "choose-a-password"}' legacy-profiles.json)"
    ```
+
+   Every imported profile needs a password, and an export carries none. Add a
+   `password` field to the file, which every profile in it inherits, or to
+   individual profiles. A profile with no password is skipped and listed under
+   `errors`. Imports are limited to 10 a hour per address.
 
    If you want to see what will happen before committing to it, the migration
    tool writes a per-profile report (requires the source checkout):

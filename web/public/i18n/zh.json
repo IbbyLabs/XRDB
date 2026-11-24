@@ -699,7 +699,6 @@
  "Profile updated": "配置文件已更新",
  "Profiles do not carry across. One saved here stays here, and every artwork URL it feeds keeps working.": "配置文件不会跨设备同步。此处保存的配置文件仅在此处有效，且其提供的每个艺术作品 URL 均持续有效。",
  "Progress": "进度",
- "Protects your profile from edits — recommended": "保护您的配置文件免受编辑 — 推荐",
  "Provider": "提供者",
  "Provider cache TTLs (hours)": "提供者缓存 TTL（小时）",
  "Provider country": "提供者国家",

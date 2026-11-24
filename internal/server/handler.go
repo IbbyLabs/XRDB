@@ -126,6 +126,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	flight := newRenderFlight()
 	// Forwarded headers are client input unless the peer is a known proxy.
 	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)
+	previewSigner := newPreviewSigner(settingsStore, logger)
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -182,8 +183,8 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 
 		// Enforce global API key if configured. Accept via Authorization: Bearer
 		// header or ?key= query param (for Stremio compatibility). The
-		// configurator's own preview <img> is exempt — see sameOriginRender.
-		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) && !keyParamMatches(raw, cfg.APIKey) && !sameOriginRender(r) {
+		// configurator's preview <img> carries ?key= like any other client.
+		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) && !keyParamMatches(raw, cfg.APIKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			record(r, r.URL.Path, http.StatusUnauthorized, latMs(start))
 			return
@@ -208,16 +209,18 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				profileLoaded = true
 				// The preview renders unsaved edits as inline JSON, so it carries
 				// no profile to attach provider keys from. When editing a saved
-				// profile the configurator names it in ?pk= purely so its stored
-				// keys apply here, and the preview reflects what the owner set.
-				// Gated to the same-origin preview: borrowing another profile's
-				// keys for an arbitrary config would spend its metered allowance.
-				if store != nil && sameOriginRender(r) {
-					if pk := queryValue(raw, "pk", ""); pk != "" {
-						if p, err := store.Resolve(pk); err == nil && len(p.ProviderKeys) > 0 {
-							r = r.WithContext(provider.WithKeys(r.Context(), p.ProviderKeys))
-							ownerKeyFP = provider.KeysFingerprint(p.ProviderKeys)
-						}
+				// profile the configurator sends the signed token it got when it
+				// loaded or saved that profile in ?pkt=, so the owner's stored
+				// keys apply here. The signature is the proof: borrowing another
+				// profile's keys for an arbitrary config would spend its metered
+				// allowance.
+				if pkt := queryValue(raw, "pkt", ""); pkt != "" && store != nil {
+					if pid, err := previewSigner.verify(pkt); err != nil {
+						logger.DebugContext(r.Context(), "Ignored an invalid or expired preview token",
+							"id", logging.RequestID(r.Context()))
+					} else if p, err := store.Get(pid); err == nil && len(p.ProviderKeys) > 0 {
+						r = r.WithContext(provider.WithKeys(r.Context(), p.ProviderKeys))
+						ownerKeyFP = provider.KeysFingerprint(p.ProviderKeys)
 					}
 				}
 			} else if store != nil {
@@ -702,9 +705,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		writeRenderPlaceholderJSON(w, mediaType, id, key)
 	})
 
-	registerProfileRoutes(mux, store, cfg, logger)
+	registerProfileRoutes(mux, store, cfg, logger, previewSigner)
 	registerMediaRoutes(mux, pipeline)
-	registerAIOMRoutes(mux, cfg.AIOMAllowPrivate)
+	registerAIOMRoutes(mux, cfg.AIOMAllowPrivate, trust)
 	registerAdminRoutes(mux, ms, cfg, store, settingsStore, pipeline, renderCache, ttls)
 
 	// Genre families: GET /api/genre-families — the id, label and built-in
@@ -1037,14 +1040,9 @@ func keyParamMatches(rawQuery, want string) bool {
 	return subtle.ConstantTimeCompare([]byte(got), []byte(want)) == 1
 }
 
-// sameOriginRender reports whether a render request is the configurator's own
-// preview loading in a browser, which the API-key gate exempts. XRDB_API_KEY
-// exists to gate programmatic and external use — AIOMetadata and Stremio fetch
-// server-side, hotlinks load cross-origin — and all of those still require the
-// key. Page JavaScript cannot set Sec-Fetch-Site or Referer, but any
-// non-browser client can, so this exemption is not a security boundary.
-// same-site is not accepted, so a neighbour on a shared parent domain can't
-// hotlink for free.
+// sameOriginRender reports whether a request looks like a browser loading its
+// own origin. The headers are client-set, so it only ever drives cosmetic
+// choices such as cache headers, never access.
 func sameOriginRender(r *http.Request) bool {
 	switch r.Header.Get("Sec-Fetch-Site") {
 	case "same-origin":

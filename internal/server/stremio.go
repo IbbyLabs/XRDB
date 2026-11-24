@@ -23,6 +23,7 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -127,6 +128,9 @@ func stremioManifestFor(cfg config.Config) stremioManifest {
 // serve a different look per user. Without it the addon would advertise itself
 // as configurable and then ignore whatever the user configured.
 func registerStremioAddon(mux *http.ServeMux, cfg config.Config, store *profile.Store, trust proxyTrust) {
+	if cfg.APIKey != "" {
+		slog.Warn("The Stremio addon is on while XRDB_API_KEY is set, so its artwork URLs carry no key and will answer 401")
+	}
 	manifestHandler := stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, stremioManifestFor(cfg))
 	})
@@ -195,11 +199,6 @@ func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config,
 				q.Set("v", p.VersionToken)
 			}
 		}
-	}
-	// If an API key is required, embed it as a query parameter.
-	// Note: exposing the key in URLs is a trade-off for Stremio compatibility.
-	if cfg.APIKey != "" {
-		q.Set("key", cfg.APIKey)
 	}
 	posterURL := fmt.Sprintf("%s/%s/%s?%s", base, xrdbType, id, q.Encode())
 	backdropURL := fmt.Sprintf("%s/backdrop/%s?%s", base, id, q.Encode())

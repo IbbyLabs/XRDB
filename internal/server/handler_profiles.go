@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
@@ -31,7 +32,31 @@ func generateProfileID() string {
 }
 
 // registerProfileRoutes mounts all /profile/* handlers onto mux.
-func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config, logger *slog.Logger) {
+func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config, logger *slog.Logger, signer *previewSigner) {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)
+	passwordLimiter := newWindowLimiter(profilePasswordChecksPerMinute, time.Minute)
+	createLimiter := newWindowLimiter(profileCreatesPerHour, time.Hour)
+	callerKey := func(r *http.Request) string { return "ip:" + capAddressKey(clientIP(r, trust)) }
+
+	// authorize rate-limits and runs one password check, answering the request
+	// itself when it refuses.
+	authorize := func(w http.ResponseWriter, r *http.Request, id, refusal string) bool {
+		key := callerKey(r)
+		if ok, _ := passwordLimiter.allow(1, key); !ok {
+			logger.WarnContext(r.Context(), "Refused a profile password check over the rate limit",
+				"id", logging.RequestID(r.Context()), "client_ip", clientIP(r, trust))
+			refuseRateLimited(w, passwordLimiter, key)
+			return false
+		}
+		if err := store.CheckPassword(id, r.Header.Get("X-Profile-Password")); err != nil {
+			http.Error(w, refusal, http.StatusUnauthorized)
+			return false
+		}
+		return true
+	}
 	mux.HandleFunc("/profile", func(w http.ResponseWriter, r *http.Request) {
 		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -85,14 +110,23 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				http.Error(w, "invalid JSON", http.StatusBadRequest)
 				return
 			}
-			if extra.Password != "" {
-				hash, err := bcrypt.GenerateFromPassword([]byte(extra.Password), bcrypt.DefaultCost)
-				if err != nil {
-					http.Error(w, "failed to hash password", http.StatusInternalServerError)
-					return
-				}
-				p.PasswordHash = string(hash)
+			if extra.Password == "" {
+				http.Error(w, "A password is required to create a profile.", http.StatusBadRequest)
+				return
 			}
+			key := callerKey(r)
+			if ok, _ := createLimiter.allow(1, key); !ok {
+				logger.WarnContext(r.Context(), "Refused a profile creation over the rate limit",
+					"id", logging.RequestID(r.Context()), "client_ip", clientIP(r, trust))
+				refuseRateLimited(w, createLimiter, key)
+				return
+			}
+			hash, err := bcrypt.GenerateFromPassword([]byte(extra.Password), bcrypt.DefaultCost)
+			if err != nil {
+				http.Error(w, "failed to hash password", http.StatusInternalServerError)
+				return
+			}
+			p.PasswordHash = string(hash)
 			p.ID = generateProfileID()
 			if err := store.Save(&p); err != nil {
 				switch {
@@ -107,7 +141,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				}
 				return
 			}
-			writeJSON(w, http.StatusCreated, &p)
+			writeJSON(w, http.StatusCreated, withPreviewToken(&p, signer))
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -136,15 +170,15 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				return
 			}
 			if p.PasswordHash != "" {
-				pw := r.Header.Get("X-Profile-Password")
-				if err := store.CheckPassword(p.ID, pw); err != nil {
-					http.Error(w, "profile password required", http.StatusUnauthorized)
+				if !authorize(w, r, p.ID, "profile password required") {
 					return
 				}
 			} else {
 				p.Config = withoutV2Credentials(p.Config)
 			}
-			writeJSON(w, http.StatusOK, p)
+			resp := withPreviewToken(p, signer)
+			resp.PasswordRequired = p.PasswordHash == ""
+			writeJSON(w, http.StatusOK, resp)
 		case http.MethodPut:
 			existing, err := store.Resolve(id)
 			if err != nil {
@@ -156,9 +190,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				return
 			}
 			if existing.PasswordHash != "" {
-				pw := r.Header.Get("X-Profile-Password")
-				if err := store.CheckPassword(existing.ID, pw); err != nil {
-					http.Error(w, "profile password required", http.StatusUnauthorized)
+				if !authorize(w, r, existing.ID, "profile password required") {
 					return
 				}
 			}
@@ -199,6 +231,10 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			p.ID = existing.ID
 			p.PasswordHash = existing.PasswordHash
 			if extra.Password != nil {
+				if *extra.Password == "" && existing.PasswordHash != "" {
+					http.Error(w, "A profile's password can be changed but not removed.", http.StatusBadRequest)
+					return
+				}
 				p.PasswordHash = ""
 				if *extra.Password != "" {
 					hash, err := bcrypt.GenerateFromPassword([]byte(*extra.Password), bcrypt.DefaultCost)
@@ -284,7 +320,9 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			if updated.PasswordHash == "" {
 				updated.Config = withoutV2Credentials(updated.Config)
 			}
-			writeJSON(w, http.StatusOK, updated)
+			resp := withPreviewToken(updated, signer)
+			resp.PasswordRequired = updated.PasswordHash == ""
+			writeJSON(w, http.StatusOK, resp)
 		case http.MethodDelete:
 			existing, err := store.Resolve(id)
 			if err != nil {
@@ -296,9 +334,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				return
 			}
 			if existing.PasswordHash != "" {
-				pw := r.Header.Get("X-Profile-Password")
-				if err := store.CheckPassword(existing.ID, pw); err != nil {
-					http.Error(w, "profile password required", http.StatusUnauthorized)
+				if !authorize(w, r, existing.ID, "profile password required") {
 					return
 				}
 			}
@@ -342,9 +378,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			return
 		}
 		if p.PasswordHash != "" {
-			pw := r.Header.Get("X-Profile-Password")
-			if err := store.CheckPassword(p.ID, pw); err != nil {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
+			if !authorize(w, r, p.ID, "unauthorized") {
 				return
 			}
 		} else {
@@ -367,6 +401,13 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		}
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		key := callerKey(r)
+		if ok, _ := createLimiter.allow(1, key); !ok {
+			logger.WarnContext(r.Context(), "Refused a profile import over the creation rate limit",
+				"id", logging.RequestID(r.Context()), "client_ip", clientIP(r, trust))
+			refuseRateLimited(w, createLimiter, key)
 			return
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
@@ -392,6 +433,10 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			}
 			env = profile.ExportEnvelope{Version: 1, Profiles: bare}
 		}
+		// An export carries no password hash, so each profile names a plaintext
+		// password here, or inherits the envelope's.
+		passwords := importPasswords(body, len(env.Profiles))
+		hashes := map[string]string{}
 		type importResult struct {
 			Imported int      `json:"imported"`
 			Skipped  int      `json:"skipped"`
@@ -422,6 +467,26 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 					res.Errors = append(res.Errors, p.ID+": failed to check for an existing profile")
 					continue
 				}
+			}
+			p.PasswordHash = ""
+			if pw := passwords[i]; pw != "" {
+				hash, ok := hashes[pw]
+				if !ok {
+					h, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
+					if err != nil {
+						logger.ErrorContext(r.Context(), "Failed to hash an imported profile password",
+							"id", logging.RequestID(r.Context()), "profile_id", p.ID, "error", err)
+						res.Errors = append(res.Errors, p.ID+": failed to save")
+						continue
+					}
+					hash = string(h)
+					hashes[pw] = hash
+				}
+				p.PasswordHash = hash
+			}
+			if p.PasswordHash == "" {
+				res.Errors = append(res.Errors, p.ID+": a password is required")
+				continue
 			}
 			if err := store.Save(p); err != nil {
 				switch {
@@ -456,6 +521,49 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			"imported", res.Imported, "skipped", res.Skipped, "errors", len(res.Errors))
 		writeJSON(w, status, res)
 	})
+}
+
+// importPasswords returns the plaintext password for each of n imported
+// profiles: its own "password" field, else the envelope's.
+func importPasswords(body []byte, n int) []string {
+	type entry struct {
+		Password string `json:"password"`
+	}
+	var env struct {
+		Password string  `json:"password"`
+		Profiles []entry `json:"profiles"`
+	}
+	var bare []entry
+	var shared string
+	var own []entry
+	if err := json.Unmarshal(body, &env); err == nil {
+		shared, own = env.Password, env.Profiles
+	} else if err := json.Unmarshal(body, &bare); err == nil {
+		own = bare
+	}
+	out := make([]string, n)
+	for i := range out {
+		out[i] = shared
+		if i < len(own) && own[i].Password != "" {
+			out[i] = own[i].Password
+		}
+	}
+	return out
+}
+
+// profileResponse is a profile plus the fields only the profile routes add.
+type profileResponse struct {
+	*profile.Profile
+	// PreviewToken lets the configurator's preview render with this profile's
+	// own provider keys (query parameter pkt).
+	PreviewToken string `json:"previewToken,omitempty"`
+	// PasswordRequired marks a profile that has no password, which the owner
+	// is asked to set. Present on reads and saves.
+	PasswordRequired bool `json:"passwordRequired,omitempty"`
+}
+
+func withPreviewToken(p *profile.Profile, signer *previewSigner) *profileResponse {
+	return &profileResponse{Profile: p, PreviewToken: signer.issue(p.ID)}
 }
 
 // withoutV2Credentials drops v2 credential keys at any depth of a config.

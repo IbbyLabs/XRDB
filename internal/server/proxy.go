@@ -128,14 +128,27 @@ func clientIP(r *http.Request, trust proxyTrust) string {
 		return cf
 	}
 	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-		// The left-most entry is the original client; the rest are the proxies
-		// it passed through.
-		if i := strings.IndexByte(fwd, ','); i >= 0 {
-			return strings.TrimSpace(fwd[:i])
-		}
-		return strings.TrimSpace(fwd)
+		return forwardedClient(fwd, trust)
 	}
 	return bareHost(r.RemoteAddr)
+}
+
+// forwardedClient picks the client from an X-Forwarded-For chain. Each proxy
+// appends the address it saw, so entries a client wrote sit on the left; the
+// right-most entry that is not a trusted proxy is the last one a trusted hop
+// vouches for. A chain made only of trusted addresses yields its left-most.
+func forwardedClient(fwd string, trust proxyTrust) string {
+	parts := strings.Split(fwd, ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		entry := strings.TrimSpace(parts[i])
+		if entry == "" {
+			continue
+		}
+		if !trust.trusts(entry) {
+			return entry
+		}
+	}
+	return strings.TrimSpace(parts[0])
 }
 
 // forwardedScheme returns the scheme the client actually used, falling back to

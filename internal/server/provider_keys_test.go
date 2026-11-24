@@ -131,9 +131,9 @@ func TestProviderKeyValuesAreNeverReturned(t *testing.T) {
 	}
 }
 
-// Removing the password removes the protection the keys were stored behind, so
-// they cannot be left sitting on a now-public profile.
-func TestClearingThePasswordClearsTheKeys(t *testing.T) {
+// A password can be changed but not removed, so the keys stored behind it are
+// never left on an open profile.
+func TestAPasswordCannotBeRemovedButCanBeChanged(t *testing.T) {
 	h, store := keysHandler(t)
 	p := &profile.Profile{ID: newTestID(t), Type: "poster", Config: json.RawMessage(`{}`)}
 	if err := store.Save(p); err != nil {
@@ -146,15 +146,23 @@ func TestClearingThePasswordClearsTheKeys(t *testing.T) {
 		t.Fatalf("put: %d", rr.Code)
 	}
 
-	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"password":""}`, "hunter2"); rr.Code != http.StatusOK {
-		t.Fatalf("clear password: %d %s", rr.Code, rr.Body.String())
+	rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"password":""}`, "hunter2")
+	if rr.Code != http.StatusBadRequest || !strings.Contains(rr.Body.String(), "can be changed but not removed") {
+		t.Fatalf("remove password: %d %s, want 400 refusing removal", rr.Code, rr.Body.String())
 	}
 	stored, err := store.Get(p.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(stored.ProviderKeys) != 0 {
-		t.Errorf("keys survived the password being removed: %v", stored.KeysSet)
+	if stored.PasswordHash == "" || len(stored.ProviderKeys) == 0 {
+		t.Error("a refused removal still changed the profile")
+	}
+
+	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"password":"newer"}`, "hunter2"); rr.Code != http.StatusOK {
+		t.Fatalf("change password: %d %s", rr.Code, rr.Body.String())
+	}
+	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{}}`, "newer"); rr.Code != http.StatusOK {
+		t.Errorf("the new password was not accepted: %d", rr.Code)
 	}
 }
 

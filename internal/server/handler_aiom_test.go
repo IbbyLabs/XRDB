@@ -96,3 +96,40 @@ func TestAIOMUpstreamErrorIsBounded(t *testing.T) {
 		t.Errorf("long message is %d runes, want %d", len(got), aiomMaxErrorLength+1)
 	}
 }
+
+func TestAIOMInstallRefusesPlainHTTPUnlessPrivateAllowed(t *testing.T) {
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	rr := postAIOMInstall(h, "http://aiom.example.com")
+	if rr.Code != http.StatusBadRequest || !strings.Contains(rr.Body.String(), "https") {
+		t.Errorf("status %d body %s, want 400 naming https", rr.Code, rr.Body.String())
+	}
+	if err := checkAIOMScheme("http://aiom.local:3232", true); err != nil {
+		t.Errorf("plain http refused with private addresses allowed: %v", err)
+	}
+	if err := checkAIOMScheme("https://aiometadata.elfhosted.com", false); err != nil {
+		t.Errorf("https refused: %v", err)
+	}
+}
+
+func TestAIOMInstallIsRateLimitedPerClient(t *testing.T) {
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	post := func(remote string) int {
+		body := `{"baseUrl":"http://x.example","userUUID":"u","password":"p","posterUrlPattern":"p"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/aiometadata/install", strings.NewReader(body))
+		req.RemoteAddr = remote
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		return rr.Code
+	}
+	for i := 0; i < aiomInstallsPerWindow; i++ {
+		if got := post("203.0.113.9:1000"); got == http.StatusTooManyRequests {
+			t.Fatalf("request %d was limited early", i+1)
+		}
+	}
+	if got := post("203.0.113.9:1001"); got != http.StatusTooManyRequests {
+		t.Errorf("request over the limit got %d, want 429", got)
+	}
+	if got := post("203.0.113.10:1"); got == http.StatusTooManyRequests {
+		t.Errorf("a different client was limited")
+	}
+}

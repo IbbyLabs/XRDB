@@ -14,6 +14,7 @@ import (
 	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/provider"
+	"xrdb_rewrite/internal/settings"
 )
 
 type keyRecordingProvider struct {
@@ -28,7 +29,7 @@ func (p *keyRecordingProvider) Fetch(ctx context.Context, mediaType, id string) 
 	return p.StubProvider.Fetch(ctx, mediaType, id)
 }
 
-func previewHandler(t *testing.T, store *profile.Store, sawKey *bool) http.Handler {
+func previewHandler(t *testing.T, store *profile.Store, sawKey *bool, ss *settings.Store) http.Handler {
 	t.Helper()
 	reg := provider.NewRegistry()
 	reg.Register(&keyRecordingProvider{
@@ -41,7 +42,7 @@ func previewHandler(t *testing.T, store *profile.Store, sawKey *bool) http.Handl
 	pipeline := compose.NewWithFetcher(reg, fixedFetcher{data: testSourcePNG(t, 800, 1200)})
 	c, _ := cache.New(filepath.Join(t.TempDir(), "cache"), time.Hour, 100, 8<<20)
 	t.Cleanup(c.Close)
-	return NewHandler("test", store, nil, pipeline, c, config.Config{})
+	return NewHandler("test", store, ss, pipeline, c, config.Config{})
 }
 
 func openStore(t *testing.T) *profile.Store {
@@ -57,9 +58,10 @@ func openStore(t *testing.T) *profile.Store {
 	return store
 }
 
-// The preview must apply a saved profile's provider keys, but only same-origin:
-// borrowing another profile's metered key for an arbitrary config would spend it.
-func TestPreviewAppliesProfileKeysOnlySameOrigin(t *testing.T) {
+// The preview applies a saved profile's provider keys only for a valid signed
+// token. Fetch metadata and the profile name are caller-supplied, so they prove
+// nothing.
+func TestPreviewAppliesProfileKeysOnlyWithAValidToken(t *testing.T) {
 	store := openStore(t)
 	if err := store.Save(&profile.Profile{
 		ID: "abc123", Alias: "myprofile", Type: "poster",
@@ -67,24 +69,62 @@ func TestPreviewAppliesProfileKeysOnlySameOrigin(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	if err := store.Save(&profile.Profile{ID: "other1", Type: "poster", Config: json.RawMessage(`{}`)}); err != nil {
+		t.Fatal(err)
+	}
+	ss, err := settings.Open(filepath.Join(t.TempDir(), "settings.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = ss.Close() })
 
 	var sawKey bool
-	h := previewHandler(t, store, &sawKey)
+	h := previewHandler(t, store, &sawKey, ss)
+	signer := newPreviewSigner(ss, nil)
 
-	sawKey = false
-	req := httptest.NewRequest(http.MethodGet, "/poster/tt1?config=%7B%7D&pk=myprofile&cb=x1", nil)
-	req.Header.Set("Sec-Fetch-Site", "cross-site")
-	h.ServeHTTP(httptest.NewRecorder(), req)
-	if sawKey {
-		t.Error("a cross-origin request borrowed the profile's provider key")
+	render := func(query, site string) bool {
+		sawKey = false
+		req := httptest.NewRequest(http.MethodGet, "/poster/tt1?config=%7B%7D&"+query, nil)
+		if site != "" {
+			req.Header.Set("Sec-Fetch-Site", site)
+		}
+		h.ServeHTTP(httptest.NewRecorder(), req)
+		return sawKey
 	}
 
-	sawKey = false
-	req = httptest.NewRequest(http.MethodGet, "/poster/tt1?config=%7B%7D&pk=myprofile&cb=x2", nil)
-	req.Header.Set("Sec-Fetch-Site", "same-origin")
-	h.ServeHTTP(httptest.NewRecorder(), req)
-	if !sawKey {
-		t.Error("the same-origin preview did not apply the profile's provider key")
+	expired := newPreviewSigner(ss, nil)
+	expired.now = func() time.Time { return time.Now().Add(-previewTokenTTL - time.Minute) }
+	valid := signer.issue("abc123")
+
+	// The token a configurator receives when it loads the profile.
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/myprofile", nil))
+	var loaded struct {
+		PreviewToken string `json:"previewToken"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &loaded); err != nil || loaded.PreviewToken == "" {
+		t.Fatalf("profile read carried no preview token: %v %s", err, rr.Body.String())
+	}
+
+	for name, tc := range map[string]struct{ query, site string }{
+		"pk with a spoofed same-origin":    {"pk=myprofile&cb=1", "same-origin"},
+		"pk by id with a spoofed referer":  {"pk=abc123&cb=2", ""},
+		"forged token":                     {"pkt=" + valid[:len(valid)-2] + "xx&cb=3", "same-origin"},
+		"token naming the wrong profile":   {"pkt=" + signer.issue("other1") + "&cb=4", "same-origin"},
+		"expired token":                    {"pkt=" + expired.issue("abc123") + "&cb=5", "same-origin"},
+		"token signed with another secret": {"pkt=" + newPreviewSigner(nil, nil).issue("abc123") + "&cb=6", "same-origin"},
+		"garbage token":                    {"pkt=not-a-token&cb=7", "same-origin"},
+	} {
+		if render(tc.query, tc.site) {
+			t.Errorf("%s borrowed the profile's provider key", name)
+		}
+	}
+
+	if !render("pkt="+valid+"&cb=8", "cross-site") {
+		t.Error("a valid token did not apply the profile's provider key")
+	}
+	if !render("pkt="+loaded.PreviewToken+"&cb=9", "") {
+		t.Error("the token from the profile read did not apply the provider key")
 	}
 }
 
@@ -94,7 +134,7 @@ func TestPreviewAppliesProfileKeysOnlySameOrigin(t *testing.T) {
 func TestAProviderKeyChangeMovesTheCacheKey(t *testing.T) {
 	store := openStore(t)
 	var sawKey bool
-	h := previewHandler(t, store, &sawKey)
+	h := previewHandler(t, store, &sawKey, nil)
 
 	keyFor := func(alias string) string {
 		rr := httptest.NewRecorder()
