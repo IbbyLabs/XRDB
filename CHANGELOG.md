@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.146.0](https://github.com/IbbyLabs/XRDB/compare/v3.145.1...v3.146.0) (2026-11-24)
+
+
+### Added
+
+* **profiles:** new profiles and imports need a password ([8475078](https://github.com/IbbyLabs/XRDB/commit/84750783d6f0aa763ead8a612b9cf16ded1c8dfc))
+
 ## [3.145.1](https://github.com/IbbyLabs/XRDB/compare/v3.145.0...v3.145.1) (2026-11-15)
 
 
