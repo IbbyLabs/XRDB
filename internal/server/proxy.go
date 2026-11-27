@@ -155,7 +155,11 @@ func cloudflareClient(r *http.Request, hop string, trustsEveryHeader bool) (stri
 	return addr.Unmap().String(), true
 }
 
-// cloudflareRanges is Cloudflare's published edge list (cloudflare.com/ips, November 2026).
+// cloudflareRangesFetched is when cloudflareRanges was copied from cloudflare.com/ips;
+// a test fails once it is a year old so the list gets refreshed.
+const cloudflareRangesFetched = "2026-11-27"
+
+// cloudflareRanges is Cloudflare's published edge list.
 var cloudflareRanges = mustPrefixes(
 	"173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "141.101.64.0/18",
 	"108.162.192.0/18", "190.93.240.0/20", "188.114.96.0/20", "197.234.240.0/22", "198.41.128.0/17",

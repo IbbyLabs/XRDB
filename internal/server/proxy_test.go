@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func reqFrom(remoteAddr string, headers map[string]string) *http.Request {
@@ -227,5 +228,16 @@ func TestClientIPIgnoresSpoofedLeftXFFEntries(t *testing.T) {
 		if got := clientIP(r, trust); got != c.want {
 			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
 		}
+	}
+}
+
+// Cloudflare adds edge ranges now and then, so the embedded list is refreshed yearly.
+func TestCloudflareRangesAreRefreshedYearly(t *testing.T) {
+	fetched, err := time.Parse("2006-01-02", cloudflareRangesFetched)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if age := time.Since(fetched); age > 365*24*time.Hour {
+		t.Errorf("cloudflareRanges were fetched %s ago: refresh them from cloudflare.com/ips-v4 and /ips-v6 and update cloudflareRangesFetched", age.Round(24*time.Hour))
 	}
 }
