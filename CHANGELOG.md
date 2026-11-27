@@ -2,6 +2,22 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.147.0](https://github.com/IbbyLabs/XRDB/compare/v3.146.2...v3.147.0) (2026-11-27)
+
+
+### Added
+
+* **admin:** reset a profile's password and provider keys ([de1f761](https://github.com/IbbyLabs/XRDB/commit/de1f76124ab6aa5be06d2ef883b665e3833a625d))
+
+
+### Fixed
+
+* **admin:** set the new password in the same write as the reset ([231bceb](https://github.com/IbbyLabs/XRDB/commit/231bcebe13cdc804ca2e875bce51b0ace920577a))
+* **aiom:** limit installs per /64 and refuse https-to-http redirects ([8f613e2](https://github.com/IbbyLabs/XRDB/commit/8f613e2cb3882db13d14759e6475c3c7a6c8021c))
+* **logging:** redact the preview token from access logs ([04f5cf2](https://github.com/IbbyLabs/XRDB/commit/04f5cf246664c64a71d159ac308b5f5d0c1de1d5))
+* **profiles:** charge imports per profile and validate before hashing ([a90c7e6](https://github.com/IbbyLabs/XRDB/commit/a90c7e62ce8ce9b8d23ccf7cbe5325293ad2959b))
+* **server:** believe CF-Connecting-IP only from a Cloudflare hop ([6067947](https://github.com/IbbyLabs/XRDB/commit/60679473afd49792f491e18438e63cb4c654b19a))
+
 ## [3.146.2](https://github.com/IbbyLabs/XRDB/compare/v3.146.1...v3.146.2) (2026-11-27)
 
 
