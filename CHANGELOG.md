@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.146.2](https://github.com/IbbyLabs/XRDB/compare/v3.146.1...v3.146.2) (2026-11-27)
+
+
+### Fixed
+
+* **ratings:** the failure breaker needs a streak lasting 10s to trip ([8fe5ec8](https://github.com/IbbyLabs/XRDB/commit/8fe5ec83fb4fde5523ae01c41ebc82efc6943076))
+
 ## [3.146.1](https://github.com/IbbyLabs/XRDB/compare/v3.146.0...v3.146.1) (2026-11-24)
 
 
