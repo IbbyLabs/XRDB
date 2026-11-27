@@ -171,6 +171,23 @@ func validateAlias(alias string) (string, error) {
 	return alias, nil
 }
 
+// Validate runs Save's checks that need no database: id, type, config and alias.
+func (s *Store) Validate(p *Profile) error {
+	if p.ID == "" {
+		return fmt.Errorf("%w: profile id is required", ErrInvalidProfile)
+	}
+	if p.Type == "" {
+		return fmt.Errorf("%w: profile type is required", ErrInvalidProfile)
+	}
+	if _, err := normalizeConfig(p.Config); err != nil {
+		return fmt.Errorf("%w: invalid config: %w", ErrInvalidProfile, err)
+	}
+	if _, err := validateAlias(p.Alias); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Save inserts a new profile. Returns ErrConflict if the ID already exists.
 func (s *Store) Save(p *Profile) error {
 	if p.ID == "" {

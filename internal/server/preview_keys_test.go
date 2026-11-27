@@ -6,8 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"xrdb_rewrite/internal/cache"
 	"xrdb_rewrite/internal/compose"
@@ -66,6 +69,7 @@ func TestPreviewAppliesProfileKeysOnlyWithAValidToken(t *testing.T) {
 	if err := store.Save(&profile.Profile{
 		ID: "abc123", Alias: "myprofile", Type: "poster",
 		Config: json.RawMessage(`{}`), ProviderKeys: map[string]string{"tmdb": "owner-tmdb-key"},
+		PasswordHash: mustHash(t, "owner-pw"),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +102,9 @@ func TestPreviewAppliesProfileKeysOnlyWithAValidToken(t *testing.T) {
 
 	// The token a configurator receives when it loads the profile.
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/myprofile", nil))
+	read := httptest.NewRequest(http.MethodGet, "/profile/myprofile", nil)
+	read.Header.Set("X-Profile-Password", "owner-pw")
+	h.ServeHTTP(rr, read)
 	var loaded struct {
 		PreviewToken string `json:"previewToken"`
 	}
@@ -164,5 +170,29 @@ func TestAProviderKeyChangeMovesTheCacheKey(t *testing.T) {
 
 	if before == withKey {
 		t.Error("a provider key did not move the cache key, so the pre-key render would be served stale")
+	}
+}
+
+func mustHash(t *testing.T, pw string) string {
+	t.Helper()
+	h, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.MinCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(h)
+}
+
+// A passwordless profile can hold no keys, so reading it hands out no token
+// that could outlive a password and keys added later.
+func TestPasswordlessProfileReadCarriesNoPreviewToken(t *testing.T) {
+	store := openStore(t)
+	if err := store.Save(&profile.Profile{ID: "open01", Alias: "openprofile", Type: "poster", Config: json.RawMessage(`{}`)}); err != nil {
+		t.Fatal(err)
+	}
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/openprofile", nil))
+	if rr.Code != http.StatusOK || strings.Contains(rr.Body.String(), "previewToken") {
+		t.Errorf("passwordless profile read: %d %s, want no previewToken", rr.Code, rr.Body.String())
 	}
 }

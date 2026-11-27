@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -39,6 +40,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)
 	passwordLimiter := newWindowLimiter(profilePasswordChecksPerMinute, time.Minute)
 	createLimiter := newWindowLimiter(profileCreatesPerHour, time.Hour)
+	importLimiter := newWindowLimiter(profileImportsPerHour, time.Hour)
 	callerKey := func(r *http.Request) string { return "ip:" + capAddressKey(clientIP(r, trust)) }
 
 	// authorize rate-limits and runs one password check, answering the request
@@ -408,12 +410,6 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			return
 		}
 		key := callerKey(r)
-		if ok, _ := createLimiter.allow(1, key); !ok {
-			logger.WarnContext(r.Context(), "Refused a profile import over the creation rate limit",
-				"id", logging.RequestID(r.Context()), "client_ip", clientIP(r, trust))
-			refuseRateLimited(w, createLimiter, key)
-			return
-		}
 		r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -437,6 +433,21 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			}
 			env = profile.ExportEnvelope{Version: 1, Profiles: bare}
 		}
+		if len(env.Profiles) > profileImportMax {
+			logger.WarnContext(r.Context(), "Refused a profile import with too many profiles",
+				"id", logging.RequestID(r.Context()), "profiles", len(env.Profiles), "max", profileImportMax)
+			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{
+				"error": "An import can carry at most " + strconv.Itoa(profileImportMax) + " profiles. Split the file and import the rest separately."})
+			return
+		}
+		if len(env.Profiles) > 0 {
+			if ok, _ := importLimiter.allow(int64(len(env.Profiles)), key); !ok {
+				logger.WarnContext(r.Context(), "Refused a profile import over the import rate limit",
+					"id", logging.RequestID(r.Context()), "client_ip", clientIP(r, trust), "profiles", len(env.Profiles))
+				refuseRateLimited(w, importLimiter, key)
+				return
+			}
+		}
 		// An export carries no password hash, so each profile names a plaintext
 		// password here, or inherits the envelope's.
 		passwords := importPasswords(body, len(env.Profiles))
@@ -448,6 +459,11 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		}
 		var res importResult
 		for i := range env.Profiles {
+			if err := r.Context().Err(); err != nil {
+				logger.WarnContext(r.Context(), "Stopped a profile import because the request ended",
+					"id", logging.RequestID(r.Context()), "done", i, "profiles", len(env.Profiles))
+				return
+			}
 			p := &env.Profiles[i]
 			// A v2 export can be posted here directly: its per-surface keys are
 			// translated on the way in, and a config already in XRDB's shape is
@@ -473,6 +489,15 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				}
 			}
 			p.PasswordHash = ""
+			// Cheap checks first, so an invalid profile costs no bcrypt.
+			if passwords[i] == "" {
+				res.Errors = append(res.Errors, p.ID+": a password is required")
+				continue
+			}
+			if err := store.Validate(p); err != nil {
+				res.Errors = append(res.Errors, p.ID+": "+err.Error())
+				continue
+			}
 			if pw := passwords[i]; pw != "" {
 				hash, ok := hashes[pw]
 				if !ok {
@@ -566,8 +591,14 @@ type profileResponse struct {
 	PasswordRequired bool `json:"passwordRequired,omitempty"`
 }
 
+// A preview token lets a render borrow the profile's provider keys, so only a
+// password-protected profile, the only kind that can hold keys, gets one.
 func withPreviewToken(p *profile.Profile, signer *previewSigner) *profileResponse {
-	return &profileResponse{Profile: p, PreviewToken: signer.issue(p.ID)}
+	resp := &profileResponse{Profile: p}
+	if p.PasswordHash != "" {
+		resp.PreviewToken = signer.issue(p.ID)
+	}
+	return resp
 }
 
 // withoutV2Credentials drops v2 credential keys at any depth of a config.

@@ -12,6 +12,11 @@ const (
 	profilePasswordChecksPerMinute = 30
 	// profileCreatesPerHour caps new profiles per client address.
 	profileCreatesPerHour = 10
+	// profileImportsPerHour caps profiles brought in through /profile/import per
+	// client address; each profile in a request costs one.
+	profileImportsPerHour = 50
+	// profileImportMax caps the profiles one import request may carry.
+	profileImportMax = 50
 )
 
 // newWindowLimiter allows n requests per window per key, with no extra burst.

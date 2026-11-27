@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -183,25 +184,69 @@ func TestAPreviewTokenExpires(t *testing.T) {
 	}
 }
 
-func TestProfileImportCountsAgainstTheCreationLimit(t *testing.T) {
+// importBody builds an import envelope of n poster profiles named prefix0..prefixN-1.
+func importBody(prefix string, n int) string {
+	parts := make([]string, n)
+	for i := range parts {
+		parts[i] = `{"id":"` + prefix + strconv.Itoa(i) + `","type":"poster","config":{}}`
+	}
+	return `{"password":"pw","version":1,"profiles":[` + strings.Join(parts, ",") + `]}`
+}
+
+func TestProfileImportChargesEachProfile(t *testing.T) {
 	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
 	const addr = "203.0.113.20:7000"
-	for i := 0; i < profileCreatesPerHour; i++ {
-		body := `{"password":"pw","version":1,"profiles":[{"id":"imp` + strconv.Itoa(i) + `","type":"poster","config":{}}]}`
-		rr := profileRequest(h, http.MethodPost, "/profile/import", body, "", addr)
-		if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `"imported":1`) {
-			t.Fatalf("import %d: %d %s, want a profile imported", i, rr.Code, rr.Body.String())
-		}
+	rr := profileRequest(h, http.MethodPost, "/profile/import", importBody("imp", profileImportsPerHour), "", addr)
+	if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `"imported":`+strconv.Itoa(profileImportsPerHour)) {
+		t.Fatalf("a full allowance import: %d %s", rr.Code, rr.Body.String())
 	}
-	rr := profileRequest(h, http.MethodPost, "/profile/import", `{"password":"pw","version":1,"profiles":[]}`, "", addr)
+	rr = profileRequest(h, http.MethodPost, "/profile/import", importBody("more", 1), "", addr)
 	if rr.Code != http.StatusTooManyRequests || rr.Header().Get("Retry-After") == "" {
-		t.Fatalf("import over the limit: %d retry-after=%q, want 429 with Retry-After", rr.Code, rr.Header().Get("Retry-After"))
+		t.Fatalf("one more profile over the allowance: %d retry-after=%q, want 429 with Retry-After", rr.Code, rr.Header().Get("Retry-After"))
 	}
-	// One request is one hit however many profiles it carries.
-	other := "203.0.113.21:7000"
-	many := `{"password":"pw","version":1,"profiles":[{"id":"m1","type":"poster","config":{}},{"id":"m2","type":"poster","config":{}},{"id":"m3","type":"poster","config":{}}]}`
-	if rr := profileRequest(h, http.MethodPost, "/profile/import", many, "", other); !strings.Contains(rr.Body.String(), `"imported":3`) {
-		t.Errorf("a multi-profile import: %d %s", rr.Code, rr.Body.String())
+	// Another address has its own allowance.
+	rr = profileRequest(h, http.MethodPost, "/profile/import", importBody("m", 3), "", "203.0.113.21:7000")
+	if !strings.Contains(rr.Body.String(), `"imported":3`) {
+		t.Errorf("a multi-profile import from another address: %d %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestProfileImportRefusesTooManyProfiles(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+	rr := profileRequest(h, http.MethodPost, "/profile/import", importBody("big", profileImportMax+1), "", "203.0.113.22:7000")
+	if rr.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("an import over the cap: %d %s, want 413", rr.Code, rr.Body.String())
+	}
+	if _, err := store.Get("big0"); err == nil {
+		t.Errorf("an import over the cap stored a profile")
+	}
+}
+
+func TestProfileImportValidatesBeforeHashing(t *testing.T) {
+	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
+	body := `{"version":1,"profiles":[{"id":"notype","config":{},"password":"x"},{"id":"badalias","type":"poster","config":{},"alias":"no spaces!","password":"y"}]}`
+	start := time.Now()
+	rr := profileRequest(h, http.MethodPost, "/profile/import", body, "", "203.0.113.23:7000")
+	if !strings.Contains(rr.Body.String(), "notype: invalid profile") || !strings.Contains(rr.Body.String(), "badalias: ") {
+		t.Fatalf("invalid profiles: %d %s", rr.Code, rr.Body.String())
+	}
+	// Two bcrypt hashes at the default cost take well over 50ms; none should run.
+	if d := time.Since(start); d > 50*time.Millisecond {
+		t.Errorf("invalid profiles took %s, so they were hashed", d)
+	}
+}
+
+func TestProfileImportStopsWhenTheRequestEnds(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	req := httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(importBody("gone", 3))).WithContext(ctx)
+	req.RemoteAddr = "203.0.113.24:7000"
+	h.ServeHTTP(httptest.NewRecorder(), req)
+	if _, err := store.Get("gone0"); err == nil {
+		t.Errorf("an import whose request had ended still stored a profile")
 	}
 }
 
