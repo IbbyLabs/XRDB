@@ -10,7 +10,7 @@ import (
 // sampling the hold on a timer calls that source working for part of every
 // outage and flips back on the next failure.
 func TestASourceFailingEveryCallIsFailingBetweenItsHolds(t *testing.T) {
-	h := NewHealthTracker(10, time.Hour)
+	h, clk := newClockedHealth()
 
 	// The control: nothing has failed, so neither reading is set. Without it an
 	// implementation that always answered true would satisfy the rest.
@@ -18,9 +18,7 @@ func TestASourceFailingEveryCallIsFailingBetweenItsHolds(t *testing.T) {
 		t.Fatal("setup: a source with no history read as failing")
 	}
 
-	for range failureBreakerThreshold * 2 {
-		h.Failure("mdblist", HTTPFault("mdblist", 502), CallerInteractive)
-	}
+	failAcrossSpan(h, clk, "mdblist", HTTPFault("mdblist", 502), CallerInteractive, failureBreakerThreshold*2)
 	if !h.CoolingOff("mdblist", CallerInteractive) {
 		t.Fatal("setup: repeated failures did not hold the source out")
 	}
@@ -69,10 +67,8 @@ func TestOneFailureDoesNotReadAsFailing(t *testing.T) {
 
 // A source that recovers stops reading as failing, or the panel never clears.
 func TestARecoveredSourceStopsFailing(t *testing.T) {
-	h := NewHealthTracker(10, time.Hour)
-	for range failureBreakerThreshold * 2 {
-		h.Failure("mdblist", HTTPFault("mdblist", 502), CallerInteractive)
-	}
+	h, clk := newClockedHealth()
+	failAcrossSpan(h, clk, "mdblist", HTTPFault("mdblist", 502), CallerInteractive, failureBreakerThreshold*2)
 	if !h.Failing("mdblist", CallerInteractive) {
 		t.Fatal("setup: a held-out source did not read as failing")
 	}

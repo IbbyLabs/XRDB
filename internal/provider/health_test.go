@@ -189,12 +189,10 @@ func TestKeysAreScopedPerSourceAndTitle(t *testing.T) {
 // never fires. Without a breaker on plain failures the source is called again on
 // the very next render and every render pays the timeout.
 func TestRepeatedPlainFailuresHoldTheSourceOut(t *testing.T) {
-	h := NewHealthTracker(16, time.Hour)
+	h, clk := newClockedHealth()
 	plain := timedOut()
 
-	for i := 0; i < failureBreakerThreshold-1; i++ {
-		h.Failure("mdblist", plain, CallerInteractive)
-	}
+	failAcrossSpan(h, clk, "mdblist", plain, CallerInteractive, failureBreakerThreshold-1)
 	if h.CoolingOff("mdblist", CallerInteractive) {
 		t.Fatalf("source held out after %d failures, want it still tried", failureBreakerThreshold-1)
 	}
@@ -215,19 +213,17 @@ func TestRepeatedPlainFailuresHoldTheSourceOut(t *testing.T) {
 // probed on every cooldown, so each hold that ends in more failures is longer
 // than the last. One success puts it straight back to the short hold.
 func TestBreakerHoldsLongerEachTimeItTripsAgain(t *testing.T) {
-	h := NewHealthTracker(16, time.Hour)
+	h, clk := newClockedHealth()
 	plain := timedOut()
 	trip := func() time.Duration {
-		for i := 0; i < failureBreakerThreshold; i++ {
-			h.Failure("mdblist", plain, CallerInteractive)
-		}
+		failAcrossSpan(h, clk, "mdblist", plain, CallerInteractive, failureBreakerThreshold)
 		h.mu.Lock()
 		defer h.mu.Unlock()
 		src := h.sources["mdblist"]
 		if src == nil {
 			t.Fatal("no health entry for mdblist: the failures did not count at all")
 		}
-		return time.Until(src.cooldownUntil[CallerInteractive]).Round(time.Second)
+		return src.cooldownUntil[CallerInteractive].Sub(clk.now()).Round(time.Second)
 	}
 
 	first := trip()

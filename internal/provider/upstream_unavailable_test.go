@@ -60,8 +60,9 @@ func TestAnOrdinaryServerErrorStillCountsAgainstTheSource(t *testing.T) {
 	defer srv.Close()
 
 	m := NewMALWithURL(srv.URL + "/")
-	h := NewHealthTracker(10, time.Hour)
+	h, clk := newClockedHealth()
 	for range failureBreakerThreshold {
+		clk.advance(failureBreakerSpan)
 		_, err := m.Fetch(context.Background(), "series", "mal:9253")
 		if errors.Is(err, ErrUpstreamUnavailable) {
 			t.Fatalf("http 500 was treated as a broken title: %v", err)
@@ -85,8 +86,9 @@ func TestASlowGatewayErrorStillCountsAgainstTheSource(t *testing.T) {
 	defer srv.Close()
 
 	m := NewMALWithURL(srv.URL + "/")
-	h := NewHealthTracker(10, time.Hour)
+	h, clk := newClockedHealth()
 	for range failureBreakerThreshold {
+		clk.advance(failureBreakerSpan)
 		_, err := m.Fetch(context.Background(), "series", "mal:9253")
 		if errors.Is(err, ErrUpstreamUnavailable) {
 			t.Fatalf("a slow gateway timeout was read as a broken title: %v", err)

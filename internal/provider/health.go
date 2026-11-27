@@ -24,6 +24,8 @@ type HealthTracker struct {
 	lru     *list.List               // front = least recently used
 	max     int
 	ttl     time.Duration
+	// now is swapped in tests so no test waits on a real clock.
+	now func() time.Time
 }
 
 type sourceState struct {
@@ -32,6 +34,8 @@ type sourceState struct {
 	lastFailure     time.Time
 	lastError       string
 	consecutiveFail int
+	// failStreakStart is when the current run of failures began; zero when none.
+	failStreakStart time.Time
 	// consecutiveEmpty counts answers in a row carrying no ratings. A markup
 	// change answers empty rather than erroring, so consecutiveFail never moves
 	// for it.
@@ -190,6 +194,21 @@ func NewHealthTracker(maxEntries int, ttl time.Duration) *HealthTracker {
 	}
 }
 
+// clock reports the current time, or the test clock when one is set.
+func (h *HealthTracker) clock() time.Time {
+	if h.now != nil {
+		return h.now()
+	}
+	return time.Now()
+}
+
+// SetClock replaces the time source. Tests use it to move time without sleeping.
+func (h *HealthTracker) SetClock(now func() time.Time) {
+	h.mu.Lock()
+	h.now = now
+	h.mu.Unlock()
+}
+
 // GoodKey builds the key a remembered result is stored under.
 func GoodKey(source, mediaType, id string) string {
 	return source + "|" + mediaType + "|" + id
@@ -224,13 +243,14 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	st := h.stateLocked(source)
 	recovered = !st.healthy
 	for _, until := range st.cooldownUntil {
-		recovered = recovered || time.Now().Before(until)
+		recovered = recovered || h.clock().Before(until)
 	}
 	st.healthy = true
 	st.cooldownUntil = [callerClassCount]time.Time{}
 	st.cooldownReason = [callerClassCount]string{}
-	st.lastSuccess = time.Now()
+	st.lastSuccess = h.clock()
 	st.consecutiveFail = 0
+	st.failStreakStart = time.Time{}
 	st.consecutiveUncounted = 0
 	st.consecutiveEmpty = 0
 	st.breakerTrips = 0
@@ -241,7 +261,7 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 		st.lastRatedByType = make(map[string]time.Time)
 	}
 	_, contentType, _ := SplitGoodKey(key)
-	st.lastRatedByType[contentType] = time.Now()
+	st.lastRatedByType[contentType] = h.clock()
 
 	h.rememberLocked(key, meta)
 	return recovered
@@ -264,6 +284,7 @@ func (h *HealthTracker) Empty(source string) {
 
 	st := h.stateLocked(source)
 	st.consecutiveFail = 0
+	st.failStreakStart = time.Time{}
 	st.consecutiveUncounted = 0
 	st.breakerTrips = 0
 	st.consecutiveEmpty++
@@ -327,8 +348,8 @@ func (h *HealthTracker) rememberLocked(key string, meta *MediaMeta) {
 	h.entries[key] = h.lru.PushBack(&goodEntry{
 		key:       key,
 		meta:      meta,
-		storedAt:  time.Now(),
-		expiresAt: time.Now().Add(h.ttl),
+		storedAt:  h.clock(),
+		expiresAt: h.clock().Add(h.ttl),
 	})
 	for len(h.entries) > h.max {
 		front := h.lru.Front()
@@ -370,7 +391,7 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 			st := h.stateLocked(source)
 			st.uncounted++
 			st.consecutiveUncounted++
-			st.lastUncounted = time.Now()
+			st.lastUncounted = h.clock()
 			st.lastUncountedError = truncateError(err.Error())
 			first := st.consecutiveUncounted == 1
 			h.mu.Unlock()
@@ -392,7 +413,7 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	defer h.mu.Unlock()
 
 	st := h.stateLocked(source)
-	wasCooling := time.Now().Before(st.cooldownUntil[class])
+	wasCooling := h.clock().Before(st.cooldownUntil[class])
 	// A refusal a sweep provoked holds the sweep off. A refusal a person hit
 	// holds everyone off: if the source will not answer an ordinary render it
 	// will not answer a crawl either.
@@ -416,7 +437,10 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 		return set
 	}
 	st.healthy = false
-	st.lastFailure = time.Now()
+	st.lastFailure = h.clock()
+	if st.consecutiveFail == 0 {
+		st.failStreakStart = st.lastFailure
+	}
 	st.consecutiveFail++
 	st.failures++
 	if isTimeout(err) {
@@ -445,17 +469,17 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 		if rl.QuotaExhausted {
 			wait = quotaCooldown
 		}
-		if hold(time.Now().Add(wait), CooldownRateLimit) {
+		if hold(h.clock().Add(wait), CooldownRateLimit) {
 			st.cooldowns++
 		}
-		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil[class])
+		enteredCooldown = !wasCooling && h.clock().Before(st.cooldownUntil[class])
 	}
 
 	// A source can fail without ever refusing on rate-limit grounds: a timeout
 	// answers nothing and carries no Retry-After, so the branch above never fires
 	// and the next render pays the same wait again. Hold a repeatedly failing
 	// source out the same way, whatever it failed with.
-	if st.consecutiveFail >= failureBreakerThreshold {
+	if st.breakerDueLocked(h.clock()) {
 		// Each hold that ends in another round of failures doubles the next one, so
 		// a source that cannot serve the current demand settles instead of being
 		// probed every cooldown. A success resets it, so one that genuinely comes
@@ -464,11 +488,11 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 		if wait > maxCooldown {
 			wait = maxCooldown
 		}
-		if hold(time.Now().Add(wait), CooldownFailureBreaker) {
+		if hold(h.clock().Add(wait), CooldownFailureBreaker) {
 			st.cooldowns++
 			st.breakerTrips++
 		}
-		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil[class])
+		enteredCooldown = !wasCooling && h.clock().Before(st.cooldownUntil[class])
 	}
 	return enteredCooldown
 }
@@ -487,7 +511,9 @@ const (
 	// source out, and failureCooldown is for how long. A source answering nothing
 	// still costs every render its timeout until it is held out.
 	failureBreakerThreshold = 5
-	failureCooldown         = 30 * time.Second
+	// failureBreakerSpan is how long a failure streak must have run to trip; failures inside one stall count as one incident.
+	failureBreakerSpan = 10 * time.Second
+	failureCooldown    = 30 * time.Second
 	// failureBackoffShifts caps the doubling at 30s<<3 = 4 minutes, under the
 	// five-minute ceiling every other cooldown answers to.
 	failureBackoffShifts = 3
@@ -510,7 +536,7 @@ func (h *HealthTracker) CooldownReason(source string, class CallerClass) string 
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	st, ok := h.sources[source]
-	if !ok || !time.Now().Before(st.cooldownUntil[class]) {
+	if !ok || !h.clock().Before(st.cooldownUntil[class]) {
 		return ""
 	}
 	return st.cooldownReason[class]
@@ -541,7 +567,7 @@ func (h *HealthTracker) CoolingOff(source string, class CallerClass) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	st, ok := h.sources[source]
-	return ok && time.Now().Before(st.cooldownUntil[class])
+	return ok && h.clock().Before(st.cooldownUntil[class])
 }
 
 // CooldownRemaining is how long a source stays held out for class, or zero.
@@ -572,13 +598,19 @@ func (h *HealthTracker) Failing(source string, class CallerClass) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	st, ok := h.sources[source]
-	return ok && st.failingLocked(class)
+	return ok && st.failingLocked(class, h.clock())
 }
 
 // failingLocked is Failing for one already-held state. Called with h.mu held.
-func (st *sourceState) failingLocked(class CallerClass) bool {
-	return time.Now().Before(st.cooldownUntil[class]) ||
-		st.consecutiveFail >= failureBreakerThreshold
+func (st *sourceState) failingLocked(class CallerClass, now time.Time) bool {
+	return now.Before(st.cooldownUntil[class]) || st.breakerDueLocked(now)
+}
+
+// breakerDueLocked reports whether the failure streak is long and old enough to
+// trip the breaker.
+func (st *sourceState) breakerDueLocked(now time.Time) bool {
+	return st.consecutiveFail >= failureBreakerThreshold &&
+		!st.failStreakStart.IsZero() && now.Sub(st.failStreakStart) >= failureBreakerSpan
 }
 
 // LastGood returns a remembered result for key, if one is still valid. It
@@ -603,7 +635,7 @@ func (h *HealthTracker) LastGoodAge(source, key string) (*MediaMeta, time.Durati
 		return nil, 0, false
 	}
 	ge := el.Value.(*goodEntry)
-	now := time.Now()
+	now := h.clock()
 	if now.After(ge.expiresAt) {
 		h.lru.Remove(el)
 		delete(h.entries, key)
@@ -670,6 +702,7 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
+	now := h.clock()
 	out := make([]SourceHealth, 0, len(h.sources))
 	for name, st := range h.sources {
 		sh := SourceHealth{
@@ -689,10 +722,10 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 			StaleServes:          st.staleServes,
 			// The admin view reports the non-sweep hold: it is the one that
 			// means a person's render is losing the source.
-			CoolingOff: time.Now().Before(st.cooldownUntil[CallerInteractive]) ||
-				time.Now().Before(st.cooldownUntil[CallerUnknown]),
-			CoolingOffBulk:         time.Now().Before(st.cooldownUntil[CallerBulk]),
-			Failing:                st.failingLocked(CallerInteractive) || st.failingLocked(CallerUnknown),
+			CoolingOff: now.Before(st.cooldownUntil[CallerInteractive]) ||
+				now.Before(st.cooldownUntil[CallerUnknown]),
+			CoolingOffBulk:         now.Before(st.cooldownUntil[CallerBulk]),
+			Failing:                st.failingLocked(CallerInteractive, now) || st.failingLocked(CallerUnknown, now),
 			Cooldowns:              st.cooldowns,
 			HeldOutEmpty:           copyCounts(st.heldOutEmpty),
 			HeldOutEmptyOwnerKeyed: copyCounts(st.heldOutEmptyOwner),

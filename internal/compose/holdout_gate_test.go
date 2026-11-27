@@ -97,8 +97,11 @@ func TestTheFailureBreakerIsNotReportedAsARateLimitCooldown(t *testing.T) {
 	reg.Register(&alwaysFailing{name: "imdb"})
 
 	health := provider.NewHealthTracker(10, time.Hour)
+	now := time.Now()
+	health.SetClock(func() time.Time { return now })
 	for range 5 {
 		health.Failure("imdb", provider.HTTPFault("imdb", 504), provider.CallerInteractive)
+		now = now.Add(10 * time.Second)
 	}
 	if !health.CoolingOff("imdb", provider.CallerInteractive) {
 		t.Fatal("five plain failures did not hold the source out")

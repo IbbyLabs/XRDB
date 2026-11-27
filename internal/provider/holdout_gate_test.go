@@ -71,10 +71,8 @@ func TestACooldownNamesWhatSetIt(t *testing.T) {
 		t.Errorf("a 429 set a cooldown reported as %q, want %q", got, CooldownRateLimit)
 	}
 
-	h2 := NewHealthTracker(10, time.Hour)
-	for range failureBreakerThreshold {
-		h2.Failure("mal", HTTPFault("mal", 504), CallerInteractive)
-	}
+	h2, clk := newClockedHealth()
+	failAcrossSpan(h2, clk, "mal", HTTPFault("mal", 504), CallerInteractive, failureBreakerThreshold)
 	if !h2.CoolingOff("mal", CallerInteractive) {
 		t.Fatal("five consecutive failures did not hold the source out")
 	}

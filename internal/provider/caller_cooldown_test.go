@@ -57,10 +57,8 @@ func TestABulkRefusalStillHoldsTheSweepBack(t *testing.T) {
 // the path a timeout under our own load takes. It must split by caller too, or
 // saturation still takes the source off everyone's poster.
 func TestTheFailureBreakerAlsoSplitsByCaller(t *testing.T) {
-	h := NewHealthTracker(10, time.Hour)
-	for i := 0; i < failureBreakerThreshold+1; i++ {
-		h.Failure("anilist", timedOut(), CallerBulk)
-	}
+	h, clk := newClockedHealth()
+	failAcrossSpan(h, clk, "anilist", timedOut(), CallerBulk, failureBreakerThreshold+1)
 	if !h.CoolingOff("anilist", CallerBulk) {
 		t.Fatal("repeated bulk failures did not hold the sweep back")
 	}

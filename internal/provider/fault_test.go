@@ -45,10 +45,8 @@ func TestARealFaultStillTripsTheBreaker(t *testing.T) {
 		{"a transport failure", fmt.Errorf("dial: %w", &net.OpError{Op: "dial", Err: errors.New("refused")})},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			h := NewHealthTracker(10, time.Hour)
-			for range 5 {
-				h.Failure("simkl", tc.err, CallerInteractive)
-			}
+			h, clk := newClockedHealth()
+			failAcrossSpan(h, clk, "simkl", tc.err, CallerInteractive, 5)
 			if !h.CoolingOff("simkl", CallerInteractive) {
 				t.Error("a genuinely failing source was not held out")
 			}

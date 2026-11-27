@@ -51,10 +51,8 @@ func TestAClassifiedFaultStillHoldsTheSourceOut(t *testing.T) {
 		{"a rejected key", fmt.Errorf("omdb: API error: Invalid API key!: %w", ErrSourceFault)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			h := NewHealthTracker(10, time.Hour)
-			for range failureBreakerThreshold {
-				h.Failure("src", tc.err, CallerInteractive)
-			}
+			h, clk := newClockedHealth()
+			failAcrossSpan(h, clk, "src", tc.err, CallerInteractive, failureBreakerThreshold)
 			if !h.CoolingOff("src", CallerInteractive) {
 				t.Errorf("%v no longer holds an unwell source out", tc.err)
 			}

@@ -152,10 +152,8 @@ func TestOurOwnQueueRefusalsDoNotCountAgainstTheSource(t *testing.T) {
 
 	// Control: a real failure still trips it, so the guard cannot pass by
 	// swallowing everything.
-	h := NewHealthTracker(10, time.Hour)
-	for range failureBreakerThreshold {
-		h.Failure("mdblist", HTTPFault("mdblist", 504), CallerInteractive)
-	}
+	h, clk := newClockedHealth()
+	failAcrossSpan(h, clk, "mdblist", HTTPFault("mdblist", 504), CallerInteractive, failureBreakerThreshold)
 	if !h.CoolingOff("mdblist", CallerInteractive) {
 		t.Error("five real failures no longer trip the breaker")
 	}
