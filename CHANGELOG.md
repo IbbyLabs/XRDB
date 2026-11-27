@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.148.0](https://github.com/IbbyLabs/XRDB/compare/v3.147.0...v3.148.0) (2026-11-27)
+
+
+### Added
+
+* **ring:** diamond, seal, signal bars, fill pill and dial (FR-240) ([f443497](https://github.com/IbbyLabs/XRDB/commit/f443497a4a3fe5df016e3ee4ef98fd83973b08dd))
+* **web:** offer the new rating ring shapes (FR-240) ([a4de7ef](https://github.com/IbbyLabs/XRDB/commit/a4de7efb283c3f56a726d13929a4b7d470c8a535))
+
 ## [3.147.0](https://github.com/IbbyLabs/XRDB/compare/v3.146.2...v3.147.0) (2026-11-27)
 
 
