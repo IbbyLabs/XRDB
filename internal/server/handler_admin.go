@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"math"
@@ -613,6 +614,51 @@ func registerAdminRoutes(
 
 	// Poster warming: pre-renders a list of IDs into the cache in the background.
 	// POST /api/admin/warm  { "ids": ["tt123","tt456"], "mediaType": "poster", "config": "..." }
+	// Clears a profile's password, and its provider keys with it, for an owner
+	// locked out by a password someone else set.
+	mux.HandleFunc("/api/admin/profile-password-reset", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		if store == nil {
+			http.Error(w, "profile store unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		var req struct {
+			ID string `json:"id"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil || strings.TrimSpace(req.ID) == "" {
+			http.Error(w, `body must be {"id":"<profile id or alias>"}`, http.StatusBadRequest)
+			return
+		}
+		p, err := store.Resolve(strings.TrimSpace(req.ID))
+		if err != nil {
+			if errors.Is(err, profile.ErrNotFound) {
+				http.Error(w, "not found", http.StatusNotFound)
+				return
+			}
+			slog.ErrorContext(r.Context(), "Failed to load a profile for a password reset", "id", logging.RequestID(r.Context()), "error", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		hadKeys := len(p.ProviderKeys)
+		p.PasswordHash = ""
+		p.ProviderKeys = nil
+		if err := store.Update(p); err != nil {
+			slog.ErrorContext(r.Context(), "Failed to reset a profile password", "id", logging.RequestID(r.Context()), "profile_id", p.ID, "error", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		slog.WarnContext(r.Context(), "Reset a profile password from the admin API",
+			"id", logging.RequestID(r.Context()), "profile_id", p.ID, "provider_keys_cleared", hadKeys)
+		writeJSON(w, http.StatusOK, map[string]any{"id": p.ID, "passwordCleared": true, "providerKeysCleared": hadKeys})
+	})
+
 	mux.HandleFunc("/api/admin/warm", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

@@ -107,6 +107,7 @@ cd web && npm ci && npm run dev   # web on :3001
 | `GET` | `/api/admin/sources` | Per-source health; `staleServes` flags a broken source, `uncounted` one refusing us with a status nothing classifies † |
 | `POST` | `/api/admin/warm` | Pre-render IDs into the cache † |
 | `GET/PUT/DELETE` | `/api/admin/settings` | Integration keys † |
+| `POST` | `/api/admin/profile-password-reset` | Clear a profile's password and provider keys, body `{"id":"<id or alias>"}` † |
 | `GET` | `/stremio/manifest.json`, `/stremio/meta/…` | Stremio addon, instance default look |
 | `GET` | `/stremio/c/{config}/manifest.json`, `/stremio/c/{config}/meta/…` | Stremio addon bound to a saved profile |
 
