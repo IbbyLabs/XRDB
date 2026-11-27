@@ -293,6 +293,11 @@ export const RING_SHAPE_OPTIONS = [
   { id: 'hexagon', label: msg('Hexagon') },
   { id: 'shield',  label: msg('Shield') },
   { id: 'verdict', label: msg('Verdict pill') },
+  { id: 'diamond', label: msg('Diamond') },
+  { id: 'seal',    label: msg('Seal') },
+  { id: 'bars',    label: msg('Signal bars') },
+  { id: 'fillpill', label: msg('Fill pill') },
+  { id: 'dial',    label: msg('Dial') },
 ] as const;
 
 export const RING_CENTER_OPTIONS = [
