@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -131,5 +132,43 @@ func TestAIOMInstallIsRateLimitedPerClient(t *testing.T) {
 	}
 	if got := post("203.0.113.10:1"); got == http.StatusTooManyRequests {
 		t.Errorf("a different client was limited")
+	}
+}
+
+// Every address in one IPv6 /64 shares an allowance, like the other caller limits.
+func TestAIOMInstallLimitCoversTheWholeIPv6Slash64(t *testing.T) {
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	post := func(remote string) int {
+		body := `{"baseUrl":"http://x.example","userUUID":"u","password":"p","posterUrlPattern":"p"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/aiometadata/install", strings.NewReader(body))
+		req.RemoteAddr = remote
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		return rr.Code
+	}
+	for i := 0; i < aiomInstallsPerWindow; i++ {
+		post("[2001:db8:1:2::" + strconv.FormatInt(int64(i+1), 16) + "]:1")
+	}
+	if got := post("[2001:db8:1:2::ffff]:1"); got != http.StatusTooManyRequests {
+		t.Errorf("another address in the same /64 got %d, want 429", got)
+	}
+	if got := post("[2001:db8:1:3::1]:1"); got == http.StatusTooManyRequests {
+		t.Errorf("an address in another /64 was limited")
+	}
+}
+
+func TestAIOMClientRefusesAnHTTPRedirect(t *testing.T) {
+	client := newAIOMClient(false)
+	via := []*http.Request{httptest.NewRequest(http.MethodPost, "https://aiom.example/api/config/load", nil)}
+	next := httptest.NewRequest(http.MethodPost, "http://aiom.example/api/config/load", nil)
+	if err := client.CheckRedirect(next, via); err == nil {
+		t.Errorf("an https to http redirect was followed")
+	}
+	next = httptest.NewRequest(http.MethodPost, "https://aiom2.example/api/config/load", nil)
+	if err := client.CheckRedirect(next, via); err != nil {
+		t.Errorf("an https redirect was refused: %v", err)
+	}
+	if err := newAIOMClient(true).CheckRedirect(httptest.NewRequest(http.MethodPost, "http://aiom.local/x", nil), via); err != nil {
+		t.Errorf("with private addresses allowed, plain http stays allowed: %v", err)
 	}
 }

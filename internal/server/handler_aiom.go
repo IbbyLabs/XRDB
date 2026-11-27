@@ -103,6 +103,10 @@ func newAIOMClient(allowPrivate bool) *http.Client {
 			if req.URL.Scheme != "https" && req.URL.Scheme != "http" {
 				return errors.New("redirect to a non-http scheme")
 			}
+			// The install carries the AIOMetadata password, so an https hop may not drop to plain http.
+			if !allowPrivate && req.URL.Scheme != "https" {
+				return errors.New("redirect from https to plain http")
+			}
 			return nil
 		},
 	}
@@ -153,7 +157,7 @@ func registerAIOMRoutes(mux *http.ServeMux, allowPrivate bool, trusts ...proxyTr
 			return
 		}
 		ip := clientIP(r, trust)
-		if ok, _ := limiter.allow(1, ip); !ok {
+		if ok, _ := limiter.allow(1, capAddressKey(ip)); !ok {
 			slog.Warn("AIOMetadata install rate limit reached", "client", ip)
 			w.Header().Set("Retry-After", strconv.Itoa(int(aiomInstallWindow.Seconds())/aiomInstallsPerWindow))
 			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many install attempts, try again shortly"})
