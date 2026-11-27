@@ -120,17 +120,69 @@ func bareHost(remoteAddr string) string {
 // clientIP returns the originating client address. Forwarded headers are only
 // consulted when the immediate peer is a trusted proxy; otherwise the peer
 // address is the truth, because anything else is caller-supplied.
+//
+// CF-Connecting-Ip is honoured only when the hop that reached our proxy (or
+// XRDB itself) is a Cloudflare address, because only Cloudflare overwrites it;
+// any other client can set it to whatever it likes.
 func clientIP(r *http.Request, trust proxyTrust) string {
 	if !trust.trusts(r.RemoteAddr) {
+		if cf, ok := cloudflareClient(r, bareHost(r.RemoteAddr), false); ok {
+			return cf
+		}
 		return bareHost(r.RemoteAddr)
 	}
-	if cf := r.Header.Get("CF-Connecting-Ip"); cf != "" {
+	hop := bareHost(r.RemoteAddr)
+	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+		hop = forwardedClient(fwd, trust)
+	}
+	if cf, ok := cloudflareClient(r, hop, trust.all); ok {
 		return cf
 	}
-	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-		return forwardedClient(fwd, trust)
+	return hop
+}
+
+// cloudflareClient returns CF-Connecting-Ip when hop is a Cloudflare edge
+// address (or every header is trusted) and the header holds a valid IP.
+func cloudflareClient(r *http.Request, hop string, trustsEveryHeader bool) (string, bool) {
+	cf := strings.TrimSpace(r.Header.Get("CF-Connecting-Ip"))
+	if cf == "" || (!trustsEveryHeader && !isCloudflareAddr(hop)) {
+		return "", false
 	}
-	return bareHost(r.RemoteAddr)
+	addr, err := netip.ParseAddr(cf)
+	if err != nil {
+		return "", false
+	}
+	return addr.Unmap().String(), true
+}
+
+// cloudflareRanges is Cloudflare's published edge list (cloudflare.com/ips, November 2026).
+var cloudflareRanges = mustPrefixes(
+	"173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "141.101.64.0/18",
+	"108.162.192.0/18", "190.93.240.0/20", "188.114.96.0/20", "197.234.240.0/22", "198.41.128.0/17",
+	"162.158.0.0/15", "104.16.0.0/13", "104.24.0.0/14", "172.64.0.0/13", "131.0.72.0/22",
+	"2400:cb00::/32", "2606:4700::/32", "2803:f800::/32", "2405:b500::/32", "2405:8100::/32",
+	"2a06:98c0::/29", "2c0f:f248::/32",
+)
+
+func mustPrefixes(cidrs ...string) []netip.Prefix {
+	out := make([]netip.Prefix, 0, len(cidrs))
+	for _, c := range cidrs {
+		out = append(out, netip.MustParsePrefix(c))
+	}
+	return out
+}
+
+func isCloudflareAddr(host string) bool {
+	addr, ok := parseHostAddr(host)
+	if !ok {
+		return false
+	}
+	for _, p := range cloudflareRanges {
+		if p.Contains(addr) {
+			return true
+		}
+	}
+	return false
 }
 
 // forwardedClient picks the client from an X-Forwarded-For chain. Each proxy

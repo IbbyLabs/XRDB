@@ -41,14 +41,59 @@ func TestPrivatePeerIsTrustedByDefault(t *testing.T) {
 	}
 }
 
-func TestCloudflareHeaderWinsOverForwardedFor(t *testing.T) {
+// Behind Cloudflare, the hop our proxy saw is a Cloudflare edge, so its
+// CF-Connecting-Ip names the real client.
+func TestCloudflareHeaderWinsWhenTheHopIsCloudflare(t *testing.T) {
 	trust := newProxyTrust("", false)
 	r := reqFrom("10.0.0.1:1", map[string]string{
 		"CF-Connecting-Ip": "5.6.7.8",
-		"X-Forwarded-For":  "1.2.3.4",
+		"X-Forwarded-For":  "162.158.1.2",
 	})
 	if got := clientIP(r, trust); got != "5.6.7.8" {
 		t.Errorf("client_ip = %q, want the Cloudflare header to win", got)
+	}
+}
+
+// A self-hosted proxy that passes the header through must not let a client
+// pick its own address: the hop is the client, not Cloudflare.
+func TestCloudflareHeaderIgnoredWhenTheHopIsNotCloudflare(t *testing.T) {
+	trust := newProxyTrust("", false)
+	for _, fwd := range []string{"198.51.100.9", ""} {
+		headers := map[string]string{"CF-Connecting-Ip": "5.6.7.8"}
+		want := "10.0.0.1"
+		if fwd != "" {
+			headers["X-Forwarded-For"] = fwd
+			want = fwd
+		}
+		if got := clientIP(reqFrom("10.0.0.1:1", headers), trust); got != want {
+			t.Errorf("xff %q: client_ip = %q, want %q (a spoofed CF-Connecting-Ip must not count)", fwd, got, want)
+		}
+	}
+}
+
+// XRDB reached straight from a Cloudflare edge, with no proxy of our own.
+func TestCloudflareHeaderFromADirectCloudflarePeer(t *testing.T) {
+	trust := newProxyTrust("", false)
+	r := reqFrom("[2606:4700::1]:443", map[string]string{"CF-Connecting-Ip": "2001:db8::5"})
+	if got := clientIP(r, trust); got != "2001:db8::5" {
+		t.Errorf("client_ip = %q, want the Cloudflare header", got)
+	}
+}
+
+// XRDB_TRUST_PROXY_HEADERS keeps believing the header from anyone.
+func TestTrustAllStillBelievesTheCloudflareHeader(t *testing.T) {
+	trust := newProxyTrust("", true)
+	r := reqFrom("198.51.100.1:1", map[string]string{"CF-Connecting-Ip": "5.6.7.8"})
+	if got := clientIP(r, trust); got != "5.6.7.8" {
+		t.Errorf("client_ip = %q, want the header under trust-all", got)
+	}
+}
+
+func TestCloudflareHeaderMustBeAnIP(t *testing.T) {
+	trust := newProxyTrust("", false)
+	r := reqFrom("10.0.0.1:1", map[string]string{"CF-Connecting-Ip": "not-an-ip", "X-Forwarded-For": "162.158.1.2"})
+	if got := clientIP(r, trust); got != "162.158.1.2" {
+		t.Errorf("client_ip = %q, want the hop when the header is not an IP", got)
 	}
 }
 
