@@ -21,7 +21,7 @@ func resetRequest(h http.Handler, key, body string) *httptest.ResponseRecorder {
 	return rr
 }
 
-func TestAdminResetClearsAProfilePasswordAndKeys(t *testing.T) {
+func TestAdminResetReplacesThePasswordAndClearsKeys(t *testing.T) {
 	store := openTestStore(t)
 	if err := store.Save(&profile.Profile{
 		ID: "locked1", Alias: "lockedout", Type: "poster", Config: json.RawMessage(`{}`),
@@ -31,16 +31,19 @@ func TestAdminResetClearsAProfilePasswordAndKeys(t *testing.T) {
 	}
 	h := NewHandler("test", store, nil, nil, nil, config.Config{AdminKey: "admin-k"})
 
-	if rr := resetRequest(h, "", `{"id":"lockedout"}`); rr.Code != http.StatusUnauthorized {
+	if rr := resetRequest(h, "", `{"id":"lockedout","password":"new"}`); rr.Code != http.StatusUnauthorized {
 		t.Fatalf("without the admin key: %d, want 401", rr.Code)
 	}
-	if rr := resetRequest(h, "wrong", `{"id":"lockedout"}`); rr.Code != http.StatusUnauthorized {
+	if rr := resetRequest(h, "wrong", `{"id":"lockedout","password":"new"}`); rr.Code != http.StatusUnauthorized {
 		t.Fatalf("with a wrong key: %d, want 401", rr.Code)
 	}
-	if rr := resetRequest(h, "admin-k", `{"id":"nobody"}`); rr.Code != http.StatusNotFound {
+	if rr := resetRequest(h, "admin-k", `{"id":"nobody","password":"new"}`); rr.Code != http.StatusNotFound {
 		t.Fatalf("an unknown profile: %d, want 404", rr.Code)
 	}
-	rr := resetRequest(h, "admin-k", `{"id":"lockedout"}`)
+	if rr := resetRequest(h, "admin-k", `{"id":"lockedout"}`); rr.Code != http.StatusBadRequest {
+		t.Fatalf("a reset without a new password: %d, want 400 so the profile is never left open", rr.Code)
+	}
+	rr := resetRequest(h, "admin-k", `{"id":"lockedout","password":"owner-new"}`)
 	if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `"providerKeysCleared":1`) {
 		t.Fatalf("reset by alias: %d %s", rr.Code, rr.Body.String())
 	}
@@ -48,14 +51,20 @@ func TestAdminResetClearsAProfilePasswordAndKeys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.PasswordHash != "" || len(p.ProviderKeys) != 0 {
-		t.Errorf("after reset: password=%q keys=%v, want both cleared", p.PasswordHash, p.ProviderKeys)
+	if len(p.ProviderKeys) != 0 {
+		t.Errorf("after reset: keys=%v, want cleared", p.ProviderKeys)
+	}
+	if err := store.CheckPassword("locked1", "owner-new"); err != nil {
+		t.Errorf("the new password does not open the profile: %v", err)
+	}
+	if err := store.CheckPassword("locked1", "someone-else"); err == nil {
+		t.Errorf("the old password still opens the profile")
 	}
 }
 
 func TestAdminResetIsOffWithoutAnAdminKey(t *testing.T) {
 	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
-	if rr := resetRequest(h, "", `{"id":"x"}`); rr.Code != http.StatusUnauthorized {
+	if rr := resetRequest(h, "", `{"id":"x","password":"p"}`); rr.Code != http.StatusUnauthorized {
 		t.Errorf("no admin key configured: %d, want 401", rr.Code)
 	}
 }

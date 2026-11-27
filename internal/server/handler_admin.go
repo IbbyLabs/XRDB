@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"xrdb_rewrite/internal/cache"
 	"xrdb_rewrite/internal/compose"
 	"xrdb_rewrite/internal/config"
@@ -614,8 +616,8 @@ func registerAdminRoutes(
 
 	// Poster warming: pre-renders a list of IDs into the cache in the background.
 	// POST /api/admin/warm  { "ids": ["tt123","tt456"], "mediaType": "poster", "config": "..." }
-	// Clears a profile's password, and its provider keys with it, for an owner
-	// locked out by a password someone else set.
+	// Replaces a profile's password and clears its provider keys in one write, for
+	// an owner locked out by a password someone else set.
 	mux.HandleFunc("/api/admin/profile-password-reset", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -630,10 +632,17 @@ func registerAdminRoutes(
 			return
 		}
 		var req struct {
-			ID string `json:"id"`
+			ID       string `json:"id"`
+			Password string `json:"password"`
 		}
-		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil || strings.TrimSpace(req.ID) == "" {
-			http.Error(w, `body must be {"id":"<profile id or alias>"}`, http.StatusBadRequest)
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil || strings.TrimSpace(req.ID) == "" || req.Password == "" {
+			http.Error(w, `body must be {"id":"<profile id or alias>","password":"<new password>"}`, http.StatusBadRequest)
+			return
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			slog.ErrorContext(r.Context(), "Failed to hash a reset profile password", "id", logging.RequestID(r.Context()), "error", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 		p, err := store.Resolve(strings.TrimSpace(req.ID))
@@ -647,7 +656,7 @@ func registerAdminRoutes(
 			return
 		}
 		hadKeys := len(p.ProviderKeys)
-		p.PasswordHash = ""
+		p.PasswordHash = string(hash)
 		p.ProviderKeys = nil
 		if err := store.Update(p); err != nil {
 			slog.ErrorContext(r.Context(), "Failed to reset a profile password", "id", logging.RequestID(r.Context()), "profile_id", p.ID, "error", err)
@@ -656,7 +665,7 @@ func registerAdminRoutes(
 		}
 		slog.WarnContext(r.Context(), "Reset a profile password from the admin API",
 			"id", logging.RequestID(r.Context()), "profile_id", p.ID, "provider_keys_cleared", hadKeys)
-		writeJSON(w, http.StatusOK, map[string]any{"id": p.ID, "passwordCleared": true, "providerKeysCleared": hadKeys})
+		writeJSON(w, http.StatusOK, map[string]any{"id": p.ID, "passwordReplaced": true, "providerKeysCleared": hadKeys})
 	})
 
 	mux.HandleFunc("/api/admin/warm", func(w http.ResponseWriter, r *http.Request) {
