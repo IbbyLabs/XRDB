@@ -3585,7 +3585,7 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 
 	outerR := int(32*ringScale + 0.5)
 	if shape, ok := ringShapeDrawers[cfg.RingShape]; ok {
-		a := ringShapeArt{fill: fillColor, face: valueFace, label: ringLabel(value, empty, cfg), empty: empty}
+		a := ringShapeArt{fill: fillColor, face: valueFace, label: ringLabel(value, empty, cfg), frac: progress / 10, empty: empty}
 		if empty && !placeholderColoured {
 			a.fill = color.NRGBA{}
 		}

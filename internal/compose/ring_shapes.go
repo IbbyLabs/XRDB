@@ -15,6 +15,7 @@ type ringShapeArt struct {
 	small font.Face   // secondary text, such as the verdict word
 	label string      // the score, "N/A", or empty
 	word  string      // verdict word; empty for an empty badge
+	frac  float64     // 0-1 share of the scale the gauges fill
 	empty bool
 }
 
@@ -26,11 +27,16 @@ type ringShape struct {
 }
 
 var ringShapeDrawers = map[string]ringShape{
-	"disc":    {size: squareRingShape(1), draw: drawRingShapeDisc},
-	"chip":    {size: chipRingShapeSize, draw: drawRingShapeChip},
-	"hexagon": {size: squareRingShape(1.08), draw: drawRingShapeHexagon},
-	"shield":  {size: shieldRingShapeSize, draw: drawRingShapeShield},
-	"verdict": {size: verdictRingShapeSize, draw: drawRingShapeVerdict},
+	"disc":     {size: squareRingShape(1), draw: drawRingShapeDisc},
+	"chip":     {size: chipRingShapeSize, draw: drawRingShapeChip},
+	"hexagon":  {size: squareRingShape(1.08), draw: drawRingShapeHexagon},
+	"shield":   {size: shieldRingShapeSize, draw: drawRingShapeShield},
+	"verdict":  {size: verdictRingShapeSize, draw: drawRingShapeVerdict},
+	"diamond":  {size: squareRingShape(1.18), draw: drawRingShapeDiamond},
+	"seal":     {size: squareRingShape(1.12), draw: drawRingShapeSeal},
+	"bars":     {size: barsRingShapeSize, draw: drawRingShapeBars},
+	"fillpill": {size: fillPillRingShapeSize, draw: drawRingShapeFillPill},
+	"dial":     {size: squareRingShape(1.06), draw: drawRingShapeDial},
 }
 
 var (
@@ -220,6 +226,62 @@ func drawRingShapeShield(base *image.NRGBA, r image.Rectangle, a ringShapeArt) {
 	fillShapeAA(base, r, shapeFill(a), outer.inside)
 	fillShapeAA(base, r, ringShapeSolidDark, outer.shrink(w/2, h*0.45, 0.8).inside)
 	drawCentredLabel(base, a.face, r.Min.X+r.Dx()/2, r.Min.Y+int(h*0.44), ringShapeWhite, a.label)
+}
+
+// roundedBox reports whether (x, y) lies in the box centred on (cx, cy) with
+// half sizes hw, hh and corner radius rr.
+func roundedBox(x, y, cx, cy, hw, hh, rr float64) bool {
+	qx, qy := math.Abs(x-cx)-(hw-rr), math.Abs(y-cy)-(hh-rr)
+	if qx <= 0 || qy <= 0 {
+		return qx <= rr && qy <= rr
+	}
+	return qx*qx+qy*qy <= rr*rr
+}
+
+// shade darkens c by k, keeping its alpha.
+func shade(c color.NRGBA, k float64) color.NRGBA {
+	return color.NRGBA{R: uint8(float64(c.R) * k), G: uint8(float64(c.G) * k), B: uint8(float64(c.B) * k), A: c.A}
+}
+
+func drawRingShapeDiamond(base *image.NRGBA, r image.Rectangle, a ringShapeArt) {
+	fill := shapeFill(a)
+	c := float64(r.Dx()) / 2
+	// A square of half-side c/√2 turned 45°, so its corners touch the box edges.
+	hs := c / math.Sqrt2
+	fillShapeAA(base, r, fill, func(x, y float64) bool {
+		dx, dy := x-c, y-c
+		return roundedBox((dx+dy)/math.Sqrt2, (dy-dx)/math.Sqrt2, 0, 0, hs, hs, hs*0.16)
+	})
+	drawCentredLabel(base, a.face, r.Min.X+r.Dx()/2, r.Min.Y+r.Dy()/2, inkOn(fill), a.label)
+}
+
+// sealScallops is the number of rounded lobes around the seal's edge.
+const sealScallops = 16
+
+func drawRingShapeSeal(base *image.NRGBA, r image.Rectangle, a ringShapeArt) {
+	fill := shapeFill(a)
+	c := float64(r.Dx()) / 2
+	amp := c * 0.1
+	inner := c - amp
+	fillShapeAA(base, r, fill, func(x, y float64) bool {
+		dx, dy := x-c, y-c
+		d2 := dx*dx + dy*dy
+		if d2 <= inner*inner {
+			return true
+		}
+		if d2 > c*c {
+			return false
+		}
+		edge := inner + amp*math.Abs(math.Cos(sealScallops*math.Atan2(dy, dx)/2))
+		return d2 <= edge*edge
+	})
+	lo, hi := c*0.81, c*0.85
+	fillShapeAA(base, r, shade(fill, 0.7), func(x, y float64) bool {
+		dx, dy := x-c, y-c
+		d2 := dx*dx + dy*dy
+		return d2 >= lo*lo && d2 <= hi*hi
+	})
+	drawCentredLabel(base, a.face, r.Min.X+r.Dx()/2, r.Min.Y+r.Dy()/2, inkOn(fill), a.label)
 }
 
 func drawRingShapeVerdict(base *image.NRGBA, r image.Rectangle, a ringShapeArt) {

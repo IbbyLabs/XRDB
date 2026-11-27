@@ -710,7 +710,10 @@ type QualityBadgeConfig struct {
 
 // RingShapes lists the badge shapes the rating ring can take besides the
 // default progress ring.
-var RingShapes = map[string]bool{"disc": true, "chip": true, "hexagon": true, "shield": true, "verdict": true}
+var RingShapes = map[string]bool{
+	"disc": true, "chip": true, "hexagon": true, "shield": true, "verdict": true,
+	"diamond": true, "seal": true, "bars": true, "fillpill": true, "dial": true,
+}
 
 // RatingRingConfig groups the compact rating-ring options beyond the existing
 // flat RatingRing/RatingRingPos/RatingRingColor fields.
