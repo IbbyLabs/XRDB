@@ -134,7 +134,7 @@ func RedactURL(raw string) string {
 // silently passes every name it has not been told about.
 var sensitiveFragments = []string{
 	"key", "token", "secret", "password", "pass", "clientid", "client_id", "credential", "auth",
-	"sig", "signature", "hmac", "session", "cookie", "bearer",
+	"sig", "signature", "hmac", "session", "cookie", "bearer", "pkt",
 }
 
 // notSensitive names query keys that contain a fragment above and carry nothing

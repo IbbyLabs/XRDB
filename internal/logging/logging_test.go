@@ -28,6 +28,14 @@ func TestRedactQueryHidesSecrets(t *testing.T) {
 	}
 }
 
+// pkt carries a signed preview token that borrows a profile's provider keys.
+func TestRedactQueryHidesThePreviewToken(t *testing.T) {
+	out := RedactQuery("config=%7B%7D&pkt=SECRETTOKEN")
+	if strings.Contains(out, "SECRETTOKEN") {
+		t.Fatalf("preview token leaked in redacted query: %q", out)
+	}
+}
+
 func TestRedactQueryEmptyAndBad(t *testing.T) {
 	if RedactQuery("") != "" {
 		t.Error("empty query should stay empty")
