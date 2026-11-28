@@ -283,10 +283,25 @@ func (s *Service) failed(err error) (Map, time.Duration, outcome, error) {
 	return Map{}, wait, fetchFailed, err
 }
 
+// refreshDue reports whether a token is close enough to expiry to renew: within
+// refreshMargin, or the last quarter of its lifetime when that is shorter.
+func refreshDue(auth *profile.TraktAuth, now time.Time) bool {
+	if auth.ExpiresAt == 0 {
+		return false
+	}
+	margin := refreshMargin
+	if auth.IssuedAt > 0 && auth.ExpiresAt > auth.IssuedAt {
+		if q := time.Duration(auth.ExpiresAt-auth.IssuedAt) * time.Second / 4; q < margin {
+			margin = q
+		}
+	}
+	return time.Unix(auth.ExpiresAt, 0).Sub(now) <= margin
+}
+
 // freshAuth returns a link whose access token is good, refreshing it when it is
 // near expiry or force is set.
 func (s *Service) freshAuth(ctx context.Context, profileID string, auth *profile.TraktAuth, force bool) (*profile.TraktAuth, error) {
-	if !force && (auth.ExpiresAt == 0 || time.Unix(auth.ExpiresAt, 0).Sub(s.now()) > refreshMargin) {
+	if !force && !refreshDue(auth, s.now()) {
 		return auth, nil
 	}
 	s.refreshing.Lock()
@@ -300,7 +315,7 @@ func (s *Service) freshAuth(ctx context.Context, profileID string, auth *profile
 	if !stored.Linked() {
 		return nil, ErrInvalidGrant
 	}
-	if stored.AccessToken != auth.AccessToken && time.Unix(stored.ExpiresAt, 0).Sub(s.now()) > refreshMargin {
+	if stored.AccessToken != auth.AccessToken && !refreshDue(stored, s.now()) {
 		return stored, nil
 	}
 	t, err := s.client.Refresh(ctx, stored.RefreshToken)
@@ -317,7 +332,7 @@ func (s *Service) freshAuth(ctx context.Context, profileID string, auth *profile
 	if err != nil {
 		return nil, err
 	}
-	next := &profile.TraktAuth{AccessToken: t.AccessToken, RefreshToken: t.RefreshToken, ExpiresAt: t.ExpiresAt(s.now())}
+	next := &profile.TraktAuth{AccessToken: t.AccessToken, RefreshToken: t.RefreshToken, ExpiresAt: t.ExpiresAt(s.now()), IssuedAt: t.IssuedAt(s.now())}
 	if err := s.store.SetTraktAuth(profileID, next); err != nil {
 		// The old refresh token is spent, so this pair is the only one left.
 		s.log.ErrorContext(ctx, "Could not store a refreshed Trakt token; the owner may have to link Trakt again",
@@ -439,7 +454,7 @@ func (s *Service) PollLink(ctx context.Context, profileID string) (string, error
 	}
 	switch result {
 	case PollLinked:
-		next := &profile.TraktAuth{AccessToken: t.AccessToken, RefreshToken: t.RefreshToken, ExpiresAt: t.ExpiresAt(now)}
+		next := &profile.TraktAuth{AccessToken: t.AccessToken, RefreshToken: t.RefreshToken, ExpiresAt: t.ExpiresAt(now), IssuedAt: t.IssuedAt(now)}
 		if err := s.store.SetTraktAuth(profileID, next); err != nil {
 			return "", err
 		}

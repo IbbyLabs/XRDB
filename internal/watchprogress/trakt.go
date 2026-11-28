@@ -79,6 +79,14 @@ func (t Tokens) ExpiresAt(now time.Time) int64 {
 	return created + t.ExpiresIn
 }
 
+// IssuedAt is when the access token was issued, in unix seconds.
+func (t Tokens) IssuedAt(now time.Time) int64 {
+	if t.CreatedAt > 0 {
+		return t.CreatedAt
+	}
+	return now.Unix()
+}
+
 // DeviceCode is the start of a device sign-in.
 type DeviceCode struct {
 	DeviceCode      string `json:"device_code"`

@@ -16,6 +16,8 @@ type TraktAuth struct {
 	RefreshToken string `json:"refreshToken,omitempty"`
 	// ExpiresAt is when the access token stops working, in unix seconds.
 	ExpiresAt int64 `json:"expiresAt,omitempty"`
+	// IssuedAt is when Trakt issued the access token, in unix seconds.
+	IssuedAt int64 `json:"issuedAt,omitempty"`
 	// NeedsRelink is set when Trakt refused the refresh token, so the owner
 	// has to link again.
 	NeedsRelink bool `json:"needsRelink,omitempty"`

@@ -606,3 +606,26 @@ func TestUnlinkingEmptiesTheMapAtOnce(t *testing.T) {
 		t.Errorf("after the link was removed the bar read %d, want none", got)
 	}
 }
+
+func TestRefreshDueFollowsTheTokenLifetime(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0)
+	day := int64(24 * 60 * 60)
+	cases := []struct {
+		name string
+		auth profile.TraktAuth
+		want bool
+	}{
+		{"a fresh 24h token is not renewed", profile.TraktAuth{IssuedAt: now.Unix(), ExpiresAt: now.Unix() + day}, false},
+		{"a 24h token in its last quarter is renewed", profile.TraktAuth{IssuedAt: now.Unix() - 19*3600, ExpiresAt: now.Unix() + 5*3600}, true},
+		{"a 7-day token two days old is not renewed", profile.TraktAuth{IssuedAt: now.Unix() - 2*day, ExpiresAt: now.Unix() + 5*day}, false},
+		{"a 7-day token in its last day is renewed", profile.TraktAuth{IssuedAt: now.Unix() - 6*day - 3600, ExpiresAt: now.Unix() + day - 3600}, true},
+		{"a token stored before IssuedAt keeps the 24h margin", profile.TraktAuth{ExpiresAt: now.Unix() + 20*3600}, true},
+		{"no expiry is never renewed early", profile.TraktAuth{}, false},
+	}
+	for _, c := range cases {
+		auth := c.auth
+		if got := refreshDue(&auth, now); got != c.want {
+			t.Errorf("%s: refreshDue = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
