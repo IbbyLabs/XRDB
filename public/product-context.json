@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
   "xrdbTag": "3.151.0",
-  "generatedAt": "2026-11-28T11:45:05Z",
+  "generatedAt": "2026-11-28T11:45:13Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -151,7 +151,7 @@
         "`watchedProgress` (true or false, off by default) draws a thin bar along the bottom of movie posters, filled to how far the profile owner is through each film on Trakt: paused films show their paused percent, finished films a full bar, unwatched films nothing. The configurator offers it as \"Show watched progress on posters\" under Display for posters, with a Link Trakt button beside it that uses Trakt's device sign-in: XRDB shows a code, the owner enters it at Trakt, and the link is stored encrypted with the profile. Linking needs a profile password.",
         "The bar is private. It only draws on poster links that use the profile's own ID. The profile's alias, a v2 uuid link, a shared or instance default profile, and the configurator's live preview never show it, so a shared alias link cannot reveal anyone's watch history. With the toggle on, the Install tab hands out the ID-based links for that reason.",
         "It covers movies only, read from Trakt. Shows and episodes, and SIMKL, are not supported yet. Any answer saying XRDB cannot show watched progress at all is out of date.",
-        "Progress is read from Trakt at most every few minutes per profile. In Stremio the poster link moves at each 10% of progress so Stremio fetches a new image; elsewhere a poster updates when the app next fetches it. If Trakt cannot be reached the poster is drawn without the bar."
+        "Progress is read from Trakt at most every few minutes per profile. In Stremio the poster link moves at each 10% of progress so Stremio fetches a new image; elsewhere a poster updates when the app next fetches it. If Trakt cannot be reached, posters keep the last progress it returned for up to six hours, then draw without the bar until it answers. Unlinking, or Trakt asking for the link to be made again, removes the bar at once."
       ]
     },
     {

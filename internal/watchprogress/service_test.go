@@ -495,3 +495,114 @@ func TestNoClientIDMeansNoTraktCalls(t *testing.T) {
 		t.Errorf("made %d calls with no client id", n)
 	}
 }
+
+func (f *fakeTrakt) set(fn func(*fakeTrakt)) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	fn(f)
+}
+
+func TestATransientFailureKeepsServingTheLastMap(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		failure func(*fakeTrakt, *httptest.Server)
+	}{
+		{"server error", func(f *fakeTrakt, _ *httptest.Server) {
+			f.set(func(f *fakeTrakt) { f.syncStatus = http.StatusBadGateway })
+		}},
+		{"rate limited", func(f *fakeTrakt, _ *httptest.Server) {
+			f.set(func(f *fakeTrakt) { f.syncStatus = http.StatusTooManyRequests })
+		}},
+		{"network error", func(_ *fakeTrakt, srv *httptest.Server) { srv.Close() }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f, srv := newFakeTrakt(t)
+			s, c, logs := newTestService(t, srv, linkedStore(7*24*time.Hour))
+			if got := s.MoviePercent(context.Background(), "owner", "tt0000042", ""); got != 42 {
+				t.Fatalf("first read gave %d, want 42", got)
+			}
+			tc.failure(f, srv)
+			c.advance(defaultCacheTTL + time.Second)
+			for i := 0; i < 3; i++ {
+				if got := s.MoviePercent(context.Background(), "owner", "tt0000042", ""); got != 42 {
+					t.Fatalf("during a failure the bar read %d, want the last 42", got)
+				}
+			}
+			c.advance(staleWindow - defaultCacheTTL - time.Minute)
+			if got := s.MoviePercent(context.Background(), "owner", "tt0000042", ""); got != 42 {
+				t.Errorf("inside the stale window the bar read %d, want the last 42", got)
+			}
+			if !strings.Contains(logs.String(), "serving the last progress it returned") {
+				t.Errorf("the kept map was not logged: %s", logs.String())
+			}
+		})
+	}
+}
+
+func TestAFailingRefetchIsStillBackedOff(t *testing.T) {
+	f, srv := newFakeTrakt(t)
+	s, c, _ := newTestService(t, srv, linkedStore(7*24*time.Hour))
+	s.MoviePercent(context.Background(), "owner", "tt0000042", "")
+	f.set(func(f *fakeTrakt) { f.syncStatus = http.StatusServiceUnavailable })
+	c.advance(defaultCacheTTL + time.Second)
+	for i := 0; i < 5; i++ {
+		s.MoviePercent(context.Background(), "owner", "tt0000042", "")
+	}
+	if n := f.count("/sync/playback/movies"); n != 2 {
+		t.Errorf("Trakt was asked %d times, want 2: the read and one retry per failure window", n)
+	}
+}
+
+func TestTheLastMapIsDroppedPastTheStaleWindow(t *testing.T) {
+	f, srv := newFakeTrakt(t)
+	s, c, _ := newTestService(t, srv, linkedStore(7*24*time.Hour))
+	s.MoviePercent(context.Background(), "owner", "tt0000042", "")
+	f.set(func(f *fakeTrakt) { f.syncStatus = http.StatusServiceUnavailable })
+	c.advance(staleWindow + time.Second)
+	if got := s.MoviePercent(context.Background(), "owner", "tt0000042", ""); got != 0 {
+		t.Errorf("past the stale window the bar read %d, want none", got)
+	}
+}
+
+func TestARefusedRefreshTokenEmptiesTheMapAtOnce(t *testing.T) {
+	f, srv := newFakeTrakt(t)
+	s, c, _ := newTestService(t, srv, linkedStore(7*24*time.Hour))
+	s.MoviePercent(context.Background(), "owner", "tt0000042", "")
+	f.set(func(f *fakeTrakt) {
+		f.tokens = map[string]string{}
+		f.refreshOK = false
+	})
+	c.advance(defaultCacheTTL + time.Second)
+	if got := s.MoviePercent(context.Background(), "owner", "tt0000042", ""); got != 0 {
+		t.Errorf("after Trakt refused the refresh token the bar read %d, want none", got)
+	}
+}
+
+func TestUnlinkingEmptiesTheMapAtOnce(t *testing.T) {
+	_, srv := newFakeTrakt(t)
+	st := linkedStore(7 * 24 * time.Hour)
+	s, c, _ := newTestService(t, srv, st)
+	s.MoviePercent(context.Background(), "owner", "tt0000042", "")
+	if err := s.Unlink(context.Background(), "owner"); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.MoviePercent(context.Background(), "owner", "tt0000042", ""); got != 0 {
+		t.Errorf("right after unlinking the bar read %d, want none", got)
+	}
+
+	// A link removed elsewhere, such as on another replica, empties at the next read.
+	if err := st.SetTraktAuth("owner", &profile.TraktAuth{AccessToken: "access-1", RefreshToken: "refresh-1", ExpiresAt: time.Now().Add(7 * 24 * time.Hour).Unix()}); err != nil {
+		t.Fatal(err)
+	}
+	s.Invalidate("owner")
+	if got := s.MoviePercent(context.Background(), "owner", "tt0000042", ""); got != 42 {
+		t.Fatalf("relinked read gave %d, want 42", got)
+	}
+	if err := st.SetTraktAuth("owner", nil); err != nil {
+		t.Fatal(err)
+	}
+	c.advance(defaultCacheTTL + time.Second)
+	if got := s.MoviePercent(context.Background(), "owner", "tt0000042", ""); got != 0 {
+		t.Errorf("after the link was removed the bar read %d, want none", got)
+	}
+}

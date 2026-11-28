@@ -19,6 +19,9 @@ const (
 	// refreshMargin is how long before expiry a token is renewed. Trakt access
 	// tokens last 7 days.
 	refreshMargin = 24 * time.Hour
+	// staleWindow is how long the last map read from Trakt keeps being served
+	// while Trakt is failing.
+	staleWindow = 6 * time.Hour
 	// minPollInterval is the floor between device-token polls for one profile.
 	minPollInterval = 5 * time.Second
 	maxEntries      = 1024
@@ -71,7 +74,21 @@ type entry struct {
 	until   time.Time
 	loaded  bool
 	loading chan struct{}
+	// good is the last map Trakt answered with, served through a failure
+	// until staleWindow after goodAt.
+	good    Map
+	goodAt  time.Time
+	hasGood bool
 }
+
+// outcome is what a read from Trakt established.
+type outcome int
+
+const (
+	fetchOK     outcome = iota // the map is current
+	fetchGone                  // no link, or Trakt refused the refresh token
+	fetchFailed                // the read failed; the last good map still stands
+)
 
 // New builds a Service. It is usable whatever the options; Available says
 // whether it can do anything.
@@ -126,13 +143,11 @@ func (s *Service) MoviePercent(ctx context.Context, profileID, mediaID, contentT
 	return s.progressFor(ctx, profileID).Movie(mediaID, contentType)
 }
 
-// Invalidate drops the cached map for a profile.
+// Invalidate drops the cached map for a profile, including one being read.
 func (s *Service) Invalidate(profileID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if e := s.entries[profileID]; e != nil && e.loading == nil {
-		delete(s.entries, profileID)
-	}
+	delete(s.entries, profileID)
 }
 
 func (s *Service) progressFor(ctx context.Context, profileID string) Map {
@@ -170,13 +185,46 @@ func (s *Service) progressFor(ctx context.Context, profileID string) Map {
 	s.mu.Unlock()
 
 	fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), s.fetchTimeout)
-	m, ttl := s.fetch(fetchCtx, profileID)
+	m, ttl, result, err := s.fetch(fetchCtx, profileID)
 	cancel()
 
 	s.mu.Lock()
-	e.m, e.loaded, e.until, e.loading = m, true, s.now().Add(ttl), nil
+	if s.entries[profileID] != e {
+		// Unlinked or relinked while this read ran; its answer is not wanted.
+		e.loading = nil
+		close(ch)
+		s.mu.Unlock()
+		return Map{}
+	}
+	now = s.now()
+	kept, staleFor := false, time.Duration(0)
+	switch result {
+	case fetchOK:
+		e.good, e.goodAt, e.hasGood = m, now, true
+	case fetchGone:
+		e.good, e.hasGood = Map{}, false
+	case fetchFailed:
+		staleFor = now.Sub(e.goodAt)
+		if e.hasGood && staleFor <= staleWindow {
+			m, kept = e.good, true
+		} else {
+			e.good, e.hasGood = Map{}, false
+		}
+	}
+	e.m, e.loaded, e.until, e.loading = m, true, now.Add(ttl), nil
 	close(ch)
 	s.mu.Unlock()
+
+	if result == fetchFailed {
+		if kept {
+			s.log.WarnContext(ctx, "Could not read watched progress from Trakt; serving the last progress it returned",
+				"id", logging.RequestID(ctx), "profile_id", profileID, "error", err,
+				"retry_in_s", int(ttl.Seconds()), "stale_s", int(staleFor.Seconds()))
+		} else {
+			s.log.WarnContext(ctx, "Could not read watched progress from Trakt; posters show no bar until it answers",
+				"id", logging.RequestID(ctx), "profile_id", profileID, "error", err, "retry_in_s", int(ttl.Seconds()))
+		}
+	}
 	return m
 }
 
@@ -191,23 +239,20 @@ func (s *Service) pruneLocked(now time.Time) {
 	}
 }
 
-// fetch reads the owner's map and says how long to keep it. Every failure is
-// an empty map kept for the failure window, so a page of posters during an
-// outage makes one attempt and logs one warning.
-func (s *Service) fetch(ctx context.Context, profileID string) (Map, time.Duration) {
-	reqID := logging.RequestID(ctx)
+// fetch reads the owner's map and says how long to keep it. A failure is kept
+// for the failure window, so a page of posters during an outage makes one
+// attempt and logs one warning.
+func (s *Service) fetch(ctx context.Context, profileID string) (Map, time.Duration, outcome, error) {
 	auth, err := s.store.TraktAuth(profileID)
 	if err != nil {
-		s.log.WarnContext(ctx, "Could not read a profile's Trakt link; posters show no watched progress",
-			"id", reqID, "profile_id", profileID, "error", err)
-		return Map{}, s.failureTTL
+		return Map{}, s.failureTTL, fetchFailed, err
 	}
 	if !auth.Linked() {
-		return Map{}, s.cacheTTL
+		return Map{}, s.cacheTTL, fetchGone, nil
 	}
 	auth, err = s.freshAuth(ctx, profileID, auth, false)
 	if err != nil {
-		return Map{}, s.failed(ctx, profileID, err)
+		return s.failed(err)
 	}
 	m, err := s.client.MovieProgress(ctx, auth.AccessToken)
 	if errors.Is(err, ErrUnauthorized) {
@@ -216,22 +261,26 @@ func (s *Service) fetch(ctx context.Context, profileID string) (Map, time.Durati
 		}
 	}
 	if err != nil {
-		return Map{}, s.failed(ctx, profileID, err)
+		return s.failed(err)
 	}
 	s.log.DebugContext(ctx, "Read watched progress from Trakt",
-		"id", reqID, "profile_id", profileID, "movies", m.Len())
-	return m, s.cacheTTL
+		"id", logging.RequestID(ctx), "profile_id", profileID, "movies", m.Len())
+	return m, s.cacheTTL, fetchOK, nil
 }
 
-func (s *Service) failed(ctx context.Context, profileID string, err error) time.Duration {
+// failed classifies a failed read. Only a refused refresh token ends the
+// link's progress; anything else is retried after the failure window, or
+// Trakt's Retry-After when longer.
+func (s *Service) failed(err error) (Map, time.Duration, outcome, error) {
+	if errors.Is(err, ErrInvalidGrant) {
+		return Map{}, s.failureTTL, fetchGone, err
+	}
 	wait := s.failureTTL
 	var rl *RateLimitedError
 	if errors.As(err, &rl) && rl.RetryAfter > wait {
 		wait = rl.RetryAfter
 	}
-	s.log.WarnContext(ctx, "Could not read watched progress from Trakt; posters show no bar until it answers",
-		"id", logging.RequestID(ctx), "profile_id", profileID, "error", err, "retry_in_s", int(wait.Seconds()))
-	return wait
+	return Map{}, wait, fetchFailed, err
 }
 
 // freshAuth returns a link whose access token is good, refreshing it when it is
