@@ -19,6 +19,7 @@ import (
 	"xrdb_rewrite/internal/migrate"
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/provider"
+	"xrdb_rewrite/internal/watchprogress"
 )
 
 // generateProfileID returns a short, URL-safe, unguessable profile ID.
@@ -34,7 +35,7 @@ func generateProfileID() string {
 
 // registerProfileRoutes mounts the /profile/* handlers and returns the password
 // check they share, so other routes on a profile draw on the same allowance.
-func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config, logger *slog.Logger, signer *previewSigner) profileAuthorizer {
+func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config, logger *slog.Logger, signer *previewSigner, watch *watchprogress.Service) profileAuthorizer {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -345,6 +346,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 					return
 				}
 			}
+			disconnectTrakt(r.Context(), store, watch, logger, existing.ID)
 			if err := store.Delete(existing.ID); err != nil {
 				if errors.Is(err, profile.ErrNotFound) {
 					http.Error(w, "not found", http.StatusNotFound)

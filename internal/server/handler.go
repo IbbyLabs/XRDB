@@ -720,7 +720,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		writeRenderPlaceholderJSON(w, mediaType, id, key)
 	})
 
-	authorizeProfile := registerProfileRoutes(mux, store, cfg, logger, previewSigner)
+	authorizeProfile := registerProfileRoutes(mux, store, cfg, logger, previewSigner, watch)
 	registerTraktRoutes(mux, store, cfg, logger, watch, authorizeProfile)
 	registerMediaRoutes(mux, pipeline)
 	registerAIOMRoutes(mux, cfg.AIOMAllowPrivate, trust)

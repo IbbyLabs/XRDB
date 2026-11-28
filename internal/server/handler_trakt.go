@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -70,6 +71,27 @@ func ownerRequest(configParam string, p *profile.Profile, shared map[string]bool
 		return false
 	}
 	return !shared[strings.ToLower(configParam)] && !shared[strings.ToLower(p.ID)]
+}
+
+// disconnectTrakt unlinks a profile that is about to be deleted. A failure is
+// logged and never blocks the delete.
+func disconnectTrakt(ctx context.Context, store *profile.Store, svc *watchprogress.Service, logger *slog.Logger, profileID string) {
+	if svc == nil || store == nil {
+		return
+	}
+	auth, err := store.TraktAuth(profileID)
+	if err != nil {
+		logger.WarnContext(ctx, "Could not read the Trakt link of a profile being deleted; deleting it anyway",
+			"id", logging.RequestID(ctx), "profile_id", profileID, "error", err)
+		return
+	}
+	if auth == nil {
+		return
+	}
+	if err := svc.Unlink(ctx, profileID); err != nil {
+		logger.WarnContext(ctx, "Could not unlink Trakt from a profile being deleted; deleting it anyway",
+			"id", logging.RequestID(ctx), "profile_id", profileID, "error", err)
+	}
 }
 
 func registerTraktRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config, logger *slog.Logger, svc *watchprogress.Service, authorize profileAuthorizer) {

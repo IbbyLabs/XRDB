@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -25,6 +26,8 @@ type stubTrakt struct {
 	calls  map[string]int
 	fail   bool
 	tokens map[string]bool
+	// revokeFail makes /oauth/revoke answer 502.
+	revokeFail bool
 }
 
 func (s *stubTrakt) count(path string) int {
@@ -47,6 +50,7 @@ func (s *stubTrakt) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	s.calls[r.URL.Path]++
 	fail := s.fail
+	revokeFail := s.revokeFail
 	known := s.tokens[strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")]
 	s.mu.Unlock()
 	switch r.URL.Path {
@@ -58,6 +62,10 @@ func (s *stubTrakt) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.mu.Unlock()
 		writeJSON(w, http.StatusOK, map[string]any{"access_token": "linked-access", "refresh_token": "linked-refresh", "expires_in": 604800, "created_at": time.Now().Unix()})
 	case "/oauth/revoke":
+		if revokeFail {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 	case "/sync/playback/movies", "/sync/watched/movies":
 		if fail {
@@ -394,5 +402,74 @@ func TestTraktLinkingNeedsAPasswordAndAClientID(t *testing.T) {
 	rr = traktRequest(f, http.MethodPost, "/profile/"+open.ID+"/trakt-link", "")
 	if rr.Code != http.StatusConflict || !strings.Contains(rr.Body.String(), "password_required") {
 		t.Errorf("link on a passwordless profile: %d %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestDeletingAProfileRevokesItsTraktLink(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		revokeFail bool
+	}{
+		{"revoke succeeds", false},
+		{"revoke fails", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			prev := slog.Default()
+			slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})))
+			t.Cleanup(func() { slog.SetDefault(prev) })
+
+			f := newTraktFixture(t, nil)
+			f.trakt.mu.Lock()
+			f.trakt.revokeFail = tc.revokeFail
+			f.trakt.mu.Unlock()
+
+			rr := traktRequest(f, http.MethodDelete, "/profile/"+f.id, "pw")
+			if rr.Code != http.StatusNoContent {
+				t.Fatalf("delete: %d %s", rr.Code, rr.Body.String())
+			}
+			if f.trakt.count("/oauth/revoke") != 1 {
+				t.Errorf("deleting revoked the token %d times, want 1", f.trakt.count("/oauth/revoke"))
+			}
+			if _, err := f.store.Get(f.id); err == nil {
+				t.Error("the profile survived the delete")
+			}
+			out := buf.String()
+			for _, secret := range []string{"owner-access", "owner-refresh"} {
+				if strings.Contains(out, secret) {
+					t.Errorf("a Trakt token reached the log: %s", out)
+				}
+			}
+			warned := strings.Contains(out, `"level":"WARN"`) && strings.Contains(out, "Could not revoke a Trakt token") && strings.Contains(out, f.id)
+			if tc.revokeFail && !warned {
+				t.Errorf("a failed revoke was not logged at warn with the profile id; log was: %s", out)
+			}
+		})
+	}
+}
+
+func TestDeletingAProfileWithoutTraktLinkSkipsTrakt(t *testing.T) {
+	f := newTraktFixture(t, nil)
+	if err := f.store.SetTraktAuth(f.id, nil); err != nil {
+		t.Fatal(err)
+	}
+	if rr := traktRequest(f, http.MethodDelete, "/profile/"+f.id, "pw"); rr.Code != http.StatusNoContent {
+		t.Fatalf("delete: %d %s", rr.Code, rr.Body.String())
+	}
+	if f.trakt.total() != 0 {
+		t.Errorf("deleting an unlinked profile reached Trakt %d times", f.trakt.total())
+	}
+}
+
+func TestAWrongPasswordDeleteLeavesTheTraktLink(t *testing.T) {
+	f := newTraktFixture(t, nil)
+	if rr := traktRequest(f, http.MethodDelete, "/profile/"+f.id, "wrong"); rr.Code == http.StatusNoContent {
+		t.Fatalf("delete with the wrong password succeeded")
+	}
+	if f.trakt.count("/oauth/revoke") != 0 {
+		t.Error("a refused delete revoked the Trakt token")
+	}
+	if a, _ := f.store.TraktAuth(f.id); !a.Linked() {
+		t.Error("a refused delete dropped the Trakt link")
 	}
 }
