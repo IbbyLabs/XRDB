@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.150.0](https://github.com/IbbyLabs/XRDB/compare/v3.149.0...v3.150.0) (2026-11-28)
+
+
+### Added
+
+* **ratings:** age a series still airing as this year's title (FR-210) ([dd1357d](https://github.com/IbbyLabs/XRDB/commit/dd1357d63234e052af6939abdcb4ef5a719602b1))
+* **ratings:** give each source its own cache term by age (FR-210) ([9033930](https://github.com/IbbyLabs/XRDB/commit/90339302f5e6a3c4baeac32656f72dad072739e3))
+
 ## [3.149.0](https://github.com/IbbyLabs/XRDB/compare/v3.148.0...v3.149.0) (2026-11-28)
 
 
