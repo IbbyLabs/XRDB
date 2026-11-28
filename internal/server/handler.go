@@ -566,17 +566,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				}
 				ttl := renderTTL(renderResult, ttls, mediaType, def)
 				if renderCache != nil {
-					// A recognised sweep's renders are not stored: they are not
-					// re-read. An unknown caller's are, large ones shed first. A
-					// warm render is stored to be read.
-					switch class := provider.CallerClassFrom(r.Context()); {
-					case isWarmRequest(r.Context()):
+					switch renderStoreFor(r.Context(), degraded) {
+					case storeRender:
 						_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
-					case class == provider.CallerBulk:
-					case provider.TreatedAsBulk(class):
+					case storeRenderFromBulk:
 						_ = renderCache.SetFromBulk(cacheKey, pngBytes, ttl)
-					default:
-						_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
 					}
 					if ttl <= 0 {
 						// Zero means "use the cache default"; resolve it so the
