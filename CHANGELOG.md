@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.151.0](https://github.com/IbbyLabs/XRDB/compare/v3.150.0...v3.151.0) (2026-11-28)
+
+
+### Added
+
+* **mdblist:** skip sweep lookups in the first minutes of each hour ([fbfba41](https://github.com/IbbyLabs/XRDB/commit/fbfba419e1647a266b387e00d8e86a6f9b6c5590))
+
+
+### Fixed
+
+* **mdblist:** exempt callers with no user agent from the quiet window ([1ef2d2a](https://github.com/IbbyLabs/XRDB/commit/1ef2d2a2bb46bb75dd0f53e9f423650dc9217aee))
+* **server:** do not store a warm render a gate held a badge back from ([2fa69d5](https://github.com/IbbyLabs/XRDB/commit/2fa69d58a2b7850438d281255722537a626a7c24))
+
 ## [3.150.0](https://github.com/IbbyLabs/XRDB/compare/v3.149.0...v3.150.0) (2026-11-28)
 
 
