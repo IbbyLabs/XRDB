@@ -61,6 +61,11 @@ func NewMDBList(apiKey string) *MDBList {
 	noteKeyRing("mdblist", m.keys.all())
 	if size := mdblistBatchSize(); size > 1 {
 		m.batcher = newMDBListBatcher(m, size, mdblistBatchWindow())
+		slots, wait := mdblistBulkBatchSlots(), mdblistBulkBatchWait()
+		m.batcher.capBulk(slots, wait)
+		m.log().Info("MDBList joins sweep lookups into batches",
+			"batch_size", size, "window_ms", mdblistBatchWindow().Milliseconds(),
+			"bulk_batches_in_flight", slots, "bulk_slot_wait_ms", wait.Milliseconds())
 	}
 	return m
 }

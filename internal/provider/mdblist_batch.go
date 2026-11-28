@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"xrdb_rewrite/internal/logging"
@@ -24,6 +25,25 @@ func mdblistBatchSize() int {
 func mdblistBatchWindow() time.Duration {
 	return time.Duration(envInt("XRDB_MDBLIST_BATCH_WINDOW_MS", 250, 0, 5000)) * time.Millisecond
 }
+
+// mdblistBulkBatchSlots is how many sweep batches may be in flight to MDBList at
+// once. 0 lifts the cap.
+func mdblistBulkBatchSlots() int {
+	return envInt("XRDB_MDBLIST_BULK_BATCHES", 2, 0, 50)
+}
+
+// mdblistBulkBatchWait is how long a sweep's batch waits for a free slot before
+// its titles fall back to what a render does when MDBList is unavailable.
+func mdblistBulkBatchWait() time.Duration {
+	return time.Duration(envInt("XRDB_MDBLIST_BULK_BATCH_WAIT_MS", 1500, 0, 30000)) * time.Millisecond
+}
+
+// mdblistSlotWarnEvery spaces the warning that sweep batches are queued at the cap.
+const mdblistSlotWarnEvery = 30 * time.Second
+
+// pacedByBatchSlots is a sweep batch refused because the cap on batches in
+// flight stayed full for the whole wait.
+const pacedByBatchSlots pacedBy = "bulk_batch_slots"
 
 // errMDBListBatchShared marks a failure a caller received because the batch it
 // rode in failed; the first caller still waiting carries it for health.
@@ -56,6 +76,9 @@ type mdblistBatch struct {
 	counted bool
 	waiting int
 	cancel  context.CancelFunc
+	// lifted closes when a caller with no user agent joins, which exempts the
+	// batch from the sweep cap.
+	lifted chan struct{}
 }
 
 type mdblistBatcher struct {
@@ -64,10 +87,29 @@ type mdblistBatcher struct {
 	window time.Duration
 	mu     sync.Mutex
 	open   *mdblistBatch
+	// slots caps sweep batches in flight; nil leaves them uncapped.
+	slots    chan struct{}
+	slotWait time.Duration
+	// queuedNow, queuedTotal and gaveUpTotal feed the rate-limited warning.
+	queuedNow   atomic.Int64
+	queuedTotal atomic.Int64
+	gaveUpTotal atomic.Int64
+	lastWarn    atomic.Int64
 }
 
 func newMDBListBatcher(m *MDBList, size int, window time.Duration) *mdblistBatcher {
 	return &mdblistBatcher{m: m, max: size, window: window}
+}
+
+// capBulk limits sweep batches in flight to n, each waiting at most wait for a
+// slot. n <= 0 leaves them uncapped.
+func (bt *mdblistBatcher) capBulk(n int, wait time.Duration) {
+	if n <= 0 {
+		bt.slots = nil
+		return
+	}
+	bt.slots = make(chan struct{}, n)
+	bt.slotWait = wait
 }
 
 // batches reports whether this call goes in a batch: sweeps on the server's own
@@ -80,7 +122,8 @@ func (bt *mdblistBatcher) fetch(ctx context.Context, imdbID string) (*MediaMeta,
 	bt.mu.Lock()
 	b, opened := bt.open, false
 	if b == nil || b.closed || (len(b.ids) >= bt.max && !b.seen[imdbID]) {
-		b = &mdblistBatch{seen: map[string]bool{}, full: make(chan struct{}), done: make(chan struct{})}
+		b = &mdblistBatch{seen: map[string]bool{}, full: make(chan struct{}), done: make(chan struct{}),
+			lifted: make(chan struct{})}
 		bt.open, opened = b, true
 	}
 	if !b.seen[imdbID] {
@@ -90,8 +133,9 @@ func (bt *mdblistBatcher) fetch(ctx context.Context, imdbID string) (*MediaMeta,
 			close(b.full)
 		}
 	}
-	if CallerClassFrom(ctx) == CallerUnknown {
+	if CallerClassFrom(ctx) == CallerUnknown && !b.unknown {
 		b.unknown = true
+		close(b.lifted)
 	}
 	b.waiting++
 	bt.mu.Unlock()
@@ -142,6 +186,18 @@ func (bt *mdblistBatcher) run(callerCtx context.Context, b *mdblistBatch) {
 			timer.Stop()
 		}
 	}
+	release, err := bt.takeSlot(callerCtx, b)
+	if err != nil {
+		bt.mu.Lock()
+		b.closed = true
+		if bt.open == b {
+			bt.open = nil
+		}
+		bt.mu.Unlock()
+		b.err = err
+		return
+	}
+	defer release()
 	bt.mu.Lock()
 	b.closed = true
 	if bt.open == b {
@@ -160,6 +216,75 @@ func (bt *mdblistBatcher) run(callerCtx context.Context, b *mdblistBatch) {
 	bt.mu.Unlock()
 	defer cancel()
 	b.items, b.err = bt.sendAll(ctx, ids)
+}
+
+// takeSlot holds a sweep batch until one of the capped slots is free. The batch
+// stays open while it waits, so titles arriving meanwhile join it. A batch
+// carrying a caller with no user agent is not capped: it may be a proxy for
+// many people. Past slotWait it returns ErrGovernorBacklog, which renders treat
+// as our own pacing and answer from remembered ratings or leave empty.
+func (bt *mdblistBatcher) takeSlot(ctx context.Context, b *mdblistBatch) (func(), error) {
+	noop := func() {}
+	if bt.slots == nil {
+		return noop, nil
+	}
+	free := func() { <-bt.slots }
+	select {
+	case <-b.lifted:
+		return noop, nil
+	default:
+	}
+	select {
+	case bt.slots <- struct{}{}:
+		return free, nil
+	default:
+	}
+
+	started := time.Now()
+	depth := bt.queuedNow.Add(1)
+	defer bt.queuedNow.Add(-1)
+	bt.queuedTotal.Add(1)
+	bt.warnQueued(ctx, b, depth)
+
+	timer := time.NewTimer(bt.slotWait)
+	defer timer.Stop()
+	select {
+	case bt.slots <- struct{}{}:
+		return free, nil
+	case <-b.lifted:
+		return noop, nil
+	case <-timer.C:
+	}
+	bt.gaveUpTotal.Add(1)
+	waited := time.Since(started)
+	bt.m.log().DebugContext(ctx, "A sweep batch to MDBList gave up waiting for a slot",
+		"id", logging.RequestID(ctx), "titles", bt.titles(b),
+		"waited_ms", waited.Milliseconds(), "cap", cap(bt.slots))
+	return nil, &backlogReason{err: ErrGovernorBacklog, paced: pacedByBatchSlots,
+		wait: waited, budget: bt.slotWait}
+}
+
+// warnQueued reports sweep batches queued at the cap, at most once per
+// mdblistSlotWarnEvery.
+func (bt *mdblistBatcher) warnQueued(ctx context.Context, b *mdblistBatch, depth int64) {
+	now := time.Now().UnixNano()
+	last := bt.lastWarn.Load()
+	if last != 0 && now-last < int64(mdblistSlotWarnEvery) {
+		return
+	}
+	if !bt.lastWarn.CompareAndSwap(last, now) {
+		return
+	}
+	bt.m.log().WarnContext(ctx, "Sweep batches to MDBList are queued at their cap",
+		"id", logging.RequestID(ctx), "queued", depth, "cap", cap(bt.slots),
+		"titles", bt.titles(b), "wait_budget_ms", bt.slotWait.Milliseconds(),
+		"queued_total", bt.queuedTotal.Load(), "gave_up_total", bt.gaveUpTotal.Load())
+}
+
+func (bt *mdblistBatcher) titles(b *mdblistBatch) int {
+	bt.mu.Lock()
+	defer bt.mu.Unlock()
+	return len(b.ids)
 }
 
 // mdblistFreeBatch is the batch size of MDBList's free plan.
