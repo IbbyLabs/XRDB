@@ -1,5 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// The suite runs against the built static export by default. E2E_DEV=1 runs it
+// against `next dev` instead, for iterating on a spec without rebuilding.
+const dev = process.env.E2E_DEV === '1';
+const baseURL = dev ? 'http://localhost:3001' : 'http://127.0.0.1:3002';
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -7,7 +12,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3001',
+    baseURL,
     trace: 'on-first-retry',
   },
   projects: [
@@ -16,10 +21,19 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3001',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
-  },
+  webServer: dev
+    ? {
+        command: 'npm run dev',
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 30_000,
+      }
+    : {
+        // Serves internal/ui/dist, building it only when missing. Run
+        // `npm run build` first to test current code.
+        command: 'node scripts/serve-export.mjs',
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 300_000,
+      },
 });
