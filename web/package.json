@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "test:e2e": "playwright test",
+    "test:e2e:dev": "E2E_DEV=1 playwright test",
     "gen:icons": "node scripts/gen-rating-icons.mjs",
     "test:unit": "node --test tests/unit/*.test.mjs",
     "i18n:extract": "node scripts/extract-i18n.mjs"
