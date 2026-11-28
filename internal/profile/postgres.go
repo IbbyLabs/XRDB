@@ -211,12 +211,14 @@ func applySchemaPostgres(db *sql.DB) error {
 			password_hash TEXT   NOT NULL DEFAULT '',
 			alias         TEXT   NOT NULL DEFAULT '',
 			provider_keys TEXT   NOT NULL DEFAULT '{}',
-			preview       TEXT   NOT NULL DEFAULT ''
+			preview       TEXT   NOT NULL DEFAULT '',
+			trakt_auth    TEXT   NOT NULL DEFAULT ''
 		)`,
 		`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS password_hash TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS alias TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS provider_keys TEXT NOT NULL DEFAULT '{}'`,
 		`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS preview TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trakt_auth TEXT NOT NULL DEFAULT ''`,
 		// Partial unique indexes, exactly as the SQLite path builds them: an
 		// empty alias or uuid is exempt, so unaliased profiles do not collide.
 		// The SQLite path drops idx_profiles_uuid first, to replace a

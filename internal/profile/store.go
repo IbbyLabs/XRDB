@@ -147,6 +147,8 @@ func applySchema(db *sql.DB) error {
 	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN provider_keys TEXT NOT NULL DEFAULT '{}'`)
 	// The title the configurator opens this profile on, as a JSON object.
 	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN preview TEXT NOT NULL DEFAULT ''`)
+	// The owner's Trakt link, sealed like the provider keys.
+	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN trakt_auth TEXT NOT NULL DEFAULT ''`)
 	_, _ = db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_alias ON profiles(alias) WHERE alias != ''`)
 	// Index the uuid so migrated v2 config-string URLs (?config=<uuid>) resolve
 	// without a table scan, and make it unique so import stays idempotent even
