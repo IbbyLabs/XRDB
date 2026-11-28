@@ -11,7 +11,7 @@ import { test, expect, type Page } from '@playwright/test';
  */
 async function gotoConfigurator(page: Page) {
   await page.goto('/configurator');
-  await expect(page.locator('.preview-actions')).toBeVisible();
+  await expect(page.locator('.preview-actions')).toBeVisible({ timeout: 20_000 });
 }
 
 const genreToggle = (page: Page) => page.getByRole('switch', { name: /^genre badge$/i });
@@ -46,6 +46,8 @@ test('the copy is acknowledged where the click happened', async ({ page }) => {
 });
 
 test('the shared link rebuilds the look for someone else', async ({ page, context, browser }) => {
+  // Two page loads or a long click path; the dev server can take 10-30 s per load on a busy box.
+  test.slow();
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await gotoConfigurator(page);
 
@@ -64,7 +66,7 @@ test('the shared link rebuilds the look for someone else', async ({ page, contex
   const recipient = await browser.newContext();
   const theirPage = await recipient.newPage();
   await theirPage.goto(link);
-  await expect(theirPage.locator('.preview-actions')).toBeVisible();
+  await expect(theirPage.locator('.preview-actions')).toBeVisible({ timeout: 20_000 });
 
   await expect(genreToggle(theirPage)).toHaveAttribute('aria-checked', 'true');
   await recipient.close();

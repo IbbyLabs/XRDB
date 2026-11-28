@@ -10,7 +10,7 @@ async function openFineTuning(page: Page) {
   // The page is a static export, so nothing is interactive until React hydrates.
   // The preview actions render once the preview URL is computed after mount,
   // which makes them a real ready signal.
-  await expect(page.locator('.preview-actions')).toBeVisible();
+  await expect(page.locator('.preview-actions')).toBeVisible({ timeout: 20_000 });
   await page.getByRole('tab', { name: /ratings/i }).click();
   const toggle = page.getByRole('switch', { name: /^fine tuning$/i });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click();
@@ -64,6 +64,8 @@ test('moving one source rebalances the rest to keep the total at 100', async ({ 
 });
 
 test('a source added after weighting gets a share instead of counting for nothing', async ({ page }) => {
+  // Two page loads or a long click path; the dev server can take 10-30 s per load on a busy box.
+  test.slow();
   await openFineTuning(page);
   const group = await openWeighting(page);
   await group.getByRole('spinbutton', { name: 'IMDb (%)' }).fill('80');
@@ -91,6 +93,8 @@ test('even split clears the weighting from the URL again', async ({ page }) => {
 });
 
 test('reordering the critics list reaches the render URL', async ({ page }) => {
+  // Two page loads or a long click path; the dev server can take 10-30 s per load on a busy box.
+  test.slow();
   await openFineTuning(page);
   await enableRing(page);
   await page.getByText('Top critic / top audience order').click();

@@ -825,12 +825,16 @@ func (r *statusRecorder) Write(b []byte) (int, error) {
 // X-Request-Id, and logs one line per request with method, path, status, and
 // latency. Health and readiness probes are skipped to keep the log readable.
 func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handler) http.Handler {
+	unnamed := newUnnamedSweepDetector(logger)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		reqID := logging.NewRequestID()
 		ctx := logging.WithRequestID(r.Context(), reqID)
 		class := provider.ClassifyUserAgent(r.UserAgent())
 		if isWarmRequest(ctx) {
+			class = provider.CallerBulk
+		}
+		if class == provider.CallerUnknown && isTitleRender(r.URL.Path) && unnamed.sweeping(clientIP(r, trust), r.URL.Path) {
 			class = provider.CallerBulk
 		}
 		ctx = provider.WithCallerClass(ctx, class)
