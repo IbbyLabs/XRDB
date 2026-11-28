@@ -2,6 +2,22 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.152.0](https://github.com/IbbyLabs/XRDB/compare/v3.151.0...v3.152.0) (2026-11-28)
+
+
+### Added
+
+* **profile:** store a sealed Trakt link per profile (FR-222) ([099eb68](https://github.com/IbbyLabs/XRDB/commit/099eb68101434ef68b6b8cd886513fb730032173))
+* **server:** draw watched progress on owners' movie posters (FR-222) ([372e95e](https://github.com/IbbyLabs/XRDB/commit/372e95e111dbc01796c4c8d7a4082fa59bcdb816))
+* **watchprogress:** read owners' movie progress from Trakt (FR-222) ([9259d26](https://github.com/IbbyLabs/XRDB/commit/9259d2647d744825d0952aef7f6acab32b3d8684))
+* **web:** link Trakt from the configurator (FR-222) ([396f1b5](https://github.com/IbbyLabs/XRDB/commit/396f1b5cb296c6173d73b31163f528f77918a864))
+
+
+### Fixed
+
+* **watchprogress:** keep the last map through Trakt failures (FR-222) ([7db1eab](https://github.com/IbbyLabs/XRDB/commit/7db1eab445a57044cab4bab1ee9176710b371ed9))
+* **watchprogress:** renew short tokens in last quarter (FR-222) ([5f51c26](https://github.com/IbbyLabs/XRDB/commit/5f51c2682e427b841821581303c0861e549f4527))
+
 ## [3.151.0](https://github.com/IbbyLabs/XRDB/compare/v3.150.0...v3.151.0) (2026-11-28)
 
 
