@@ -17,6 +17,12 @@ var metaOnlyField = map[string]bool{
 	"HideCinemetaRating": true,
 }
 
+// ownerKeyedField lists config whose pixels are keyed by the render handler
+// with the profile owner, so the shared config key must not carry it.
+var ownerKeyedField = map[string]bool{
+	"WatchedProgress": true,
+}
+
 func TestEveryConfigFieldReachesTheCacheKey(t *testing.T) {
 	base := Default()
 	baseKey := CacheKey(base)
@@ -36,7 +42,7 @@ func TestEveryConfigFieldReachesTheCacheKey(t *testing.T) {
 			}
 			// Meta-only fields affect a served response, not the rendered image,
 			// so they are correctly absent from the render cache key.
-			if metaOnlyField[name] {
+			if metaOnlyField[name] || ownerKeyedField[name] {
 				continue
 			}
 			// Grouped sub-configs are embedded in the canonical struct whole, so

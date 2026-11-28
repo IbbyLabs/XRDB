@@ -20,6 +20,10 @@ type renderKeyParts struct {
 	contentType   string
 	ownerKeyFP    string
 	cacheBuster   string
+	// watched names the owner and percent of a watched-progress bar, so a
+	// render carrying one never shares an entry with the same config's
+	// bar-free render.
+	watched string
 }
 
 // renderKeyInput is the config part of a render's cache key. The render handler
@@ -41,6 +45,9 @@ func renderKeyInput(imgCfg imageconfig.Config, k renderKeyParts) string {
 	}
 	if k.ownerKeyFP != "" {
 		in += ":pk=" + k.ownerKeyFP
+	}
+	if k.watched != "" {
+		in += ":wp=" + k.watched
 	}
 	if k.cacheBuster != "" {
 		hcb := sha256.Sum256([]byte(k.cacheBuster))

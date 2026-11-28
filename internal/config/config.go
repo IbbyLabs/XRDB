@@ -201,6 +201,11 @@ type Config struct {
 	OMDBAPIKey        string
 	FanartAPIKey      string
 	TraktClientID     string
+	// TraktClientSecret and TraktRedirectURI belong to the same Trakt app as
+	// TraktClientID and are used only to link an owner's Trakt account. Trakt
+	// treats the secret as optional for device sign-in.
+	TraktClientSecret string
+	TraktRedirectURI  string
 	SIMKLClientID     string
 	SIMKLV2ClientID   string
 	SIMKLV2Secret     string
@@ -730,6 +735,8 @@ func Load() Config {
 		OMDBAPIKey:            credential("XRDB_OMDB_API_KEY", "OMDB_API_KEY", "OMDB_KEY"),
 		FanartAPIKey:          credential("XRDB_FANART_API_KEY", "FANART_API_KEY"),
 		TraktClientID:         credential("XRDB_TRAKT_CLIENT_ID", "TRAKT_CLIENT_ID"),
+		TraktClientSecret:     credential("XRDB_TRAKT_CLIENT_SECRET"),
+		TraktRedirectURI:      strings.TrimSpace(os.Getenv("XRDB_TRAKT_REDIRECT_URI")),
 		SIMKLClientID:         credential("XRDB_SIMKL_CLIENT_ID", "SIMKL_CLIENT_ID"),
 		SIMKLV2ClientID:       credential("XRDB_SIMKL_V2_CLIENT_ID"),
 		SIMKLV2Secret:         credential("XRDB_SIMKL_V2_CLIENT_SECRET"),

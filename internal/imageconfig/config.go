@@ -327,7 +327,11 @@ type Config struct {
 	// does not sit beside XRDB's overlaid one. It affects the meta response, not
 	// the rendered image, so it is deliberately absent from the render cache key.
 	HideCinemetaRating bool `json:"hideCinemetaRating,omitempty"`
-	BackdropLogo       bool `json:"backdropLogo,omitempty"`
+	// WatchedProgress draws the owner's Trakt progress along a movie poster's
+	// bottom edge, on requests made with the profile's own id. The bar is keyed
+	// by the render handler beside the owner, not by this config.
+	WatchedProgress bool `json:"watchedProgress,omitempty"`
+	BackdropLogo    bool `json:"backdropLogo,omitempty"`
 	// The title-logo overlay's box and placement, as percentages. Zero keeps the
 	// built-in look. LogoPos is where the logo's centre sits down the usable
 	// height, so growing the logo does not move it; LogoAnchor "bottom" pins the
@@ -981,6 +985,7 @@ type raw struct {
 	TrendingStyle                 *string   `json:"trendingStyle"`
 	BackdropAsPoster              *bool     `json:"backdropAsPoster"`
 	HideCinemetaRating            *bool     `json:"hideCinemetaRating"`
+	WatchedProgress               *bool     `json:"watchedProgress"`
 	BackdropLogo                  *bool     `json:"backdropLogo"`
 	LogoWidth                     *int      `json:"logoWidth"`
 	LogoHeight                    *int      `json:"logoHeight"`
@@ -1620,6 +1625,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.HideCinemetaRating != nil {
 		cfg.HideCinemetaRating = *r.HideCinemetaRating
+	}
+	if r.WatchedProgress != nil {
+		cfg.WatchedProgress = *r.WatchedProgress
 	}
 	if r.BackdropLogo != nil {
 		cfg.BackdropLogo = *r.BackdropLogo

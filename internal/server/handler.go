@@ -127,6 +127,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	// Forwarded headers are client input unless the peer is a known proxy.
 	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)
 	previewSigner := newPreviewSigner(settingsStore, logger)
+	watch := newWatchService(version, cfg, store, logger)
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -202,6 +203,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// Empty for an inline config, which carries no profile at all, and for a
 		// shared alias. Either way the caller is held to its address instead.
 		capProfileKey := ""
+		// The profile whose owner made this request: set only when the config
+		// parameter is the profile's own id, never its alias, legacy uuid or a
+		// shared profile. Gates the watched-progress bar.
+		ownerProfileID := ""
 		if configParam != "default" {
 			if len(configParam) > 0 && configParam[0] == '{' {
 				// Inline JSON config — used by the live preview without a saved profile.
@@ -249,6 +254,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					// instead, since a limit on it would hit a crowd.
 					if !sharedAliases[strings.ToLower(configParam)] && !sharedAliases[strings.ToLower(p.ID)] {
 						capProfileKey = "profile:" + p.ID
+					}
+					if ownerRequest(configParam, p, sharedAliases) {
+						ownerProfileID = p.ID
 					}
 					// A profile config can style each surface independently;
 					// resolve the one for this request's media type.
@@ -326,9 +334,16 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		}
 
 		reqContentType := normalizeContentType(queryValue(raw, "type", ""))
+		// The bar's value comes from the owner's Trakt account. The wp
+		// parameter a poster URL carries only moves the URL and is never read.
+		watchedPct := 0
+		if ownerProfileID != "" && mediaType == "poster" && imgCfg.WatchedProgress {
+			watchedPct = watch.MoviePercent(r.Context(), ownerProfileID, id, reqContentType)
+		}
 		cfgKeyInput := renderKeyInput(imgCfg, renderKeyParts{
 			id: id, configParam: configParam, profileLoaded: profileLoaded,
 			contentType: reqContentType, ownerKeyFP: ownerKeyFP, cacheBuster: queryValue(raw, "cb", ""),
+			watched: watchedKeyPart(ownerProfileID, watchedPct),
 		})
 		cacheKey := render.TypedCacheKey(mediaType, id, cfgKeyInput, uuid)
 		var pngBytes []byte
@@ -524,6 +539,8 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					ContentType: reqContentType,
 					MediaID:     id,
 					Config:      imgCfg,
+					// Zero unless the owner asked for the bar on their own id.
+					WatchedPercent: watchedPct,
 				})
 				if renderResult != nil {
 					pngBytes = renderResult.ImageBytes
@@ -626,9 +643,13 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				// from a downstream cache.
 				// An inline-config URL carries no version token, so a browser
 				// preview of one is revalidated rather than held.
+				// A watched bar is one person's history, so no shared cache
+				// may hold it.
 				if inlinePreview(r, configParam) {
 					w.Header().Set("Cache-Control", "private, no-cache")
-				} else if maxAge := int(time.Until(expiresAt).Seconds()); maxAge > 0 {
+				} else if maxAge := int(time.Until(expiresAt).Seconds()); maxAge > 0 && watchedPct > 0 {
+					w.Header().Set("Cache-Control", "private, max-age="+strconv.Itoa(maxAge))
+				} else if maxAge > 0 {
 					w.Header().Set("Cache-Control", "public, max-age="+strconv.Itoa(maxAge))
 				}
 				if match := r.Header.Get("If-None-Match"); match != "" && etagMatches(match, etag) {
@@ -699,7 +720,8 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		writeRenderPlaceholderJSON(w, mediaType, id, key)
 	})
 
-	registerProfileRoutes(mux, store, cfg, logger, previewSigner)
+	authorizeProfile := registerProfileRoutes(mux, store, cfg, logger, previewSigner)
+	registerTraktRoutes(mux, store, cfg, logger, watch, authorizeProfile)
 	registerMediaRoutes(mux, pipeline)
 	registerAIOMRoutes(mux, cfg.AIOMAllowPrivate, trust)
 	registerAdminRoutes(mux, ms, cfg, store, settingsStore, pipeline, renderCache, ttls)
@@ -766,7 +788,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	//
 	// GET /stremio/manifest.json
 	// GET /stremio/meta/{type}/{id}.json
-	registerStremioAddon(mux, cfg, store, trust)
+	registerStremioAddon(mux, cfg, store, trust, watch)
 	registerRPDBCompat(mux, imageconfig.ParseSize(cfg.RPDBMaxSize))
 	registerMigrateRoutes(mux, cfg)
 	registerFolderWriterRoutes(mux, cfg, pipeline, store)

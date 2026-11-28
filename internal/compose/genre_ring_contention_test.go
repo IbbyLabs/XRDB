@@ -130,6 +130,7 @@ var unrankedOverlays = []string{
 	"drawBadgesInPlace",
 	"drawDualRating",
 	"drawMinimalRating",
+	"drawWatchedBar",
 }
 
 func TestThePipelineReservesInelasticOverlaysFirst(t *testing.T) {

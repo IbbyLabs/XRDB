@@ -69,7 +69,9 @@ protect editing that profile (rendering with a profile stays public).
 | `XRDB_MDBLIST_API_KEY` | MDBList — IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt scores in one call. |
 | `XRDB_OMDB_API_KEY` | OMDB supplemental ratings. |
 | `XRDB_FANART_API_KEY` | Fanart.tv HD artwork and logos. |
-| `XRDB_TRAKT_CLIENT_ID` | Trakt community ratings. |
+| `XRDB_TRAKT_CLIENT_ID` | Trakt community ratings, and the app owners link their Trakt account to for watched progress on their posters. Linking uses Trakt's device sign-in, so the app needs no redirect page; it also needs `XRDB_CONFIG_ENCRYPTION_KEY`, since the tokens are stored encrypted with the profile. |
+| `XRDB_TRAKT_CLIENT_SECRET` | Optional. The secret of the same Trakt app, sent on sign-in and token refresh from the server only; never logged. Trakt treats it as optional for device sign-in. |
+| `XRDB_TRAKT_REDIRECT_URI` | The redirect URI listed on that Trakt app, sent on token refresh. Default `urn:ietf:wg:oauth:2.0:oob`. |
 | `XRDB_SIMKL_CLIENT_ID` | SIMKL community ratings. |
 | `XRDB_SIMKL_V2_CLIENT_ID` | A SIMKL client id registered for auth v2, which refuses every request that lacks a user token. Once the account is linked it replaces `XRDB_SIMKL_CLIENT_ID`, which carries on until then (SIMKL is skipped if neither works); see [SIMKL v2](docs/setup/simkl-v2.md). A per-render SIMKL key supplied by an owner is sent as before, without a token. |
 | `XRDB_SIMKL_V2_CLIENT_SECRET` | The secret that goes with `XRDB_SIMKL_V2_CLIENT_ID`. Needed to link and to refresh the token; never logged. |

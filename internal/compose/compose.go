@@ -44,6 +44,10 @@ type Request struct {
 	ContentType string
 	MediaID     string // media identifier (IMDB tt-ID or TMDB numeric ID)
 	Config      imageconfig.Config
+	// WatchedPercent is the owner's progress through this title, 1-100, drawn
+	// as a bar when Config.WatchedProgress is on. Zero draws nothing. Only the
+	// render handler sets it, and only for the profile owner's own requests.
+	WatchedPercent int
 	// artworkFrom names the provider whose artwork was actually used, set once
 	// the artwork is fetched. The ratings pass skips that provider because it has
 	// already answered; the configured source is not it when the source could not
@@ -1847,6 +1851,10 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// because the two share a symptom.
 		p.log().DebugContext(ctx, "A title logo overlay was wanted but no logo URL was available",
 			"id", logging.RequestID(ctx), "media_id", req.MediaID)
+	}
+
+	if req.MediaType == "poster" && req.Config.WatchedProgress && req.WatchedPercent > 0 {
+		drawWatchedBar(composed, req.WatchedPercent, req.Config)
 	}
 
 	data, contentType, err := render.Encode(composed, req.MediaType, string(req.Config.Size),

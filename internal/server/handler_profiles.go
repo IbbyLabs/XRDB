@@ -32,8 +32,9 @@ func generateProfileID() string {
 	return string(b)
 }
 
-// registerProfileRoutes mounts all /profile/* handlers onto mux.
-func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config, logger *slog.Logger, signer *previewSigner) {
+// registerProfileRoutes mounts the /profile/* handlers and returns the password
+// check they share, so other routes on a profile draw on the same allowance.
+func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config, logger *slog.Logger, signer *previewSigner) profileAuthorizer {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -550,6 +551,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			"imported", res.Imported, "skipped", res.Skipped, "errors", len(res.Errors))
 		writeJSON(w, status, res)
 	})
+	return authorize
 }
 
 // importPasswords returns the plaintext password for each of n imported

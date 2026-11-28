@@ -27,12 +27,14 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/profile"
+	"xrdb_rewrite/internal/watchprogress"
 )
 
 // cinemetaClient fetches upstream meta for the rating-strip path. Bounded so a
@@ -127,7 +129,7 @@ func stremioManifestFor(cfg config.Config) stremioManifest {
 // manifest from, so carrying the profile in the path is what lets one instance
 // serve a different look per user. Without it the addon would advertise itself
 // as configurable and then ignore whatever the user configured.
-func registerStremioAddon(mux *http.ServeMux, cfg config.Config, store *profile.Store, trust proxyTrust) {
+func registerStremioAddon(mux *http.ServeMux, cfg config.Config, store *profile.Store, trust proxyTrust, watch *watchprogress.Service) {
 	if cfg.APIKey != "" {
 		slog.Warn("The Stremio addon is on while XRDB_API_KEY is set, so its artwork URLs carry no key and will answer 401")
 	}
@@ -151,18 +153,18 @@ func registerStremioAddon(mux *http.ServeMux, cfg config.Config, store *profile.
 	mux.HandleFunc("/stremio/c/{config}/meta/", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		configKey := r.PathValue("config")
 		prefix := "/stremio/c/" + configKey + "/meta/"
-		serveStremioMeta(w, r, cfg, store, trust, configKey, strings.TrimPrefix(r.URL.Path, prefix))
+		serveStremioMeta(w, r, cfg, store, trust, watch, configKey, strings.TrimPrefix(r.URL.Path, prefix))
 	}))
 
 	mux.HandleFunc("/stremio/meta/", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		serveStremioMeta(w, r, cfg, store, trust, "", strings.TrimPrefix(r.URL.Path, "/stremio/meta/"))
+		serveStremioMeta(w, r, cfg, store, trust, watch, "", strings.TrimPrefix(r.URL.Path, "/stremio/meta/"))
 	}))
 }
 
 // serveStremioMeta answers a meta request for {type}/{id}.json, emitting artwork
 // URLs that point back at this instance's render routes. configKey is the
 // profile the install is bound to, or "" for the instance default.
-func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config, store *profile.Store, trust proxyTrust, configKey, path string) {
+func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config, store *profile.Store, trust proxyTrust, watch *watchprogress.Service, configKey, path string) {
 	trimmed := strings.TrimSuffix(path, ".json")
 	parts := strings.SplitN(trimmed, "/", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
@@ -189,18 +191,29 @@ func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config,
 	// movie-vs-series from the artwork surface — the bug that made series
 	// posters resolve as movies and drop most of their ratings.
 	q := url.Values{"type": {mediaType}}
+	posterQ := q
 	if configKey != "" {
 		q.Set("config", configKey)
+		posterQ = url.Values{"type": {mediaType}, "config": {configKey}}
 		// Stremio re-fetches meta far more often than it re-fetches an image it
 		// already has, so this is the right place to hand it a fresh URL after
 		// a profile edit.
 		if store != nil {
-			if p, err := store.Resolve(configKey); err == nil && p.VersionToken != "" {
-				q.Set("v", p.VersionToken)
+			if p, err := store.Resolve(configKey); err == nil {
+				if p.VersionToken != "" {
+					q.Set("v", p.VersionToken)
+					posterQ.Set("v", p.VersionToken)
+				}
+				// Stremio holds an image for a day or more, so the poster URL
+				// moves with each 10% of the owner's progress. The render reads
+				// the value from Trakt, never from this parameter.
+				if wp, ok := watchedStep(r, cfg, watch, p, configKey, mediaType, id); ok {
+					posterQ.Set("wp", strconv.Itoa(wp))
+				}
 			}
 		}
 	}
-	posterURL := fmt.Sprintf("%s/%s/%s?%s", base, xrdbType, id, q.Encode())
+	posterURL := fmt.Sprintf("%s/%s/%s?%s", base, xrdbType, id, posterQ.Encode())
 	backdropURL := fmt.Sprintf("%s/backdrop/%s?%s", base, id, q.Encode())
 
 	// Stremio queries every addon that serves the resource and renders the first
@@ -227,6 +240,22 @@ func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config,
 			Background: backdropURL,
 		},
 	})
+}
+
+// watchedStep is the 10% step of the owner's progress through a movie, for
+// the poster URL of an install bound to the profile's own id.
+func watchedStep(r *http.Request, cfg config.Config, watch *watchprogress.Service, p *profile.Profile, configKey, mediaType, id string) (int, bool) {
+	if mediaType != "movie" || !ownerRequest(configKey, p, sharedAliasSet(cfg)) {
+		return 0, false
+	}
+	if !imageconfig.ParseSurface(p.Config, "poster").WatchedProgress {
+		return 0, false
+	}
+	pct := watch.MoviePercent(r.Context(), p.ID, id, "movie")
+	if pct <= 0 {
+		return 0, false
+	}
+	return watchprogress.Step(pct), true
 }
 
 // hideCinemetaRating reports whether the named profile asked for the Cinemeta

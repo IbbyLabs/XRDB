@@ -55,6 +55,9 @@ var fixtureLimitedField = map[string]string{
 	// Read only on an episode request that carries a series MAL score and no
 	// episode score; TestMALEpisodeOnlyDecidesTheFallbackOnARender covers it.
 	"malEpisodeOnly": "needs an anime episode request with a series MAL rating and an unscored episode",
+	// Draws only with Request.WatchedPercent, which the render handler fills
+	// from the owner's Trakt account; TestTheWatchedBarFillsToThePercent covers it.
+	"watchedProgress": "needs a request carrying the owner's watched percent",
 }
 
 // ── Fixture ──────────────────────────────────────────────────────────────────

@@ -139,9 +139,11 @@ interface DisplayPanelProps {
   fine: boolean;
   /** From the instance's healthz; undefined when unread or unreadable. */
   features?: Record<string, boolean>;
+  /** The Trakt link control, shown under the watched progress toggle. */
+  traktLink?: React.ReactNode;
 }
 
-export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, onReset, fine, features }: DisplayPanelProps) {
+export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, onReset, fine, features, traktLink }: DisplayPanelProps) {
   const t = useT();
   const tOpt = (text?: string) => (text ? t(text) : undefined);
   const mediaTypeWord = t(mediaType.charAt(0).toUpperCase() + mediaType.slice(1)).toLowerCase();
@@ -675,6 +677,19 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             </Field>
           )}
         </Section>
+
+        {mediaType === 'poster' && (
+          <Section title={t('Watched progress')}>
+            <ToggleRow
+              label={t('Show watched progress on posters')}
+              hint={t('A bar along the bottom of movie posters, filled to how far you are through each one on Trakt')}
+              note={config.watchedProgress ? t('Only shows on install links that use your profile ID. Your alias and shared links never show it.') : undefined}
+              checked={config.watchedProgress}
+              onChange={() => onUpdate('watchedProgress', !config.watchedProgress)}
+            />
+            {config.watchedProgress && traktLink}
+          </Section>
+        )}
 
         <Section title={t('Ratings')}>
           <ToggleRow

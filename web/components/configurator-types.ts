@@ -505,6 +505,8 @@ export interface ConfigState {
   ageRatingOffsetX: number; // px nudge; 0 = default
   ageRatingOffsetY: number;
   hideCinemetaRating: boolean;
+  /** Draws the owner's Trakt progress on movie posters, on their own id only. */
+  watchedProgress: boolean;
   backdropLogo: boolean;
   genre: boolean;
   genrePos: string;
@@ -774,6 +776,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ageRatingOffsetX: 0,
   ageRatingOffsetY: 0,
   hideCinemetaRating: false,
+  watchedProgress: false,
   backdropLogo: false,
   genre: false,
   genrePos: 'inherit',
