@@ -2,6 +2,24 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.153.0](https://github.com/IbbyLabs/XRDB/compare/v3.152.0...v3.153.0) (2026-11-28)
+
+
+### Added
+
+* **web:** add a privacy page and the Trakt notice (FR-222) ([760e181](https://github.com/IbbyLabs/XRDB/commit/760e1812e7d3cbffd76b0c5c7dca6068366e913e))
+
+
+### Fixed
+
+* **server:** disconnect Trakt when a profile is deleted (FR-222) ([d809c56](https://github.com/IbbyLabs/XRDB/commit/d809c56bb53804d6700bf5879c50009a3d719901))
+
+
+### Documentation
+
+* point to the privacy page and add the Trakt notice (FR-222) ([28f2846](https://github.com/IbbyLabs/XRDB/commit/28f2846fdd4cd4d1b9ce0a327a2e547950266053))
+* **web:** clarify retention, ID links and delete on privacy (FR-222) ([cf807ba](https://github.com/IbbyLabs/XRDB/commit/cf807ba718e6a840a9836abfd5ee9c3dec605689))
+
 ## [3.152.0](https://github.com/IbbyLabs/XRDB/compare/v3.151.0...v3.152.0) (2026-11-28)
 
 
