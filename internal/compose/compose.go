@@ -849,6 +849,31 @@ func (p *Pipeline) SetRatingsCacheTTL(ttl time.Duration) {
 // CachedRatings reports how many source answers are held.
 func (p *Pipeline) CachedRatings() int { return p.ratings.Len() }
 
+// LogRatingsCacheStart logs the ratings cache's cap and what it holds at startup.
+func (p *Pipeline) LogRatingsCacheStart(logger *slog.Logger) {
+	if p.ratings == nil {
+		logger.Info("The ratings cache is off", "reason", "XRDB_RATINGS_CACHE_TTL_HOURS is 0")
+		return
+	}
+	logger.Info("The ratings cache is ready",
+		"cap", ratingsCacheMax, "entries", p.ratings.Len(),
+		"base_ttl_hours", p.ratings.ttl.Hours())
+}
+
+// ReportRatingsCache logs the ratings cache's size, evictions and hit rate since
+// the previous call.
+func (p *Pipeline) ReportRatingsCache(logger *slog.Logger) RatingsCacheReport {
+	r := p.ratings.takeUsage()
+	if p.ratings == nil {
+		return r
+	}
+	logger.Info("Reporting the ratings cache's size, evictions and hit rate",
+		"entries", r.Entries, "cap", r.Cap,
+		"hits", r.Hits, "misses", r.Misses, "hit_rate", math.Round(r.HitRate()*1000)/1000,
+		"evicted_expired", r.EvictedExpired, "evicted_live", r.EvictedLive)
+	return r
+}
+
 // ReportAbsences logs one line per source on what happened to its empty answers
 // since the previous call.
 func (p *Pipeline) ReportAbsences(logger *slog.Logger) {

@@ -341,6 +341,7 @@ func main() {
 	server.StartDailyBudgetSnapshots(scheduleCtx, logger)
 	server.StartMemoryReports(scheduleCtx, pipeline, renderCache, logger)
 	server.StartAbsenceReports(scheduleCtx, pipeline, logger)
+	server.StartRatingsCacheReports(scheduleCtx, pipeline, logger)
 	// The dataset's own age check only ever runs on the first Fetch, so without
 	// this a long-running container serves what it downloaded at startup.
 	imdbRefresher.StartRefresh(scheduleCtx, cfg.IMDbRefresh, logger)

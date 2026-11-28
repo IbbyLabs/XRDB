@@ -51,7 +51,7 @@ var absentHoldUncapped = map[string]bool{"wikidata": true}
 const absentStreakMemory = 8 * 24 * time.Hour
 
 // absentStreakMax bounds the streak records kept beside the entries.
-const absentStreakMax = ratingsCacheMax / 2
+const absentStreakMax = 200_000
 
 // absentStreak is a title's run of absences from one source. It is kept apart
 // from the entries so eviction and restarts do not reset it.
@@ -139,13 +139,14 @@ const ratingsRefreshTimeout = 30 * time.Second
 // sources a config asks for: 3.63 on 2026-08-27, counted over the 73,988 answers
 // then resident, giving room for about 110,000 titles at 400,000.
 //
-// The bound is 400,000 because the age rule's mean multiplier is 2.71 across
-// resident entries, which projects 253,569 against a base population of 93,631
-// measured 2026-09-03.
+// FR-210's per-source terms project about 218,000 resident from the 178,667 live
+// on 2026-11-28, and at most 337,000 if no title is asked for twice within its
+// new term. The bound is 600,000, which puts that worst case at 56% of it. An
+// entry measured 1,079 bytes of heap, so a full cache is about 650 MB.
 //
 // Recount before relying on it. The figure moves with which sources configs ask
 // for, and the ratio is what turns this bound into a title count.
-const ratingsCacheMax = 400_000
+const ratingsCacheMax = 600_000
 
 // ratingsCache remembers what a source said about a title.
 //
@@ -178,6 +179,46 @@ type ratingsCache struct {
 	streakSweptAt time.Time
 	// absences counts what happened to empty answers per source since the last report.
 	absences map[string]*absenceCounts
+	// usage counts lookups and evictions since the last report.
+	usage ratingsCacheUsage
+}
+
+// ratingsCacheUsage is the cache's lookups and evictions over a reporting window.
+type ratingsCacheUsage struct {
+	// Hits are lookups answered from a live entry.
+	Hits int
+	// Misses are lookups that fetched or joined a fetch.
+	Misses int
+	// EvictedExpired and EvictedLive are entries dropped at the cap.
+	EvictedExpired int
+	EvictedLive    int
+}
+
+// RatingsCacheReport is the cache's state and its usage since the previous report.
+type RatingsCacheReport struct {
+	Entries int
+	Cap     int
+	ratingsCacheUsage
+}
+
+// HitRate is the share of lookups answered from memory, zero with no lookups.
+func (r RatingsCacheReport) HitRate() float64 {
+	if n := r.Hits + r.Misses; n > 0 {
+		return float64(r.Hits) / float64(n)
+	}
+	return 0
+}
+
+// takeUsage returns the usage since the last call and starts a new window.
+func (c *ratingsCache) takeUsage() RatingsCacheReport {
+	if c == nil {
+		return RatingsCacheReport{Cap: ratingsCacheMax}
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	out := RatingsCacheReport{Entries: len(c.entries), Cap: ratingsCacheMax, ratingsCacheUsage: c.usage}
+	c.usage = ratingsCacheUsage{}
+	return out
 }
 
 // absenceCounts is one source's empty answers over a reporting window.
@@ -352,6 +393,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, age titleAge, fetch r
 	e, ok := c.entries[key]
 	live := ok && time.Now().Before(e.ExpiresAt)
 	if live && c.trusted(key, e) {
+		c.usage.Hits++
 		if isAbsence(e.Meta) {
 			c.countAbsenceLocked(key, func(n *absenceCounts) { n.Served++ })
 		}
@@ -359,6 +401,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, age titleAge, fetch r
 		c.mu.Unlock()
 		return e.Meta, nil
 	}
+	c.usage.Misses++
 	if _, joining := c.inflight[key]; !joining {
 		switch {
 		case live && isAbsence(e.Meta):
@@ -468,27 +511,42 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, age titleAge,
 	c.mu.Unlock()
 }
 
+// ageTier is the term multiplier for a title at least olderThanYears old.
+type ageTier struct {
+	olderThanYears int
+	multiplier     int
+}
+
 // ratingsAgeTTLTiers scale the term by how long ago a title came out, oldest
 // first. A score moves most in the months after release and barely at all years
 // later, so the answer that changes least is kept longest and the most
 // expensive part of a render is paid for less often.
 //
-// This cache is clock-bound rather than full, so resident entries scale with the
-// term. Replaying sixteen days of recorded score movement on 2026-10-09, these
-// tiers hold 1.30 times the entries the previous 1x/2x/3x tiers did, projecting
-// about 330,000 resident against a 400,000 cap.
-//
 // Eviction takes the entries closest to expiry, which are the 1x tier, so cap
 // pressure falls on the newest titles.
-//
-// The unit is the year because a rating source reports a year and not a date.
-var ratingsAgeTTLTiers = []struct {
-	olderThanYears int
-	multiplier     int
-}{
+var ratingsAgeTTLTiers = []ageTier{
 	{olderThanYears: 10, multiplier: 8},
 	{olderThanYears: 3, multiplier: 6},
 	{olderThanYears: 1, multiplier: 4},
+}
+
+// sourceAgeTTLTiers replace ratingsAgeTTLTiers for the sources whose scores
+// were measured to move less (FR-210: 30 days of score movement to
+// 2026-11-28). Multipliers read as days at the default 24h base.
+var sourceAgeTTLTiers = map[string][]ageTier{
+	"omdb":       {{olderThanYears: 3, multiplier: 30}, {olderThanYears: 1, multiplier: 14}, {olderThanYears: 0, multiplier: 3}},
+	"mal":        {{olderThanYears: 1, multiplier: 14}, {olderThanYears: 0, multiplier: 2}},
+	"kitsu":      {{olderThanYears: 1, multiplier: 14}, {olderThanYears: 0, multiplier: 2}},
+	"anilist":    {{olderThanYears: 1, multiplier: 14}},
+	"filmweb":    {{olderThanYears: 6, multiplier: 21}, {olderThanYears: 3, multiplier: 14}, {olderThanYears: 1, multiplier: 7}},
+	"imdb_local": {{olderThanYears: 6, multiplier: 21}, {olderThanYears: 3, multiplier: 14}, {olderThanYears: 1, multiplier: 7}},
+}
+
+// ratingsReleaseWindow is how long after release a source's answer takes the
+// base term whatever its tiers say. Known only by year, a title from the
+// current year counts as inside it.
+var ratingsReleaseWindow = map[string]time.Duration{
+	"omdb": 30 * 24 * time.Hour,
 }
 
 // settledRatingsTTL is the term for a present answer from a source whose scores
@@ -506,30 +564,53 @@ type titleAge struct {
 	date string
 }
 
-// ageScaledTTL returns the term for an answer about a title released on date, in
-// YYYY-MM-DD form, falling back to year when there is no date. Year zero takes
-// the base term, as does a release in the future.
+// ageScaledTTL returns source's term for an answer about a title released on
+// date, in YYYY-MM-DD form, falling back to year when there is no date. Year
+// zero takes the base term, as does a release in the future.
 //
 // A whole-year age moves a December release into the next tier on 1 January,
 // thirteen days after it came out, which is when a score is still moving.
-func ageScaledTTL(base time.Duration, age titleAge) time.Duration {
+func ageScaledTTL(base time.Duration, source string, age titleAge) time.Duration {
+	tiers := ratingsAgeTTLTiers
+	if own, ok := sourceAgeTTLTiers[source]; ok {
+		tiers = own
+	}
+	if window, ok := ratingsReleaseWindow[source]; ok && insideReleaseWindow(age, window) {
+		return base
+	}
 	if years, ok := yearsSince(age.date); ok {
-		return termFor(base, years)
+		return termFor(base, years, tiers)
 	}
 	if age.year <= 0 {
 		return base
 	}
-	return termFor(base, time.Now().Year()-age.year)
+	return termFor(base, time.Now().Year()-age.year, tiers)
+}
+
+// insideReleaseWindow reports whether a title came out less than window ago.
+func insideReleaseWindow(age titleAge, window time.Duration) bool {
+	if released, ok := parseReleaseDate(age.date); ok {
+		return time.Since(released) < window
+	}
+	return age.year > 0 && age.year >= time.Now().Year()
+}
+
+func parseReleaseDate(date string) (time.Time, bool) {
+	if len(date) < 10 {
+		return time.Time{}, false
+	}
+	t, err := time.Parse("2006-01-02", date[:10])
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t, true
 }
 
 // yearsSince is whole years elapsed since date. Not ok when the date is absent
 // or unparseable, so the caller falls back to the year.
 func yearsSince(date string) (int, bool) {
-	if len(date) < 10 {
-		return 0, false
-	}
-	t, err := time.Parse("2006-01-02", date[:10])
-	if err != nil {
+	t, ok := parseReleaseDate(date)
+	if !ok {
 		return 0, false
 	}
 	now := time.Now()
@@ -540,8 +621,8 @@ func yearsSince(date string) (int, bool) {
 	return age, true
 }
 
-func termFor(base time.Duration, age int) time.Duration {
-	for _, tier := range ratingsAgeTTLTiers {
+func termFor(base time.Duration, age int, tiers []ageTier) time.Duration {
+	for _, tier := range tiers {
 		if age >= tier.olderThanYears {
 			return base * time.Duration(tier.multiplier)
 		}
@@ -568,8 +649,8 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 	// rule decides that a thin one is not. The thin case wins, so an answer
 	// missing a source because an allowance ran out is re-asked in minutes
 	// rather than pinned for days by the title being old.
-	ttl := ageScaledTTL(c.ttl, age)
 	source, _, _ := provider.SplitGoodKey(key)
+	ttl := ageScaledTTL(c.ttl, source, age)
 	if settled, ok := settledRatingsTTL[source]; ok && settled > ttl {
 		ttl = settled
 	}
@@ -627,12 +708,17 @@ func (c *ratingsCache) Len() int {
 // against sources that meter by the request.
 func (c *ratingsCache) evictLocked() {
 	now := time.Now()
+	before := len(c.entries)
 	for k, e := range c.entries {
 		if now.After(e.ExpiresAt) {
 			delete(c.entries, k)
 		}
 	}
+	expired := before - len(c.entries)
+	c.usage.EvictedExpired += expired
 	if len(c.entries) < ratingsCacheMax {
+		c.log().Info("The ratings cache reached its cap and dropped expired answers",
+			"cap", ratingsCacheMax, "dropped_expired", expired, "entries", len(c.entries))
 		return
 	}
 	type aged struct {
@@ -647,9 +733,13 @@ func (c *ratingsCache) evictLocked() {
 	// Absences low on the hold ladder are nearest expiry and evicted first.
 	//
 	// A tenth at a time, so the cap is not hit again on the very next write.
-	for i := 0; i < len(all)/10+1; i++ {
+	live := len(all)/10 + 1
+	for i := 0; i < live; i++ {
 		delete(c.entries, all[i].key)
 	}
+	c.usage.EvictedLive += live
+	c.log().Warn("The ratings cache reached its cap and dropped live answers closest to expiry",
+		"cap", ratingsCacheMax, "dropped_expired", expired, "dropped_live", live, "entries", len(c.entries))
 }
 
 // ratingsCacheFile is the name the snapshot takes inside the cache directory.

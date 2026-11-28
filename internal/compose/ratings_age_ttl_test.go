@@ -27,7 +27,7 @@ func TestTheTermGrowsWithTheTitlesAge(t *testing.T) {
 		{name: "dated in the future", year: thisYear + 2, want: base},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ageScaledTTL(base, titleAge{year: tc.year})
+			got := ageScaledTTL(base, "mdblist", titleAge{year: tc.year})
 			if got != tc.want {
 				t.Errorf("ttl = %s, want %s", got, tc.want)
 			}
@@ -123,8 +123,8 @@ func TestTheTermUsesTheFullDateWhenThereIsOne(t *testing.T) {
 	now := time.Now()
 	lastDecember := time.Date(now.Year()-1, time.December, 19, 0, 0, 0, 0, time.UTC)
 
-	byYear := ageScaledTTL(base, titleAge{year: lastDecember.Year()})
-	byDate := ageScaledTTL(base, titleAge{
+	byYear := ageScaledTTL(base, "mdblist", titleAge{year: lastDecember.Year()})
+	byDate := ageScaledTTL(base, "mdblist", titleAge{
 		year: lastDecember.Year(),
 		date: lastDecember.Format("2006-01-02"),
 	})
@@ -146,7 +146,7 @@ func TestAnUnparseableDateFallsBackToTheYear(t *testing.T) {
 	base := 24 * time.Hour
 	old := time.Now().Year() - 10
 	for _, date := range []string{"", "2015", "not-a-date", "2015-13-45"} {
-		if got := ageScaledTTL(base, titleAge{year: old, date: date}); got != 8*base {
+		if got := ageScaledTTL(base, "mdblist", titleAge{year: old, date: date}); got != 8*base {
 			t.Errorf("date %q gave %s, want the year's %s", date, got, 8*base)
 		}
 	}

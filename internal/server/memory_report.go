@@ -114,3 +114,35 @@ func StartAbsenceReports(ctx context.Context, pipeline *compose.Pipeline, logger
 		}
 	}()
 }
+
+// ratingsCacheReportInterval is how often the ratings cache's size, evictions
+// and hit rate are logged.
+const ratingsCacheReportInterval = time.Hour
+
+// StartRatingsCacheReports logs the ratings cache's cap and size now, then its
+// size, evictions and hit rate every ratingsCacheReportInterval until ctx is done.
+func StartRatingsCacheReports(ctx context.Context, pipeline *compose.Pipeline, logger *slog.Logger) {
+	startRatingsCacheReports(ctx, pipeline, logger, ratingsCacheReportInterval)
+}
+
+func startRatingsCacheReports(ctx context.Context, pipeline *compose.Pipeline, logger *slog.Logger, every time.Duration) {
+	if pipeline == nil {
+		return
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
+	pipeline.LogRatingsCacheStart(logger)
+	go func() {
+		ticker := time.NewTicker(every)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				pipeline.ReportRatingsCache(logger)
+			}
+		}
+	}()
+}

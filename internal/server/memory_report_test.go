@@ -8,6 +8,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"xrdb_rewrite/internal/compose"
+	"xrdb_rewrite/internal/provider"
 )
 
 // A reading with no pipeline and no cache still has to carry the process
@@ -55,12 +58,14 @@ func (h *countingHandler) Handle(_ context.Context, r slog.Record) error {
 func (h *countingHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
 func (h *countingHandler) WithGroup(string) slog.Handler      { return h }
 
-func (h *countingHandler) count() int {
+func (h *countingHandler) count() int { return h.countPrefix("Reporting process memory") }
+
+func (h *countingHandler) countPrefix(prefix string) int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	n := 0
 	for _, l := range h.lines {
-		if strings.HasPrefix(l, "Reporting process memory") {
+		if strings.HasPrefix(l, prefix) {
 			n++
 		}
 	}
@@ -88,5 +93,31 @@ func TestMemoryReportsWriteOneImmediatelyAndStopWithTheContext(t *testing.T) {
 	time.Sleep(150 * time.Millisecond)
 	if h.count() != after {
 		t.Error("readings continued after the context was cancelled")
+	}
+}
+
+func TestRatingsCacheReportsLogTheStartAndThenEachInterval(t *testing.T) {
+	h := &countingHandler{}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	startRatingsCacheReports(ctx, compose.New(provider.NewRegistry()), slog.New(h), 20*time.Millisecond)
+
+	if h.countPrefix("The ratings cache is ready") != 1 {
+		t.Fatal("no startup line for the ratings cache")
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for h.countPrefix("Reporting the ratings cache") == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if h.countPrefix("Reporting the ratings cache") == 0 {
+		t.Fatal("no periodic ratings cache report")
+	}
+	cancel()
+	time.Sleep(50 * time.Millisecond)
+	after := h.countPrefix("Reporting the ratings cache")
+	time.Sleep(100 * time.Millisecond)
+	if h.countPrefix("Reporting the ratings cache") != after {
+		t.Error("reports continued after the context was cancelled")
 	}
 }
