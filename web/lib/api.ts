@@ -616,3 +616,55 @@ export async function migrateLegacyConfig(input: string): Promise<MigrateResult>
   }
   return body as MigrateResult;
 }
+
+// ── Trakt link ────────────────────────────────────────────────────────────────
+// The server keeps the tokens; the browser only ever sees whether a link exists
+// and, while linking, the code the owner types at Trakt.
+
+export interface TraktStatus {
+  available: boolean;
+  linked: boolean;
+  pending: boolean;
+  needsRelink: boolean;
+}
+
+export interface TraktLinkStart {
+  userCode: string;
+  verificationUrl: string;
+  expiresIn: number;
+  interval: number;
+}
+
+export type TraktLinkState = 'none' | 'pending' | 'linked' | 'expired' | 'denied';
+
+async function traktCall<T>(path: string, method: string, password?: string): Promise<T> {
+  const res = await fetch(`${base()}/profile/${path}`, {
+    method,
+    headers: { ...renderAuthHeaders(), ...profilePasswordHeaders(password) },
+  });
+  if (res.status === 401) throw new Error(NEEDS_KEY_OR_PASSWORD);
+  if (!res.ok) {
+    const text = await res.text();
+    let body: { error?: string; code?: string } = {};
+    try { body = JSON.parse(text) as typeof body; } catch { /* plain text */ }
+    throw new ApiError(body.error || text || `Trakt request failed: ${res.status}`, res.status, body.code);
+  }
+  return res.json() as Promise<T>;
+}
+
+export function traktStatus(id: string, password?: string): Promise<TraktStatus> {
+  return traktCall<TraktStatus>(`${encodeURIComponent(id)}/trakt`, 'GET', password);
+}
+
+export function traktStartLink(id: string, password?: string): Promise<TraktLinkStart> {
+  return traktCall<TraktLinkStart>(`${encodeURIComponent(id)}/trakt-link`, 'POST', password);
+}
+
+export async function traktPollLink(id: string, password?: string): Promise<TraktLinkState> {
+  const body = await traktCall<{ state: TraktLinkState }>(`${encodeURIComponent(id)}/trakt-poll`, 'POST', password);
+  return body.state;
+}
+
+export function traktUnlink(id: string, password?: string): Promise<TraktStatus> {
+  return traktCall<TraktStatus>(`${encodeURIComponent(id)}/trakt`, 'DELETE', password);
+}

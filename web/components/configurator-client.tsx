@@ -16,6 +16,7 @@ import {
   type ConfigState, type SurfaceConfigs,
 } from './configurator-types';
 import { Notice, DisplayPanel } from './configurator-display';
+import { TraktLink } from './trakt-link';
 import { TemplateStrip, RatingsPanel } from './configurator-panels';
 import { ProfilePanel, type LoadedProfile } from './profile-panel';
 import { InstallPanel } from './install-panel';
@@ -827,7 +828,7 @@ export function ConfiguratorClient() {
           {activeTab === 'display' && (
             <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
               <h2 className="sr-only">{t('Display settings')}</h2>
-              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} fine={fine} features={features} onReset={() => { lastEditRef.current = null; pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
+              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} fine={fine} features={features} traktLink={<TraktLink profileId={loadedProfile?.id} hasPassword={loadedProfile?.hasPassword} password={loadedProfile?.password} />} onReset={() => { lastEditRef.current = null; pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
             </div>
           )}
 
@@ -859,7 +860,7 @@ export function ConfiguratorClient() {
             <div id={`${uid}-panel-install`} role="tabpanel" aria-labelledby={`${uid}-tab-install`} className="tabpanel-enter">
               <h2 className="sr-only">{t('Install')}</h2>
               <InstallPanel
-                configKey={loadedProfile ? (loadedProfile.alias || loadedProfile.id) : ''}
+                configKey={loadedProfile ? (configs.poster.watchedProgress ? loadedProfile.id : (loadedProfile.alias || loadedProfile.id)) : ''}
                 renderKey={renderKey}
                 versionToken={loadedProfile?.versionToken}
                 onRenderKeyChange={applyRenderKey}
