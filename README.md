@@ -151,6 +151,12 @@ reproduced verbatim:
 IMDb's dataset is licensed for personal and non-commercial use. Run your
 instance on that basis.
 
+> XRDB uses Trakt but is not endorsed or certified by Trakt.
+
+Linking Trakt is optional and read-only: XRDB reads a profile owner's watched
+and paused movies to draw progress bars on their own posters, and never writes
+to Trakt. The configurator's `/privacy` page covers what XRDB stores and logs.
+
 Ratings sourced from Rotten Tomatoes, Metacritic, Letterboxd, AlloCiné and
 Filmweb are read from their public pages, as none of them publishes an API.
 They are cached hard and fall back to the last known good value when a source
