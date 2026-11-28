@@ -1,13 +1,13 @@
 'use client';
 
-import { BRAND_CONTACT_EMAIL, BRAND_DISCORD_DM_URL } from '@/lib/brand';
+import { BRAND_PRIVACY_EMAIL, BRAND_DISCORD_DM_URL } from '@/lib/brand';
 import { useT, useRich } from '@/lib/i18n';
 import type { RichTags } from '@/lib/i18n';
 
 const LAST_UPDATED = '28 November 2026';
 
 const CONTACT: RichTags = {
-  email: c => <a href={`mailto:${BRAND_CONTACT_EMAIL}`}>{c}</a>,
+  email: c => <a href={`mailto:${BRAND_PRIVACY_EMAIL}`}>{c}</a>,
   dm: c => <a href={BRAND_DISCORD_DM_URL} target="_blank" rel="noreferrer">{c}</a>,
 };
 
@@ -47,19 +47,21 @@ export function PrivacyContent() {
           <p>{t('XRDB only reads from Trakt: the movies you have watched and the movies you have paused part-way through. It never writes to your Trakt account, so it adds no history, check-ins, ratings or lists.')}</p>
           <p>{t('Your progress is kept in the server’s memory for a few minutes at a time, or for up to six hours while Trakt cannot be reached. Posters drawn with a bar are cached like other artwork.')}</p>
           <p>{t('The bar only appears on artwork links that use the profile’s ID. Its alias, shared links and the configurator preview never show it.')}</p>
+          <p>{t('Anyone with your profile’s ID link can see your watched progress on its posters, so share the alias, not the ID.')}</p>
           <p>{t('To unlink, press Unlink Trakt in the configurator’s Display tab. XRDB asks Trakt to revoke the token and deletes its copy. You can also revoke XRDB’s access from your Trakt account settings.')}</p>
           <p>{t('XRDB uses Trakt but is not endorsed or certified by Trakt.')}</p>
         </section>
 
         <section aria-labelledby="privacy-cache">
           <h2 id="privacy-cache">{t('Cached artwork')}</h2>
-          <p>{t('XRDB caches the artwork it renders, in memory and on disk, under a one-way digest of the title, the image type and the look. Cached artwork expires after 72 hours by default and is rendered again when next requested.')}</p>
+          <p>{t('XRDB caches the artwork it renders, in memory and on disk, under a one-way digest of the title, the image type and the look. Cached artwork is kept for up to 72 hours by default and is rendered again when next requested.')}</p>
           <p>{t('Ratings and other title details are cached per title, not per person.')}</p>
         </section>
 
         <section aria-labelledby="privacy-logs">
           <h2 id="privacy-logs">{t('Request logs')}</h2>
           <p>{t('Each request writes one line to the server log: the time, the requesting address, the path, the query string with keys, tokens and passwords replaced, the status, size and duration of the response, and the user agent, cut to 120 characters.')}</p>
+          <p>{t('Logs roll over by size and are cleared whenever XRDB is updated, so they are usually kept for about two days.')}</p>
           <p>{t('Profile events, such as linking or unlinking Trakt, are logged with the profile ID. Requests per address are counted in memory to enforce rate limits.')}</p>
         </section>
 
@@ -80,12 +82,12 @@ export function PrivacyContent() {
         <section aria-labelledby="privacy-delete">
           <h2 id="privacy-delete">{t('Deleting your data')}</h2>
           <p>{t('Open the profile in the configurator’s Profile tab, press Delete, then press again to confirm. A password-protected profile needs its password.')}</p>
-          <p>{t('Deleting removes the profile, its API keys and its Trakt tokens from the database. It does not revoke the token at Trakt, so unlink Trakt first, or revoke XRDB from your Trakt account settings afterwards. Artwork already cached for the profile expires on its own.')}</p>
+          <p>{t('Deleting also disconnects Trakt: XRDB asks Trakt to revoke the token, then removes the profile, its API keys and its Trakt tokens from the database. Artwork already cached for the profile expires on its own.')}</p>
         </section>
 
         <section aria-labelledby="privacy-contact">
           <h2 id="privacy-contact">{t('Contact')}</h2>
-          <p>{rich('For questions about your data, or anything you cannot do yourself, email <email>ibby@ibbylabs.dev</email> or <dm>message IbbyLabs on Discord</dm>.', CONTACT)}</p>
+          <p>{rich('For questions about your data, or anything you cannot do yourself, email <email>team@ibbylabs.dev</email> or <dm>message IbbyLabs on Discord</dm>.', CONTACT)}</p>
         </section>
       </div>
     </div>

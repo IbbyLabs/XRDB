@@ -11,7 +11,7 @@ export const BRAND_DISCORD_URL = 'https://discord.ibbylabs.dev';
 export const BRAND_DISCORD_DM_URL = 'https://dm.ibbylabs.dev';
 export const BRAND_DEVELOPER = 'IbbyLabs';
 export const BRAND_DEVELOPER_URL = 'https://ibbylabs.dev';
-export const BRAND_CONTACT_EMAIL = 'ibby@ibbylabs.dev';
+export const BRAND_PRIVACY_EMAIL = 'team@ibbylabs.dev';
 
 /** The public instance ElfHosted runs at the author's invitation. Its profile
  *  store is its own: a profile saved here does not exist there. */

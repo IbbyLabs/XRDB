@@ -162,5 +162,5 @@ ignored, so this header text costs nothing.
 - Check the running version at `https://extendedratings.com/healthz` before telling anyone a fix is live.
 - The developer build is `https://dev.extendedratings.com` and moves ahead of the stable one.
 - Point bug reports at `/bug report` and feature requests at `/feat submit` rather than collecting them in chat.
-- Privacy questions go to the `/privacy` page, linked from the site footer and the Link Trakt section. It covers what a profile stores, how the Trakt link is stored and used (read-only, never writing to Trakt), cached artwork, request logs, and how to unlink Trakt or delete a profile. Contact for data requests is ibby@ibbylabs.dev.
+- Privacy questions go to the `/privacy` page, linked from the site footer and the Link Trakt section. It covers what a profile stores, how the Trakt link is stored and used (read-only, never writing to Trakt), cached artwork, request logs, and how to unlink Trakt or delete a profile. Contact for data requests is team@ibbylabs.dev.
 - A public Discord channel names the rating badges and artwork sources XRDB cannot currently reach. It is edited when that set changes rather than on a timer, so a panel saying everything works is a current answer and not a stale one. Send anyone asking why a badge is missing there before guessing at their config.
