@@ -29,11 +29,12 @@ export default defineConfig({
         timeout: 30_000,
       }
     : {
-        // Serves internal/ui/dist, building it only when missing. Run
-        // `npm run build` first to test current code.
-        command: 'node scripts/serve-export.mjs',
-        url: baseURL,
+        // The real XRDB binary serving internal/ui/dist, building the export
+        // only when missing. Run `npm run build` first to test current code.
+        command: 'bash scripts/e2e-server.sh',
+        url: `${baseURL}/healthz`,
         reuseExistingServer: !process.env.CI,
         timeout: 300_000,
+        gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
       },
 });
