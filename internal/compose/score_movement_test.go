@@ -330,7 +330,6 @@ func TestRecordingStaysOffUntilTheInstanceAsks(t *testing.T) {
 	}
 }
 
-
 // A reader has to tell a quiet stretch from one where the process died with
 // samples still queued, and only the file can say which it was.
 func TestScoreMovementFileMarksWhereRecordingRestarted(t *testing.T) {
