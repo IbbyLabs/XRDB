@@ -87,7 +87,7 @@ export function PrivacyContent() {
 
         <section aria-labelledby="privacy-contact">
           <h2 id="privacy-contact">{t('Contact')}</h2>
-          <p>{rich('For questions about your data, or anything you cannot do yourself, email <email>team@ibbylabs.dev</email> or <dm>message IbbyLabs on Discord</dm>.', CONTACT)}</p>
+          <p>{rich('For questions about your data, or anything you cannot do yourself, email <email>team@ibbylabs.dev</email> or <dm>message Ibby on Discord</dm>.', CONTACT)}</p>
         </section>
       </div>
     </div>
