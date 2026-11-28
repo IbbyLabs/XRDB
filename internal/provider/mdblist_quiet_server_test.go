@@ -201,59 +201,62 @@ func interactiveReference(t *testing.T) (etag string) {
 	return rr.Header().Get("ETag")
 }
 
-// A sweep's render inside the quiet window goes out without the MDBList badge,
-// and nothing holds it for long: not the render cache, not a downstream cache,
-// and not the ratings cache. Once the window ends the next render has the badge.
+// A named sweep's render inside the quiet window goes out without the MDBList
+// badge, and nothing holds it for long: not the render cache, not a downstream
+// cache, and not the ratings cache. Once the window ends it has the badge.
 func TestASweepRenderInTheQuietWindowIsShortLivedAndInteractiveIsUnaffected(t *testing.T) {
 	full := interactiveReference(t)
+	const sweep = "AIOMetadata/1.0"
 
-	for _, tc := range []struct {
-		name   string
-		agent  string
-		stored bool
-	}{
-		{"named sweep", "AIOMetadata/1.0", false},
-		{"no user agent", "", true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			rig := newQuietRig(t, quietMoment)
-			rr := rig.render(t, tc.agent)
-
-			if n := rig.calls.Load(); n != 0 {
-				t.Fatalf("MDBList was called %d times for a sweep at :00:30", n)
-			}
-			if rr.Header().Get("ETag") == full {
-				t.Fatal("the held-out render is identical to the one with the MDBList badge")
-			}
-			cc := rr.Header().Get("Cache-Control")
-			if !strings.Contains(cc, "no-store") {
-				if got := maxAge(t, cc); got <= 0 || got > quietQueueHeldTTL {
-					t.Errorf("Cache-Control = %q, want no-store or at most %s", cc, quietQueueHeldTTL)
-				}
-			}
-			e, ok := rig.cache.Get(rr.Header().Get("X-Cache-Key"))
-			if ok != tc.stored {
-				t.Errorf("stored = %v, want %v", ok, tc.stored)
-			}
-			if ok && time.Until(e.ExpiresAt) > quietQueueHeldTTL+time.Minute {
-				t.Errorf("held-out render stored until %s, want at most %s", e.ExpiresAt, quietQueueHeldTTL)
-			}
-			if n := rig.pipeline.CachedRatings(); n != 0 {
-				t.Errorf("ratings cache holds %d answers for a held-out lookup, want 0", n)
-			}
-			rig.assertHealthUntouched(t)
-
-			// After the window the sweep reaches MDBList and gets the badge.
-			rig.cache.Purge()
-			rig.clock.Store(time.Date(2026, 11, 28, 3, 2, 0, 0, time.UTC).UnixNano())
-			after := rig.render(t, tc.agent)
-			if rig.calls.Load() == 0 {
-				t.Fatal("a sweep at :02:00 did not reach MDBList")
-			}
-			if after.Header().Get("ETag") != full {
-				t.Error("the render after the window does not match the one with the badge")
-			}
-			rig.assertHealthUntouched(t)
-		})
+	rig := newQuietRig(t, quietMoment)
+	rr := rig.render(t, sweep)
+	if n := rig.calls.Load(); n != 0 {
+		t.Fatalf("MDBList was called %d times for a sweep at :00:30", n)
 	}
+	if rr.Header().Get("ETag") == full {
+		t.Fatal("the held-out render is identical to the one with the MDBList badge")
+	}
+	cc := rr.Header().Get("Cache-Control")
+	if !strings.Contains(cc, "no-store") {
+		if got := maxAge(t, cc); got <= 0 || got > quietQueueHeldTTL {
+			t.Errorf("Cache-Control = %q, want no-store or at most %s", cc, quietQueueHeldTTL)
+		}
+	}
+	if e, ok := rig.cache.Get(rr.Header().Get("X-Cache-Key")); ok && time.Until(e.ExpiresAt) > quietQueueHeldTTL+time.Minute {
+		t.Errorf("held-out render stored until %s, want at most %s", e.ExpiresAt, quietQueueHeldTTL)
+	}
+	if n := rig.pipeline.CachedRatings(); n != 0 {
+		t.Errorf("ratings cache holds %d answers for a held-out lookup, want 0", n)
+	}
+	rig.assertHealthUntouched(t)
+
+	rig.cache.Purge()
+	rig.clock.Store(time.Date(2026, 11, 28, 3, 2, 0, 0, time.UTC).UnixNano())
+	after := rig.render(t, sweep)
+	if rig.calls.Load() == 0 {
+		t.Fatal("a sweep at :02:00 did not reach MDBList")
+	}
+	if after.Header().Get("ETag") != full {
+		t.Error("the render after the window does not match the one with the badge")
+	}
+	rig.assertHealthUntouched(t)
+}
+
+// A caller with no user agent may be a proxy for many people, so the window
+// does not hold it: at :00:30 it still gets the MDBList badge.
+func TestACallerWithNoUserAgentKeepsTheBadgeInTheQuietWindow(t *testing.T) {
+	full := interactiveReference(t)
+
+	rig := newQuietRig(t, quietMoment)
+	rr := rig.render(t, "")
+	if rig.calls.Load() == 0 {
+		t.Fatal("a caller with no user agent at :00:30 did not reach MDBList")
+	}
+	if rr.Header().Get("ETag") != full {
+		t.Error("a caller with no user agent at :00:30 lost the MDBList badge")
+	}
+	if cc := rr.Header().Get("Cache-Control"); maxAge(t, cc) <= quietQueueHeldTTL {
+		t.Errorf("Cache-Control = %q, want the normal term", cc)
+	}
+	rig.assertHealthUntouched(t)
 }

@@ -51,13 +51,13 @@ func (q *mdblistQuietWindow) length() time.Duration {
 	return time.Duration(q.minutes) * time.Minute
 }
 
-// hold returns ErrGovernorBacklog for a sweep lookup inside the window, nil
-// otherwise. Owner-keyed and interactive lookups always pass.
+// hold returns ErrGovernorBacklog for a named sweep's lookup inside the window,
+// nil otherwise. A caller with no user agent passes: it may proxy many people.
 func (q *mdblistQuietWindow) hold(ctx context.Context) error {
 	if q == nil || q.minutes <= 0 {
 		return nil
 	}
-	if !TreatedAsBulk(CallerClassFrom(ctx)) || HasOwnerKey(ctx, KeyMDBList) {
+	if CallerClassFrom(ctx) != CallerBulk || HasOwnerKey(ctx, KeyMDBList) {
 		return nil
 	}
 	now := q.now().UTC()

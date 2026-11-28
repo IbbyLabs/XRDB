@@ -129,8 +129,8 @@ func TestTheQuietWindowSettingDefaultsAndBounds(t *testing.T) {
 	}
 }
 
-// Only sweeps on the server's key are held. A person's lookup, and a lookup on
-// the owner's own key, go out as usual; a caller with no user agent is a sweep.
+// Only named sweeps on the server's key are held. A person's lookup, a lookup on
+// the owner's own key and a caller with no user agent go out as usual.
 func TestTheQuietWindowHoldsOnlySweepsOnTheServersKey(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -140,7 +140,8 @@ func TestTheQuietWindowHoldsOnlySweepsOnTheServersKey(t *testing.T) {
 		{"interactive", WithCallerClass(context.Background(), CallerInteractive), false},
 		{"owner keyed sweep", WithKeys(quietBulkCtx, map[string]string{KeyMDBList: "ownerkey"}), false},
 		{"named sweep", quietBulkCtx, true},
-		{"no user agent", WithCallerClass(context.Background(), CallerUnknown), true},
+		{"no user agent", WithCallerClass(context.Background(), CallerUnknown), false},
+		{"no class at all", context.Background(), false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			srv := newSlotServer(t, 0)
