@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { ExternalLink, Link2, Unlink } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import {
@@ -15,6 +16,16 @@ interface TraktLinkProps {
   profileId?: string;
   hasPassword?: boolean;
   password?: string;
+}
+
+function TraktNotice() {
+  const t = useT();
+  return (
+    <p className="hint" style={{ marginTop: 0 }}>
+      {t('XRDB uses Trakt but is not endorsed or certified by Trakt.')}{' '}
+      <Link href="/privacy">{t('Privacy')}</Link>
+    </p>
+  );
 }
 
 type Phase =
@@ -45,9 +56,12 @@ export function TraktLink({ profileId, hasPassword, password }: TraktLinkProps) 
 
   if (!profileId || !hasPassword) {
     return (
-      <p className="hint" style={{ marginTop: 0 }}>
-        {t('Save this config to a profile with a password, then link Trakt here.')}
-      </p>
+      <div className="cfg-fields">
+        <p className="hint" style={{ marginTop: 0 }}>
+          {t('Save this config to a profile with a password, then link Trakt here.')}
+        </p>
+        <TraktNotice />
+      </div>
     );
   }
 
@@ -166,6 +180,8 @@ export function TraktLink({ profileId, hasPassword, password }: TraktLinkProps) 
           <span className="hint" style={{ marginTop: 0 }}>{t('Waiting for you to approve it on Trakt…')}</span>
         </div>
       )}
+
+      <TraktNotice />
     </div>
   );
 }

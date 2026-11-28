@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   BRAND_DEVELOPER,
   BRAND_DEVELOPER_URL,
@@ -75,6 +76,8 @@ export function SiteFooter() {
           </a>
           <span className="credit-sep" aria-hidden>·</span>
           <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer">Ko-fi</a>
+          <span className="credit-sep" aria-hidden>·</span>
+          <Link href="/privacy">{t('Privacy')}</Link>
           <span className="credit-sep" aria-hidden>·</span>
           <label className="sr-only" htmlFor="ui-lang">{t('Language')}</label>
           <select id="ui-lang" className="footer-lang" value={lang} onChange={(e) => setLang(e.target.value)}>
