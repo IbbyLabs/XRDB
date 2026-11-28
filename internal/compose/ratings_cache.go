@@ -562,6 +562,31 @@ var settledRatingsTTL = map[string]time.Duration{
 type titleAge struct {
 	year int
 	date string
+	// current counts a series still airing as this year's, with date its latest
+	// episode.
+	current bool
+}
+
+// airingWindow is how recent a series' latest episode must be for it to count
+// as still airing.
+const airingWindow = 60 * 24 * time.Hour
+
+// ratingsTitleAge is the age a rating term is decided on, from the render's
+// metadata. A series with an episode inside airingWindow or one scheduled is
+// this year's, dated from its latest episode.
+func ratingsTitleAge(artwork *provider.MediaMeta, now time.Time) titleAge {
+	if artwork == nil {
+		return titleAge{}
+	}
+	last, hasLast := parseReleaseDate(artwork.LastAirDate)
+	if (hasLast && now.Sub(last) < airingWindow) || artwork.NextEpisode {
+		age := titleAge{year: now.Year(), current: true}
+		if hasLast {
+			age.date = last.Format("2006-01-02")
+		}
+		return age
+	}
+	return titleAge{year: artwork.Year, date: artwork.ReleaseDate}
 }
 
 // ageScaledTTL returns source's term for an answer about a title released on
@@ -577,6 +602,9 @@ func ageScaledTTL(base time.Duration, source string, age titleAge) time.Duration
 	}
 	if window, ok := ratingsReleaseWindow[source]; ok && insideReleaseWindow(age, window) {
 		return base
+	}
+	if age.current {
+		return termFor(base, 0, tiers)
 	}
 	if years, ok := yearsSince(age.date); ok {
 		return termFor(base, years, tiers)

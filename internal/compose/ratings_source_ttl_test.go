@@ -280,3 +280,48 @@ func TestTheStartupLineCarriesTheCapAndSize(t *testing.T) {
 		t.Errorf("a disabled cache reported %d entries", r.Entries)
 	}
 }
+
+func TestASeriesStillAiringTakesThisYearsTerms(t *testing.T) {
+	now := time.Now()
+	ago := func(days int) string { return now.AddDate(0, 0, -days).Format("2006-01-02") }
+	series := func(last string, next bool) *provider.MediaMeta {
+		return &provider.MediaMeta{Year: 2010, ReleaseDate: "2010-01-17", LastAirDate: last, NextEpisode: next}
+	}
+	for _, tc := range []struct {
+		name    string
+		artwork *provider.MediaMeta
+		want    map[string]int // days per source
+	}{
+		{"a 2010 series that aired 10 days ago", series(ago(10), false),
+			map[string]int{"omdb": 1, "mal": 2, "anilist": 1, "imdb_local": 1, "filmweb": 1, "mdblist": 1}},
+		{"a 2010 series that aired 45 days ago", series(ago(45), false),
+			map[string]int{"omdb": 3, "mal": 2, "imdb_local": 1, "mdblist": 1}},
+		{"a 2010 series on a break with an episode scheduled", series(ago(200), true),
+			map[string]int{"omdb": 3, "kitsu": 2, "filmweb": 1, "trakt": 1}},
+		{"a scheduled episode and no last air date", series("", true),
+			map[string]int{"omdb": 1, "mal": 2, "imdb_local": 1}},
+		{"a 2010 series that ended in 2015", series("2015-05-01", false),
+			map[string]int{"omdb": 30, "mal": 14, "anilist": 14, "imdb_local": 21, "filmweb": 21, "mdblist": 8}},
+		{"a 2010 series last aired 90 days ago", series(ago(90), false),
+			map[string]int{"omdb": 30, "imdb_local": 21, "mdblist": 8}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			age := ratingsTitleAge(tc.artwork, now)
+			for source, days := range tc.want {
+				if got := ageScaledTTL(day, source, age); got != time.Duration(days)*day {
+					t.Errorf("%s: term %s, want %d days", source, got, days)
+				}
+			}
+		})
+	}
+}
+
+func TestAFilmIsAgedFromItsReleaseDate(t *testing.T) {
+	film := &provider.MediaMeta{Year: 2010, ReleaseDate: "2010-07-16"}
+	if age := ratingsTitleAge(film, time.Now()); age.current || age.date != "2010-07-16" || age.year != 2010 {
+		t.Errorf("film age %+v", age)
+	}
+	if age := ratingsTitleAge(nil, time.Now()); age != (titleAge{}) {
+		t.Errorf("no metadata gave %+v", age)
+	}
+}

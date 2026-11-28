@@ -52,6 +52,10 @@ type MediaMeta struct {
 	// the source gives a full one. Age in whole years puts a December release a
 	// year old on 1 January.
 	ReleaseDate string
+	// LastAirDate is a series' latest episode date, YYYY-MM-DD, from TMDB.
+	LastAirDate string
+	// NextEpisode is set when TMDB lists an upcoming episode for a series.
+	NextEpisode bool
 	Overview    string
 	PosterURL   string // canonical poster image URL
 	// PosterAltURL is a second poster file to use when PosterURL turns out to be

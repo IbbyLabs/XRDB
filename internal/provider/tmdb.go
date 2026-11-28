@@ -743,9 +743,14 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		// Set on the title, not on its images. Only /search accepts
 		// include_adult, so a by-id fetch returns a flagged record either way and
 		// this field is the only thing that says so.
-		Adult        bool    `json:"adult"`
-		ReleaseDate  string  `json:"release_date"`
-		FirstAirDate string  `json:"first_air_date"`
+		Adult        bool   `json:"adult"`
+		ReleaseDate  string `json:"release_date"`
+		FirstAirDate string `json:"first_air_date"`
+		// Series only.
+		LastAirDate      string `json:"last_air_date"`
+		NextEpisodeToAir *struct {
+			AirDate string `json:"air_date"`
+		} `json:"next_episode_to_air"`
 		VoteAverage  float64 `json:"vote_average"`
 		VoteCount    int     `json:"vote_count"`
 		PosterPath   string  `json:"poster_path"`
@@ -846,6 +851,8 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		OriginalTitle: originalTitle,
 		Year:          year,
 		ReleaseDate:   date,
+		LastAirDate:   result.LastAirDate,
+		NextEpisode:   result.NextEpisodeToAir != nil,
 		Overview:      result.Overview,
 		Language:      artLang,
 		IMDbID:        imdbID,
