@@ -45,6 +45,8 @@ type MDBList struct {
 	knownType sync.Map // imdb id -> "movie" | "show"
 	// batcher joins sweep lookups into one request; nil when batching is off.
 	batcher *mdblistBatcher
+	// quiet holds sweep lookups off MDBList at the top of each hour; nil is off.
+	quiet *mdblistQuietWindow
 	// probing is set once startup has loaded the budgets; probeMu serialises runs.
 	probing atomic.Bool
 	probeMu sync.Mutex
@@ -59,6 +61,14 @@ func NewMDBList(apiKey string) *MDBList {
 	// The budget counts every key's calls together, so it needs to know how many
 	// there are to hold its reserve against the ring rather than one key.
 	noteKeyRing("mdblist", m.keys.all())
+	if minutes := mdblistBulkQuietMinutes(); minutes > 0 {
+		m.quiet = newMDBListQuietWindow(minutes)
+		m.log().Info("MDBList skips sweep lookups at the top of each hour",
+			"quiet_minutes", minutes)
+	} else {
+		m.log().Info("MDBList's top-of-hour quiet window for sweep lookups is off",
+			"quiet_minutes", minutes)
+	}
 	if size := mdblistBatchSize(); size > 1 {
 		m.batcher = newMDBListBatcher(m, size, mdblistBatchWindow())
 		slots, wait := mdblistBulkBatchSlots(), mdblistBulkBatchWait()
@@ -120,6 +130,9 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 	}
 	if !isIMDbTitleOnly(id) {
 		return nil, fmt.Errorf("mdblist: requires imdb tt-id, got %q: %w", id, ErrNotApplicable)
+	}
+	if err := m.quiet.hold(ctx); err != nil {
+		return nil, err
 	}
 	if m.batcher.batches(ctx) {
 		return m.batcher.fetch(ctx, id)
