@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.149.0](https://github.com/IbbyLabs/XRDB/compare/v3.148.0...v3.149.0) (2026-11-28)
+
+
+### Added
+
+* **ratings:** cap a sweep's MDBList batches in flight ([663917c](https://github.com/IbbyLabs/XRDB/commit/663917cedc357cc99e16e8f9ac06858a9c3c29ee))
+* **ratings:** log callers with no user agent that ask at a sweep's rate ([36853c1](https://github.com/IbbyLabs/XRDB/commit/36853c1330bf960876211b1b0a46cee1efa1b2ba))
+
 ## [3.148.0](https://github.com/IbbyLabs/XRDB/compare/v3.147.0...v3.148.0) (2026-11-27)
 
 
