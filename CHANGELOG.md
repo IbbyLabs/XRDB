@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.153.1](https://github.com/IbbyLabs/XRDB/compare/v3.153.0...v3.153.1) (2026-11-28)
+
+
+### Fixed
+
+* **web:** name Ibby as the Discord contact on privacy (FR-222) ([9838cc6](https://github.com/IbbyLabs/XRDB/commit/9838cc602ab217f42e0a21a4932333c0e42478d1))
+
 ## [3.153.0](https://github.com/IbbyLabs/XRDB/compare/v3.152.0...v3.153.0) (2026-11-28)
 
 
