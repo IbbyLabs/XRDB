@@ -32,6 +32,7 @@ env -i PATH="$PATH" HOME="$data" TMPDIR="$data" \
   XRDB_ADDR="127.0.0.1:$port" \
   XRDB_DB="$data/xrdb.db" \
   XRDB_CACHE_DIR="$data/cache" \
+  XRDB_ADMIN_KEY="${XRDB_E2E_ADMIN_KEY:?set by playwright.config.ts}" \
   XRDB_LOG_LEVEL="${XRDB_E2E_LOG_LEVEL:-warn}" \
   XRDB_STREAM_ADDON_URL=off \
   HTTP_PROXY=http://127.0.0.1:9 HTTPS_PROXY=http://127.0.0.1:9 NO_PROXY=127.0.0.1,localhost \

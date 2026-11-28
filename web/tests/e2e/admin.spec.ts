@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { signInAsAdmin } from './admin-session';
+
+test.beforeEach(async ({ page }) => {
+  await signInAsAdmin(page);
+});
 
 test('admin page loads with metrics tab', async ({ page }) => {
   await page.goto('/admin');

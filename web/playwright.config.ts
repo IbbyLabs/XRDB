@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { E2E_ADMIN_KEY } from './tests/e2e/admin-session';
 
 // The suite runs against the built static export by default. E2E_DEV=1 runs it
 // against `next dev` instead, for iterating on a spec without rebuilding.
@@ -35,6 +36,7 @@ export default defineConfig({
         url: `${baseURL}/healthz`,
         reuseExistingServer: !process.env.CI,
         timeout: 300_000,
+        env: { XRDB_E2E_ADMIN_KEY: E2E_ADMIN_KEY },
         gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
       },
 });

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { signInAsAdmin } from './admin-session';
 
 // Neither a phone nor the 340px controls column fits five tabs on one line.
 // The row used to be clipped by its container, which left the last tab
@@ -38,6 +39,7 @@ const CONFIG_TABS = ['Display', 'Ratings', 'Profile', 'Install'];
 
 for (const [label, size] of [['phone', PHONE], ['desktop', DESKTOP]] as const) {
   test(`every admin tab is usable on ${label}`, async ({ page }) => {
+    await signInAsAdmin(page);
     await page.setViewportSize(size);
     await page.goto('/admin');
     await expectEveryTabUsable(page, ADMIN_TABS);
